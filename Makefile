@@ -193,6 +193,10 @@ PROJ_OBJ += multiranger.o
 PROJ_OBJ += lighthouse.o
 PROJ_OBJ += activeMarkerDeck.o
 
+# Tunnel exploration
+PROJ_OBJ += tunnelexplorer.o
+DEBUG = 1
+
 ifeq ($(LPS_TDOA_ENABLE), 1)
 CFLAGS += -DLPS_TDOA_ENABLE
 endif

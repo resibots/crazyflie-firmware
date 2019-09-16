@@ -40,6 +40,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "led.h"
+
 #include <stdlib.h>
 
 static bool isInit = false;

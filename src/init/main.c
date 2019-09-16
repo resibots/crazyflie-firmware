@@ -38,6 +38,7 @@
 #include "usec_time.h"
 
 #include "led.h"
+#include "debug.h"
 
 /* ST includes */
 #include "stm32fxxx.h"
@@ -45,7 +46,7 @@
 int main() 
 {
   //Initialize the platform.
-  int err = platformInit();
+  int err = platformInit(); //! Init low level drivers only (interrupts, exceptions...)
   if (err != 0) {
     // The firmware is running on the wrong hardware. Halt
     while(1);

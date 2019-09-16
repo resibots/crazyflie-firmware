@@ -153,7 +153,7 @@ const ledseq_t seq_testPassed[] = {
   {false, LEDSEQ_WAITMS(50)},
   { true, LEDSEQ_WAITMS(50)},
   {false, LEDSEQ_WAITMS(50)},
-  { true, LEDSEQ_WAITMS(50)},
+  { true, LEDSEQ_WAITMS(1000)}, // MadeInPierre's firmware indicator
   {false, LEDSEQ_WAITMS(50)},
   {false, LEDSEQ_STOP},
 };
