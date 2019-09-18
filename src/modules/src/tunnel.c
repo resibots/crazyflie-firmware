@@ -1,26 +1,33 @@
-#define DEBUG_MODULE "tunnelExplorer"
-#include "debug.h"
+#include "tunnel.h"
 
-#include "deck.h"
+#include "debug.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 #include "config.h"
 
+#include "system.h"
 #include "range.h"
 #include "led.h"
-#include "system.h"
 #include "log.h"
 
 #include "crtp.h"
 #include "commander.h"
 #include "crtp_commander.h"
 
-#define LIMIT(a) ((a>255)?255:(a<0)?0:a)
 #define ABS(x) (x > 0) ? x : -x
 #define LINSCALE(domain_low, domain_high, codomain_low, codomain_high, value) (((codomain_high - codomain_low) / (domain_high - domain_low)) * (value - domain_low) + codomain_low)
 
+typedef enum {
+  tunnelMove  = 0x00, // Ask for the drone to move in the tunnel (or pass the message to the neighbor)
+  tunnelChain = 0x01, // Ask to modify the chain setup
+  tunnelNop   = 0x02,
+} tunnelChannel;
 
+struct {
+  int8_t x;
+  int8_t y;
+} cmd_vel;
 
 void sendSetpointHover(float vx,float vy, float yawrate, float zDistance) {
   uint8_t type = 5; // hoverType, see crtp_commander_generic.c:71
@@ -33,10 +40,6 @@ void sendSetpointHover(float vx,float vy, float yawrate, float zDistance) {
   p += sizeof(vy);      memcpy(p, &yawrate, sizeof(yawrate));
   p += sizeof(yawrate); memcpy(p, &zDistance, sizeof(zDistance));
   pk.size = sizeof(type) + sizeof(vx) + sizeof(vy) + sizeof(yawrate) + sizeof(zDistance);
-
-  // for(int i = 0; i < pk.size; i++)
-  //   DEBUG_PRINT("%i,", pk.data[i]);
-  // DEBUG_PRINT("\n");
 
   setpoint_t setpoint;
   crtpCommanderGenericDecodeSetpoint(&setpoint, &pk);
@@ -60,7 +63,7 @@ static void mrTask(void *param)
 {
     systemWaitStart();
 
-    vTaskDelay(1000);
+    vTaskDelay(3000);
 
     TickType_t lastWakeTime = xTaskGetTickCount();
 
@@ -93,35 +96,51 @@ static void mrTask(void *param)
       
       // If there are two walls on each side, center the drone
       float repulsion = 0;
-      if(left < 1000 && right < 1000) {
+      if(left < 2000 && right < 2000) {
         float diff = left - right;
         if(diff < 0) diff *= -1;
         float sign = (left - right > 0) ? 1.f : -1.f;
       
-        if(diff > 500) repulsion = 0.3f;
-        else repulsion = sign * LINSCALE(0.f, 500.f, 0.1f, 0.3f, diff);
+        if(diff > 500) 
+          repulsion = sign * 0.5f;
+        else 
+          repulsion = sign * LINSCALE(0.f, 500.f, 0.1f, 0.5f, diff);
       }
 
       // Send the movement command
-      sendSetpointHover(0, repulsion, 0, 0.3f);
+      sendSetpointHover(0.3f * (float)cmd_vel.x, 0.3f * (float)cmd_vel.y + repulsion, 0, 0.3f);
     }
 }
 
-static void tunnelInit()
+void crtpTunnelHandler(CRTPPacket *p) {
+  DEBUG_PRINT("Tmsg s=%i c=", p->size);
+  for(int i = 0; i < p->size; i++)
+    DEBUG_PRINT("%i,", p->data[i]);
+  DEBUG_PRINT("\n");
+
+  cmd_vel.x = (int8_t)p->data[0];
+  cmd_vel.y = (int8_t)p->data[1];
+
+  DEBUG_PRINT("CMD = %i %i\n", cmd_vel.x, cmd_vel.y);
+
+  CRTPPacket pk;
+  pk.port = CRTP_PORT_TUNNEL;
+  pk.channel = 1;
+  memcpy(pk.data, p->data, p->size);
+  pk.size = p->size;
+  crtpSendPacket(&pk);
+}
+
+void tunnelInit()
 {
+  crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);
+
   xTaskCreate(mrTask, TUNNELEXPLORER_TASK_NAME, TUNNELEXPLORER_TASK_STACKSIZE, NULL, 
               TUNNELEXPLORER_TASK_PRI, NULL);
 }
 
-static bool tunnelTest()
+bool tunnelTest()
 {
   return true;
 }
 
-static const DeckDriver tunnelDriver = {
-  .name = "tunnelExplorer",
-  .init = tunnelInit,
-  .test = tunnelTest,
-};
-
-DECK_DRIVER(tunnelDriver);

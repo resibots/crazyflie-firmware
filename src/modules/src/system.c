@@ -64,6 +64,8 @@
 #include "deck.h"
 #include "extrx.h"
 
+#include "tunnel.h"
+
 /* Private variable */
 static bool selftestPassed;
 static bool canFly;
