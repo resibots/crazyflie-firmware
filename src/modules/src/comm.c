@@ -29,6 +29,7 @@
 #include "config.h"
 
 #include "crtp.h"
+#include "p2p.h"
 #include "console.h"
 #include "crtpservice.h"
 #include "param.h"
@@ -55,8 +56,10 @@ void commInit(void)
    * that DEBUG_PRINT can be used early */
   // crtpInit();
   // consoleInit();
+  p2pInit(); // P2P can be initialized later
 
-  crtpSetLink(radiolinkGetLink());
+  crtpSetLink(radiolinkGetCRLink());
+  p2pSetLink(radiolinkGetP2PLink());
 
   crtpserviceInit();
   platformserviceInit();
@@ -69,7 +72,7 @@ void commInit(void)
   //if (usbTest())
   //  crtpSetLink(usbGetLink);
   //else if(radiolinkTest())
-  //  crtpSetLink(radiolinkGetLink());
+  //  crtpSetLink(radiolinkGetCRLink());
   
   isInit = true;
 }

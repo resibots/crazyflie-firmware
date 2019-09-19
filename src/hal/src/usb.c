@@ -145,7 +145,7 @@ int command = 0xFF;
 static void resetUSB(void) {
   portBASE_TYPE xTaskWokenByReceive = pdFALSE;
 
-  crtpSetLink(radiolinkGetLink());
+  crtpSetLink(radiolinkGetCRLink());
 
   if (isInit == true) {
     // Empty queue
@@ -162,7 +162,7 @@ static uint8_t usbd_cf_Setup(void *pdev , USB_SETUP_REQ  *req)
   if (command == 0x01) {
     crtpSetLink(usblinkGetLink());
   } else {
-    crtpSetLink(radiolinkGetLink());
+    crtpSetLink(radiolinkGetCRLink());
   }
 
   return USBD_OK;

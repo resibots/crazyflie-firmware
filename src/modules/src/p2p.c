@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
- * crtp.c - CrazyRealtimeTransferProtocol stack
+ * p2p.c - CrazyRealtimeTransferProtocol stack
  */
 
 #include <stdbool.h>
@@ -35,24 +35,26 @@
 
 #include "config.h"
 
-#include "crtp.h"
+#include "p2p.h"
 #include "info.h"
 #include "cfassert.h"
 #include "queuemonitor.h"
 
 #include "log.h"
+#include "led.h"
+#include "ledseq.h"
 
 
 static bool isInit;
 
 static int nopFunc(void);
-static struct crtpLinkOperations nopLink = {
+static struct p2pLinkOperations nopLink = {
   .setEnable         = (void*) nopFunc,
   .sendPacket        = (void*) nopFunc,
   .receivePacket     = (void*) nopFunc,
-};
+}; 
 
-static struct crtpLinkOperations *link = &nopLink;
+static struct p2pLinkOperations *link = &nopLink;
 
 #define STATS_INTERVAL 500
 static struct {
@@ -68,29 +70,29 @@ static struct {
 
 static xQueueHandle  txQueue;
 
-#define CRTP_NBR_OF_PORTS 16
-#define CRTP_TX_QUEUE_SIZE 100
-#define CRTP_RX_QUEUE_SIZE 16
+#define P2P_NBR_OF_PORTS 16
+#define P2P_TX_QUEUE_SIZE 100
+#define P2P_RX_QUEUE_SIZE 16
 
-static void crtpTxTask(void *param);
-static void crtpRxTask(void *param);
+static void p2pTxTask(void *param);
+static void p2pRxTask(void *param);
 
-static xQueueHandle queues[CRTP_NBR_OF_PORTS];
-static volatile CrtpCallback callbacks[CRTP_NBR_OF_PORTS];
+static xQueueHandle queues[P2P_NBR_OF_PORTS];
+static volatile P2pCallback callbacks[P2P_NBR_OF_PORTS];
 static void updateStats();
 
-void crtpInit(void)
+void p2pInit(void)
 {
   if(isInit)
     return;
 
-  txQueue = xQueueCreate(CRTP_TX_QUEUE_SIZE, sizeof(CRTPPacket));
+  txQueue = xQueueCreate(P2P_TX_QUEUE_SIZE, sizeof(P2PPacket));
   DEBUG_QUEUE_MONITOR_REGISTER(txQueue);
 
-  xTaskCreate(crtpTxTask, CRTP_TX_TASK_NAME,
-              CRTP_TX_TASK_STACKSIZE, NULL, CRTP_TX_TASK_PRI, NULL);
-  xTaskCreate(crtpRxTask, CRTP_RX_TASK_NAME,
-              CRTP_RX_TASK_STACKSIZE, NULL, CRTP_RX_TASK_PRI, NULL);
+  xTaskCreate(p2pTxTask, P2P_TX_TASK_NAME,
+              P2P_TX_TASK_STACKSIZE, NULL, P2P_TX_TASK_PRI, NULL);
+  xTaskCreate(p2pRxTask, P2P_RX_TASK_NAME,
+              P2P_RX_TASK_STACKSIZE, NULL, P2P_RX_TASK_PRI, NULL);
 
   /* Start Rx/Tx tasks */
 
@@ -98,20 +100,20 @@ void crtpInit(void)
   isInit = true;
 }
 
-bool crtpTest(void)
+bool p2pTest(void)
 {
   return isInit;
 }
 
-void crtpInitTaskQueue(CRTPPort portId)
+void p2pInitTaskQueue(P2PPort portId)
 {
   ASSERT(queues[portId] == NULL);
   
-  queues[portId] = xQueueCreate(CRTP_RX_QUEUE_SIZE, sizeof(CRTPPacket));
+  queues[portId] = xQueueCreate(P2P_RX_QUEUE_SIZE, sizeof(P2PPacket));
   DEBUG_QUEUE_MONITOR_REGISTER(queues[portId]);
 }
 
-int crtpReceivePacket(CRTPPort portId, CRTPPacket *p)
+int p2pReceivePacket(P2PPort portId, P2PPacket *p)
 {
   ASSERT(queues[portId]);
   ASSERT(p);
@@ -119,7 +121,7 @@ int crtpReceivePacket(CRTPPort portId, CRTPPacket *p)
   return xQueueReceive(queues[portId], p, 0);
 }
 
-int crtpReceivePacketBlock(CRTPPort portId, CRTPPacket *p)
+int p2pReceivePacketBlock(P2PPort portId, P2PPacket *p)
 {
   ASSERT(queues[portId]);
   ASSERT(p);
@@ -128,7 +130,7 @@ int crtpReceivePacketBlock(CRTPPort portId, CRTPPacket *p)
 }
 
 
-int crtpReceivePacketWait(CRTPPort portId, CRTPPacket *p, int wait)
+int p2pReceivePacketWait(P2PPort portId, P2PPacket *p, int wait)
 {
   ASSERT(queues[portId]);
   ASSERT(p);
@@ -136,14 +138,14 @@ int crtpReceivePacketWait(CRTPPort portId, CRTPPacket *p, int wait)
   return xQueueReceive(queues[portId], p, M2T(wait));
 }
 
-int crtpGetFreeTxQueuePackets(void)
+int p2pGetFreeTxQueuePackets(void)
 {
-  return (CRTP_TX_QUEUE_SIZE - uxQueueMessagesWaiting(txQueue));
+  return (P2P_TX_QUEUE_SIZE - uxQueueMessagesWaiting(txQueue));
 }
 
-void crtpTxTask(void *param)
+void p2pTxTask(void *param)
 {
-  CRTPPacket p;
+  P2PPacket p;
 
   while (true)
   {
@@ -168,9 +170,9 @@ void crtpTxTask(void *param)
   }
 }
 
-void crtpRxTask(void *param)
+void p2pRxTask(void *param)
 {
-  CRTPPacket p;
+  P2PPacket p;
 
   while (true)
   {
@@ -178,6 +180,7 @@ void crtpRxTask(void *param)
     {
       if (!link->receivePacket(&p))
       {
+        ledseqRun(LED_GREEN_R, seq_linkup);
         if (queues[p.port])
         {
           if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL)
@@ -203,31 +206,31 @@ void crtpRxTask(void *param)
   }
 }
 
-void crtpRegisterPortCB(int port, CrtpCallback cb)
+void p2pRegisterPortCB(int port, P2pCallback cb)
 {
-  if (port>CRTP_NBR_OF_PORTS)
+  if (port>P2P_NBR_OF_PORTS)
     return;
   
   callbacks[port] = cb;
 }
 
-int crtpSendPacket(CRTPPacket *p)
+int p2pSendPacket(P2PPacket *p)
 {
   ASSERT(p); 
-  ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
+  ASSERT(p->size <= P2P_MAX_DATA_SIZE);
 
   return xQueueSend(txQueue, p, 0);
 }
 
-int crtpSendPacketBlock(CRTPPacket *p)
+int p2pSendPacketBlock(P2PPacket *p)
 {
   ASSERT(p); 
-  ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
+  ASSERT(p->size <= P2P_MAX_DATA_SIZE);
 
   return xQueueSend(txQueue, p, portMAX_DELAY);
 }
 
-int crtpReset(void)
+int p2pReset(void)
 {
   xQueueReset(txQueue);
   if (link->reset) {
@@ -237,14 +240,14 @@ int crtpReset(void)
   return 0;
 }
 
-bool crtpIsConnected(void)
+bool p2pIsConnected(void)
 {
   if (link->isConnected)
     return link->isConnected();
   return true;
 }
 
-void crtpSetLink(struct crtpLinkOperations * lk)
+void p2pSetLink(struct p2pLinkOperations * lk)
 {
   if(link)
     link->setEnable(false);
@@ -282,7 +285,7 @@ static void updateStats()
   }
 }
 
-LOG_GROUP_START(crtp)
+LOG_GROUP_START(p2p)
 LOG_ADD(LOG_UINT16, rxRate, &stats.rxRate)
 LOG_ADD(LOG_UINT16, txRate, &stats.txRate)
-LOG_GROUP_STOP(crtp)
+LOG_GROUP_STOP(p2p)

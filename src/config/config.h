@@ -73,6 +73,8 @@
 #define SYSTEM_TASK_PRI         2
 #define CRTP_TX_TASK_PRI        2
 #define CRTP_RX_TASK_PRI        2
+#define P2P_TX_TASK_PRI         2
+#define P2P_RX_TASK_PRI         2
 #define EXTRX_TASK_PRI          2
 #define ZRANGER_TASK_PRI        2
 #define ZRANGER2_TASK_PRI       2
@@ -102,6 +104,8 @@
 #define PM_TASK_NAME            "PWRMGNT"
 #define CRTP_TX_TASK_NAME       "CRTP-TX"
 #define CRTP_RX_TASK_NAME       "CRTP-RX"
+#define P2P_TX_TASK_NAME        "P2P-TX"
+#define P2P_RX_TASK_NAME        "P2P-RX"
 #define CRTP_RXTX_TASK_NAME     "CRTP-RXTX"
 #define LOG_TASK_NAME           "LOG"
 #define MEM_TASK_NAME           "MEM"
@@ -130,6 +134,8 @@
 #define PM_TASK_STACKSIZE             configMINIMAL_STACK_SIZE
 #define CRTP_TX_TASK_STACKSIZE        configMINIMAL_STACK_SIZE
 #define CRTP_RX_TASK_STACKSIZE        (2* configMINIMAL_STACK_SIZE)
+#define P2P_TX_TASK_STACKSIZE         configMINIMAL_STACK_SIZE
+#define P2P_RX_TASK_STACKSIZE         (2* configMINIMAL_STACK_SIZE)
 #define CRTP_RXTX_TASK_STACKSIZE      configMINIMAL_STACK_SIZE
 #define LOG_TASK_STACKSIZE            configMINIMAL_STACK_SIZE
 #define MEM_TASK_STACKSIZE            (2 * configMINIMAL_STACK_SIZE)
