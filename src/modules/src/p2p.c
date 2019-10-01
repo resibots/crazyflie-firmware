@@ -74,7 +74,7 @@ static struct {
 static xQueueHandle  txQueue;
 
 #define P2P_NBR_OF_PORTS 16
-#define P2P_TX_QUEUE_SIZE 100
+#define P2P_TX_QUEUE_SIZE 16
 #define P2P_RX_QUEUE_SIZE 16
 
 static void p2pTxTask(void *param);
@@ -150,12 +150,12 @@ void p2pTxTask(void *param)
 {
   systemWaitStart();
 
-  // P2PPacket p_test; //TODO tests only remove
-  // p_test.header = 0xC9; // destination with 0xXY with X=address and Y=port 
-  // p_test.txdata[0] = 0x34;
-  // p_test.txdata[1] = 0x56;
-  // p_test.size = 0; // Consider data size only (no header)
-  // p2pSendPacket(&p_test); //TODO tests only remove
+  P2PPacket p_test; //TODO tests only remove
+  p_test.header = 0xC9; // destination with 0xXY with X=address and Y=port 
+  p_test.txdata[0] = 0x34;
+  p_test.txdata[1] = 0x56;
+  p_test.size = 0; // Consider data size only (no header)
+  p2pSendPacket(&p_test); //TODO tests only remove
 
   P2PPacket p;
 
@@ -174,8 +174,8 @@ void p2pTxTask(void *param)
         stats.txCount++;
         updateStats();
 
-        // p2pSendPacket(&p_test); //TODO tests only remove
-        // vTaskDelay(M2T(300)); //TODO remove too
+        p2pSendPacket(&p_test); //TODO tests only remove
+        vTaskDelay(M2T(300)); //TODO remove too
       }
     }
     else
@@ -197,14 +197,6 @@ void p2pRxTask(void *param)
     {
       if (!link->receivePacket(&p))
       {
-        //DEBUG_PRINT("P s=%i d=%02x%02x%02x%02x%02x%02x\n", p.size, p.raw[0], p.raw[1], p.raw[2], p.raw[3], p.raw[4], p.raw[5]);
-        DEBUG_PRINT("s=%i p=%i %i->%i r=%i\n ", p.size, p.port, p.origin, p.destination, p.rssi);
-        DEBUG_PRINT("d=%02X%02X%02X%02X\n", (p.size > 0) ? p.rxdata[0] : 0xAA,
-                                            (p.size > 1) ? p.rxdata[1] : 0xAA,
-                                            (p.size > 2) ? p.rxdata[2] : 0xAA,
-                                            (p.size > 3) ? p.rxdata[3] : 0xAA);
-
-        ledseqRun(LED_GREEN_R, seq_linkup);
         if (queues[p.port])
         {
           if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL)
