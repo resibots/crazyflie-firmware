@@ -32,28 +32,46 @@
 
 #define P2P_MAX_DATA_SIZE 30
 
-#define P2P_HEADER(port) ((0x80 << 4) | ((port & 0x0F) << 4))
-
-#define P2P_IS_NULL_PACKET(P) ((P.header&0xF3)==0xF3)
-
 typedef enum { //TODO 
   P2P_PORT_NOP          = 0x00
 } P2PPort;
 
 typedef struct _P2PPacket
 {
-  uint8_t size;                         //< Size of data
+  uint8_t size;                         //< Size of data (txdata or rxdata only)
+
   union {
     struct {
       union {
         uint8_t header;                 //< Header selecting channel and port
         struct {
           uint8_t port        : 4;      //< Selected P2P port
-          uint8_t reserved    : 4;      //< Not used
+          uint8_t peer        : 4;      //< Destination or origin address (0xE7E7E7E7EX with X=peer), used for sending only
         };
       };
-      uint8_t data[P2P_MAX_DATA_SIZE]; //< Data
+
+      union {
+        // Use when receiving a packet
+        struct {
+          union {
+            uint8_t peers;                     //< Contains the two drones involved in this message
+            struct {
+              uint8_t destination : 4;         //< Destination address (0xE7E7E7E7EX with X=peer)
+              uint8_t origin      : 4;         //< Sender's address    (0xE7E7E7E7EX with X=peer)
+            };
+          };
+
+          uint8_t rssi;                        //< Received RSSI
+
+          uint8_t rxdata[P2P_MAX_DATA_SIZE-2]; //< Data when receiving
+        };
+        
+        // Use when sending a packet
+        uint8_t txdata[P2P_MAX_DATA_SIZE];     //< Data when sending 
+      };
     };
+
+    // Raw
     uint8_t raw[P2P_MAX_DATA_SIZE+1];  //< The full packet "raw" (header + data)
   };
 } __attribute__((packed)) P2PPacket;

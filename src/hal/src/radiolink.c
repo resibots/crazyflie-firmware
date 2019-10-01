@@ -44,10 +44,6 @@
 #include "ledseq.h"
 #include "queuemonitor.h"
 
-
-#define DEBUG_MODULE "P2P"
-#include "debug.h" // TODO remove
-
 #define RADIOLINK_TX_QUEUE_SIZE (1)
 #define RADIO_ACTIVITY_TIMEOUT_MS (1000)
 
@@ -172,7 +168,7 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
 
   if (slp->type == SYSLINK_RADIO_RAW)
   {
-    slp->length--; // Decrease to get CRTP size.
+    slp->length--; // Decrease to get CRTP size (data only).
     xQueueSend(crtpPacketDelivery, &slp->length, 0);
     ledseqRun(LINK_LED, seq_linkup);
     // If a radio packet is received, one can be sent
@@ -183,7 +179,7 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
     }
   } else if (slp->type == SYSLINK_RADIO_RAW_BROADCAST)
   {
-    slp->length--; // Decrease to get CRTP size.
+    slp->length--; // Decrease to get CRTP size (data only).
     xQueueSend(crtpPacketDelivery, &slp->length, 0);
     ledseqRun(LINK_LED, seq_linkup);
     // no ack for broadcasts
@@ -193,16 +189,15 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
     memcpy(&rssi, slp->data, sizeof(uint8_t)); //rssi will not change on disconnect
   } else if (slp->type == SYSLINK_RADIO_P2P)
   {
-    slp->length--; // Decrease to get P2P size.
-    DEBUG_PRINT("p2p t=%x l=%x d=%x %x %x %x\n", slp->type, slp->length, slp->data[0], slp->data[1], slp->data[2], slp->data[3]);
+    slp->length -= 3; // Decrease to get P2P rxdata size only (the 3 constant bytes before don't count).
     xQueueSend(p2pPacketDelivery, &slp->length, 0);
-    //ledseqRun(LED_GREEN_R, seq_linkup);
+    ledseqRun(LINK_LED, seq_linkup);
     //TODO: send ack ?
   } else if (slp->type == SYSLINK_RADIO_P2P_BROADCAST)
   {
-    slp->length--; // Decrease to get P2P size.
+    slp->length -= 3; // Decrease to get P2P rxdata size only (the 3 constant bytes before don't count).
     xQueueSend(p2pPacketDelivery, &slp->length, 0);
-    //ledseqRun(LED_GREEN_R, seq_linkup);
+    ledseqRun(LINK_LED, seq_linkup);
     // no ack for broadcasts
   }
 
@@ -255,8 +250,8 @@ static int radiolinkSendP2PPacket(P2PPacket *p)
   ASSERT(p->size <= P2P_MAX_DATA_SIZE);
 
   slp.type = SYSLINK_RADIO_P2P;
-  slp.length = p->size + 1;
-  memcpy(slp.data, &p->header, p->size + 1);
+  slp.length = p->size + 1; // p->size is the txdata size only. Add header (type and length don't count)
+  memcpy(slp.data, p->raw, p->size + 1 /*header + txdata*/);
 
   // Immediately send the P2P packet
   ledseqRun(LINK_DOWN_LED, seq_linkup);
