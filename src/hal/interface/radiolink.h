@@ -38,7 +38,8 @@ void radiolinkSetDatarate(uint8_t datarate);
 void radiolinkSetAddress(uint64_t address);
 void radiolinkSetPowerDbm(int8_t powerDbm);
 void radiolinkSyslinkDispatch(SyslinkPacket *slp);
-struct crtpLinkOperations * radiolinkGetLink();
+struct crtpLinkOperations * radiolinkGetCRLink();
+struct p2pLinkOperations * radiolinkGetP2PLink();
 
 
 #endif //__RADIO_H__
