@@ -8,8 +8,10 @@
 #include "config.h"
 
 #include "system.h"
+#include "configblock.h"
 #include "range.h"
 #include "led.h"
+#include "ledseq.h"
 #include "log.h"
 
 #include "crtp.h"
@@ -17,14 +19,18 @@
 #include "commander.h"
 #include "crtp_commander.h"
 
+// Number of available drones in the tunnel exploration crew
+static uint8_t nDrones = 3; // 15 max because of the 4-bit addresses
+
 #define ABS(x) (x > 0) ? x : -x
 #define LINSCALE(domain_low, domain_high, codomain_low, codomain_high, value) (((codomain_high - codomain_low) / (domain_high - domain_low)) * (value - domain_low) + codomain_low)
 
-typedef enum {
-  tunnelMove  = 0x00, // Ask for the drone to move in the tunnel (or pass the message to the neighbor)
-  tunnelChain = 0x01, // Ask to modify the chain setup
-  tunnelNop   = 0x02,
-} tunnelChannel;
+static P2PPacket reply;
+static unsigned long nextSend = 0;
+
+uint8_t getDroneId() {
+  return (uint8_t)configblockGetRadioAddress() & 0x0F;
+}
 
 struct {
   int8_t x;
@@ -64,15 +70,26 @@ void sendSetpointStop() {
 static void mrTask(void *param)
 {
     systemWaitStart();
+    vTaskDelay(2000);
 
-    vTaskDelay(3000);
+    // Stop red LED (it gets annoying ^^)
+    ledseqStop(SYS_LED, seq_alive);
+    ledseqStop(SYS_LED, seq_calibrated);
+    ledSet(SYS_LED, false);
 
     TickType_t lastWakeTime = xTaskGetTickCount();
 
+    uint8_t counter = 0;
+
     while (1)
     {
-      // 10Hz rate
       vTaskDelayUntil(&lastWakeTime, M2T(100));
+
+      if(nextSend != 0 && xTaskGetTickCount() > nextSend) {
+        p2pSendPacket(&reply);
+        ledSet(LED_GREEN_R, false);
+        nextSend = 0;
+      }
 
       // // Red button : put a hand above it to stop for 5 seconds
       // if(rangeGet(rangeUp) < 300) {
@@ -114,7 +131,23 @@ static void mrTask(void *param)
     }
 }
 
-// void crtpTunnelHandler(CRTPPacket *p) {
+void crtpTunnelHandler(CRTPPacket *p) {
+  DEBUG_PRINT("Sending ping...\n");
+  P2PPacket p2p_p;
+
+  if(getDroneId() == 0)
+    p2p_p.txdest = 1;
+  else if(getDroneId() == nDrones - 1)
+    p2p_p.txdest = nDrones - 2;
+  else
+    reply.txdest = getDroneId() + 1;
+
+  p2p_p.port   = P2P_PORT_PING;
+  p2p_p.txdata[0] = p->data[0]; // propagate or not
+  p2p_p.txdata[1] = 0x66; // data to repeat
+  p2p_p.size = 2;         // Consider data size only (no header)
+  p2pSendPacket(&p2p_p);
+
 //   DEBUG_PRINT("Tmsg s=%i c=", p->size);
 //   for(int i = 0; i < p->size; i++)
 //     DEBUG_PRINT("%i,", p->data[i]);
@@ -131,21 +164,49 @@ static void mrTask(void *param)
 //   memcpy(pk.data, p->data, p->size);
 //   pk.size = p->size;
 //   crtpSendPacket(&pk);
-// }
+}
+
+void p2pPingHandler(P2PPacket *p) {
+  DEBUG_PRINT("Got ping:\n");
+  p2pPrintPacket(p, true);
+
+  // The first drone doesn't reply to propagating pings
+  if(p->rxdest == getDroneId() && getDroneId() == 0 && p->rxdata[0] == 0x01) {
+    ledseqRun(LED_GREEN_R, seq_testPassed);
+    return;
+  }
+
+  if(p->rxdest == getDroneId()) {
+    // first byte tells if the ping has to propagate through the chain
+    if(p->size >= 1 && p->rxdata[0] == 0x01) { 
+      reply.txdest = getDroneId();
+      if(getDroneId() == 0) // first drone replies to second
+        reply.txdest = 1;
+      else if(getDroneId() == nDrones - 1) // last drone replies to n-1
+        reply.txdest = nDrones - 2;
+      else // middle drone propagates the ping
+        reply.txdest += (p->rxdest - p->origin > 0) ? 1 : -1;
+    }
+    else // reply back directly
+      reply.txdest = p->origin;
+    
+    memcpy(reply.txdata, p->rxdata, p->size);
+    reply.size = p->size;
+
+    nextSend = xTaskGetTickCount() + 500; // send reply after some time
+    ledSet(LED_GREEN_R, true);
+  }
+}
 
 void p2pTunnelHandler(P2PPacket *p) {
-  //DEBUG_PRINT("P s=%i d=%02x%02x%02x%02x%02x%02x\n", p.size, p.raw[0], p.raw[1], p.raw[2], p.raw[3], p.raw[4], p.raw[5]);
-  DEBUG_PRINT("s=%i p=%i %i->%i r=%i\n", p->size, p->port, p->origin, p->destination, p->rssi);
-  DEBUG_PRINT("d=%02X%02X%02X%02X\n", (p->size > 0) ? p->rxdata[0] : 0xAA,
-                                      (p->size > 1) ? p->rxdata[1] : 0xAA,
-                                      (p->size > 2) ? p->rxdata[2] : 0xAA,
-                                      (p->size > 3) ? p->rxdata[3] : 0xAA);
+  
 }
 
 void tunnelInit()
 {
-  // crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);
-  p2pRegisterPortCB(9, p2pTunnelHandler);
+  crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);
+  p2pRegisterPortCB(P2P_PORT_TUNNEL, p2pTunnelHandler);
+  p2pRegisterPortCB(P2P_PORT_PING, p2pPingHandler);
 
   xTaskCreate(mrTask, TUNNELEXPLORER_TASK_NAME, TUNNELEXPLORER_TASK_STACKSIZE, NULL, 
               TUNNELEXPLORER_TASK_PRI, NULL);

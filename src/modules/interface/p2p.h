@@ -33,7 +33,8 @@
 #define P2P_MAX_DATA_SIZE 30
 
 typedef enum { //TODO 
-  P2P_PORT_NOP          = 0x00
+  P2P_PORT_PING   = 0x00,
+  P2P_PORT_TUNNEL = 0x09
 } P2PPort;
 
 typedef struct _P2PPacket
@@ -46,7 +47,7 @@ typedef struct _P2PPacket
         uint8_t header;                 //< Header selecting channel and port
         struct {
           uint8_t port        : 4;      //< Selected P2P port
-          uint8_t peer        : 4;      //< Destination or origin address (0xE7E7E7E7EX with X=peer), used for sending only
+          uint8_t txdest      : 4;      //< Destination or origin address (0xE7E7E7E7EX with X=peer), used for sending only
         };
       };
 
@@ -56,7 +57,7 @@ typedef struct _P2PPacket
           union {
             uint8_t peers;                     //< Contains the two drones involved in this message
             struct {
-              uint8_t destination : 4;         //< Destination address (0xE7E7E7E7EX with X=peer)
+              uint8_t rxdest      : 4;         //< Destination address (0xE7E7E7E7EX with X=peer)
               uint8_t origin      : 4;         //< Sender's address    (0xE7E7E7E7EX with X=peer)
             };
           };
@@ -157,6 +158,16 @@ int p2pGetFreeTxQueuePackets(void);
  * @return status of fetch from queue
  */
 int p2pReceivePacketBlock(P2PPort taskId, P2PPacket *p);
+
+/**
+ * Print a packet's content to the debug console
+ *
+ * @param[in] p         A pointer to the packet to print info on
+ * @paran[in] formatted Print the size, port, origin, destination, etc in a nice way
+ * 
+ * @note formatted==false will print the paquet as a simple hecadecimal array
+ */
+void p2pPrintPacket(P2PPacket *p, bool raw);
 
 /**
  * Function pointer structure to be filled by the P2P link to permits P2P to
