@@ -64,7 +64,6 @@ static uint8_t rssi;
 static bool isConnected;
 static uint32_t lastPacketTick;
 
-
 static bool radiolinkIsConnected(void) {
   return (xTaskGetTickCount() - lastPacketTick) < M2T(RADIO_ACTIVITY_TIMEOUT_MS);
 }
@@ -190,14 +189,19 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
   } else if (slp->type == SYSLINK_RADIO_P2P)
   {
     slp->length -= 3; // Decrease to get P2P rxdata size only (the 3 constant bytes before don't count).
+    
+    if(((P2PPacket*)slp)->rxdest == configblockGetRadioAddressShort())
+      ledseqRun(LINK_LED, seq_linkup);
     xQueueSend(p2pPacketDelivery, &slp->length, 0);
-    ledseqRun(LINK_LED, seq_linkup);
+    
     //TODO: send ack ?
   } else if (slp->type == SYSLINK_RADIO_P2P_BROADCAST)
   {
     slp->length -= 3; // Decrease to get P2P rxdata size only (the 3 constant bytes before don't count).
+
+    if(((P2PPacket*)slp)->rxdest == configblockGetRadioAddressShort())
+      ledseqRun(LINK_LED, seq_linkup);
     xQueueSend(p2pPacketDelivery, &slp->length, 0);
-    ledseqRun(LINK_LED, seq_linkup);
     // no ack for broadcasts
   }
 

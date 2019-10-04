@@ -296,6 +296,14 @@ uint64_t configblockGetRadioAddress(void)
     return RADIO_ADDRESS;
 }
 
+uint8_t configblockGetRadioAddressShort(void)
+{
+  if (cb_ok)
+    return (uint8_t)configblock.radioAddress_lower & 0x0F;
+  else
+    return (uint8_t)RADIO_ADDRESS & 0x0F;
+}
+
 float configblockGetCalibPitch(void)
 {
   if (cb_ok)

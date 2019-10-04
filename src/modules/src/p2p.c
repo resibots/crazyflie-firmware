@@ -49,7 +49,7 @@
 #include "system.h"
 
 #define DEBUG_MODULE "P2P"
-#include "debug.h" // TODO remove
+#include "debug.h"
 
 static bool isInit;
 
@@ -243,11 +243,18 @@ void p2pPrintPacket(P2PPacket *p, bool format) {
   if(!format)
     DEBUG_PRINT("P2P s=%i d=%02x%02x%02x%02x%02x%02x\n", p->size, p->raw[0], p->raw[1], p->raw[2], p->raw[3], p->raw[4], p->raw[5]);
   else {
-    DEBUG_PRINT("P2P s=%i p=%i %i->%i r=%i\n", p->size, p->port, p->origin, p->rxdest, p->rssi);
-    DEBUG_PRINT("d=%02X%02X%02X%02X\n", (p->size > 0) ? p->rxdata[0] : 0xAA,
+    DEBUG_PRINT("P2P s=%i p=%i %i->%i r=%u\n", p->size, p->port, p->origin, p->rxdest, p->rssi);
+
+    DEBUG_PRINT("d=%02X%02X%02X%02X%02X%02X%02X%02X%02X\n", (p->size > 0) ? p->rxdata[0] : 0xAA,
                                         (p->size > 1) ? p->rxdata[1] : 0xAA,
                                         (p->size > 2) ? p->rxdata[2] : 0xAA,
-                                        (p->size > 3) ? p->rxdata[3] : 0xAA);
+                                        (p->size > 3) ? p->rxdata[3] : 0xAA,
+                                        (p->size > 4) ? p->rxdata[4] : 0xAA,
+                                        (p->size > 5) ? p->rxdata[5] : 0xAA,
+                                        (p->size > 6) ? p->rxdata[6] : 0xAA,
+                                        (p->size > 7) ? p->rxdata[7] : 0xAA,
+                                        (p->size > 8) ? p->rxdata[8] : 0xAA,
+                                        (p->size > 9) ? p->rxdata[9] : 0xAA);
   }
 }
 

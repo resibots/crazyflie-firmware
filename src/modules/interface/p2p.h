@@ -34,6 +34,7 @@
 
 typedef enum { //TODO 
   P2P_PORT_PING   = 0x00,
+  P2P_PORT_PARAM  = 0x01,
   P2P_PORT_TUNNEL = 0x09
 } P2PPort;
 
