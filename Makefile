@@ -194,7 +194,7 @@ PROJ_OBJ += lighthouse.o
 PROJ_OBJ += activeMarkerDeck.o
 
 # Tunnel exploration
-PROJ_OBJ += tunnel_config.o tunnel_ping.o tunnel.o 
+PROJ_OBJ += tunnel_config.o tunnel_ping.o tunnel_commander.o tunnel.o 
 
 ifeq ($(LPS_TDOA_ENABLE), 1)
 CFLAGS += -DLPS_TDOA_ENABLE

@@ -8,14 +8,13 @@
 #include "crtp.h"
 
 // Send a ping through the chain
-// TODO mors params to choose the destination drone
+// TODO more function params to choose the destination drone
 void sendPing(bool propagate);
 
 // Update function that needs to be called regularly
 void tunnelPingUpdate();
 
-// Callback that needs to be called when receiving a CRTP
-// tunnel packet.
+// Process an incoming CRTPPacket concerning pings
 void crtpTunnelPingHandler(CRTPPacket *p);
 
 // Initialize the ping submodule

@@ -47,6 +47,7 @@ void crtpTunnelPingHandler(CRTPPacket *p) {
     sendPing(p->data[1]);
   }
 
+  //TODO put elsewhere
   else if(p->data[0] == 0x01) { // set number of drones
     setNDrones(p->data[1]);
     DEBUG_PRINT("Set nDrones=%i\n", getNDrones());
