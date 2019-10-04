@@ -1,5 +1,8 @@
 #include "tunnel.h"
 
+#include "tunnel_config.h"
+#include "tunnel_ping.h"
+
 #define DEBUG_MODULE "TUN"
 #include "debug.h"
 
@@ -19,20 +22,8 @@
 #include "commander.h"
 #include "crtp_commander.h"
 
-// Number of available drones in the tunnel exploration crew
-static uint8_t nDrones = 3; // 15 max because of the 4-bit addresses
-
 #define ABS(x) (x > 0) ? x : -x
 #define LINSCALE(domain_low, domain_high, codomain_low, codomain_high, value) (((codomain_high - codomain_low) / (domain_high - domain_low)) * (value - domain_low) + codomain_low)
-
-static P2PPacket reply;
-static unsigned long nextSend = 0;
-
-static unsigned long pingStartTime = 0;
-
-uint8_t getDroneId() {
-  return configblockGetRadioAddressShort();
-}
 
 struct {
   int8_t x;
@@ -69,26 +60,7 @@ void sendSetpointStop() {
   commanderSetSetpoint(&setpoint, COMMANDER_PRIORITY_CRTP);
 }
 
-void sendPing(bool propagate) {
-  DEBUG_PRINT("Sending ping...\n");
-  P2PPacket p2p_p;
-
-  if(getDroneId() == 0)
-    p2p_p.txdest = 1;
-  else if(getDroneId() == nDrones - 1)
-    p2p_p.txdest = nDrones - 2;
-  else
-    reply.txdest = getDroneId() + 1;
-
-  p2p_p.port      = P2P_PORT_PING;
-  p2p_p.txdata[0] = (uint8_t)propagate; // propagate or not
-  p2p_p.size      = 1;         // Consider data size only (no header)
-
-  pingStartTime = xTaskGetTickCount();
-  p2pSendPacket(&p2p_p);
-}
-
-static void mrTask(void *param)
+static void tunnelTask(void *param)
 {
     systemWaitStart();
     vTaskDelay(2000);
@@ -100,20 +72,11 @@ static void mrTask(void *param)
 
     TickType_t lastWakeTime = xTaskGetTickCount();
 
-    uint8_t counter = 0;
-
     while (1)
     {
       vTaskDelayUntil(&lastWakeTime, M2T(100));
 
-      if(getDroneId() == 0 && xTaskGetTickCount() - pingStartTime > 1000)
-        sendPing(true);
-
-      if(nextSend != 0 && xTaskGetTickCount() > nextSend) {
-        p2pSendPacket(&reply);
-        ledSet(LED_GREEN_R, false);
-        nextSend = 0;
-      }
+      tunnelPingUpdate();
 
       // // Red button : put a hand above it to stop for 5 seconds
       // if(rangeGet(rangeUp) < 300) {
@@ -156,23 +119,7 @@ static void mrTask(void *param)
 }
 
 void crtpTunnelHandler(CRTPPacket *p) {
-  if(p->data[0] == 0x00) { // ask for a ping
-    sendPing(p->data[1]);
-  }
-
-  else if(p->data[0] == 0x01) { // set number of drones
-    nDrones = p->data[1];
-    DEBUG_PRINT("Set nDrones=%i\n", nDrones);
-
-    P2PPacket p2p_p;
-    p2p_p.txdest = 0x0F; // broadcast
-    p2p_p.port   = P2P_PORT_PARAM;
-    p2p_p.txdata[0] = nDrones;
-    p2p_p.size = 1;
-    p2pSendPacket(&p2p_p);
-    p2pSendPacket(&p2p_p);
-    p2pSendPacket(&p2p_p);
-  }
+  crtpTunnelPingHandler(p);
 
 //   DEBUG_PRINT("Tmsg s=%i c=", p->size);
 //   for(int i = 0; i < p->size; i++)
@@ -192,90 +139,26 @@ void crtpTunnelHandler(CRTPPacket *p) {
 //   crtpSendPacket(&pk);
 }
 
-void p2pPingHandler(P2PPacket *p) {
-  uint8_t rssi = p->rssi;
-  DEBUG_PRINT("Got ping:\n");
-  p2pPrintPacket(p, true);
-
-  // The first drone doesn't reply to propagating pings
-  if(p->rxdest == getDroneId() && getDroneId() == 0 && p->rxdata[0] == 0x01) {
-    uint16_t pingTime = xTaskGetTickCount() - pingStartTime;
-    DEBUG_PRINT("Ping returned in %ims.\n", pingTime);
-    ledseqRun(LED_GREEN_R, seq_testPassed);
-
-    // Send a ping report to the PC (containes RSSI values between each drone)
-    CRTPPacket p_log;
-    p_log.port = CRTP_PORT_TUNNEL;
-    p_log.channel = 0;
-    memcpy(p_log.data, &p->rxdata[1], p->size - 1);
-    p_log.size = p->size - 1;
-
-    // Add our RSSI if there's room
-    if(p_log.size < P2P_MAX_DATA_SIZE) {
-      p_log.data[p_log.size] = rssi;
-      p_log.size++;
-    }
-
-    // Add the ping time if there's room
-    if(p_log.size < P2P_MAX_DATA_SIZE) {
-      p_log.data[p_log.size] = pingTime / 10;
-      p_log.size++;
-    }
-
-    crtpSendPacket(&p_log);
-    return;
-  }
-
-  if(p->rxdest == getDroneId()) {
-    // first byte tells if the ping has to propagate through the chain
-    if(p->size >= 1 && p->rxdata[0] == 0x01) { 
-      reply.txdest = getDroneId();
-      if(getDroneId() == 0) // first drone replies to second
-        reply.txdest = 1;
-      else if(getDroneId() == nDrones - 1) // last drone replies to n-1
-        reply.txdest = nDrones - 2;
-      else // middle drone propagates the ping
-        reply.txdest += (p->rxdest - p->origin > 0) ? 1 : -1;
-    }
-    else // reply back directly
-      reply.txdest = p->origin;
-    
-    // Copy the previous data
-    memcpy(reply.txdata, p->rxdata, p->size);
-    reply.size = p->size;
-
-    // Add our RSSI if there's room
-    if(reply.size < P2P_MAX_DATA_SIZE) {
-      reply.txdata[reply.size] = rssi;
-      reply.size++;
-    }
-
-    nextSend = xTaskGetTickCount(); // send reply after some time
-    ledSet(LED_GREEN_R, true);
-  }
-}
-
 void p2pParamHandler(P2PPacket *p) {
-  nDrones = p->rxdata[0]; // set nDrones for now only TODO
-}
-
-void p2pTunnelHandler(P2PPacket *p) {
-  
+  setNDrones(p->rxdata[0]); // set nDrones for now only TODO
 }
 
 void tunnelInit()
 {
+  tunnelPingInit();
+
   crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);
-  p2pRegisterPortCB(P2P_PORT_TUNNEL,   p2pTunnelHandler);
-  p2pRegisterPortCB(P2P_PORT_PING,     p2pPingHandler);
   p2pRegisterPortCB(P2P_PORT_PARAM,    p2pParamHandler);
 
-  xTaskCreate(mrTask, TUNNELEXPLORER_TASK_NAME, TUNNELEXPLORER_TASK_STACKSIZE, NULL, 
+  xTaskCreate(tunnelTask, TUNNELEXPLORER_TASK_NAME, TUNNELEXPLORER_TASK_STACKSIZE, NULL, 
               TUNNELEXPLORER_TASK_PRI, NULL);
 }
 
 bool tunnelTest()
 {
-  return true;
+  bool pass = true;
+  pass &= tunnelPingTest();
+
+  return pass;
 }
 

@@ -44,6 +44,8 @@
 #include "ledseq.h"
 #include "queuemonitor.h"
 
+#include "tunnel_config.h"
+
 #define RADIOLINK_TX_QUEUE_SIZE (1)
 #define RADIO_ACTIVITY_TIMEOUT_MS (1000)
 
@@ -190,7 +192,7 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
   {
     slp->length -= 3; // Decrease to get P2P rxdata size only (the 3 constant bytes before don't count).
     
-    if(((P2PPacket*)slp)->rxdest == configblockGetRadioAddressShort())
+    if(((P2PPacket*)slp)->rxdest == getDroneId())
       ledseqRun(LINK_LED, seq_linkup);
     xQueueSend(p2pPacketDelivery, &slp->length, 0);
     
@@ -199,7 +201,7 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
   {
     slp->length -= 3; // Decrease to get P2P rxdata size only (the 3 constant bytes before don't count).
 
-    if(((P2PPacket*)slp)->rxdest == configblockGetRadioAddressShort())
+    if(((P2PPacket*)slp)->rxdest == getDroneId())
       ledseqRun(LINK_LED, seq_linkup);
     xQueueSend(p2pPacketDelivery, &slp->length, 0);
     // no ack for broadcasts
