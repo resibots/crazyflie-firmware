@@ -1,3 +1,13 @@
+/**
+ * LARSEN Research team - INRIA
+ * Multi-agent tunnel exploration module
+ * 
+ * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
+ * maintainer: LARSEN, INRIA Nancy Grand-Est, France
+ *
+ * tunnel_config.c - Manages general chain parameters
+ */
+
 #include "tunnel_config.h"
 
 #include "configblock.h"

@@ -1,7 +1,18 @@
+/**
+ * LARSEN Research team - INRIA
+ * Multi-agent tunnel exploration module
+ * 
+ * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
+ * maintainer: LARSEN, INRIA Nancy Grand-Est, France
+ *
+ * tunnel_ping.c - Sends, processes and propagates ping requests
+ * accross the drones chain.
+ */
+
 #include "tunnel_ping.h"
 #include "tunnel_config.h"
 
-#define DEBUG_MODULE "TUN"
+#define DEBUG_MODULE "TUN_PING"
 #include "debug.h"
 
 #include "FreeRTOS.h"
@@ -38,7 +49,7 @@ void sendPing(bool propagate) {
 }
 
 void tunnelPingUpdate() {
-  if(getDroneId() == 0 && xTaskGetTickCount() - pingStartTime > 500)
+  if(getDroneId() == 0 && xTaskGetTickCount() - pingStartTime > 1000)
     sendPing(true);
 }
 

@@ -1,3 +1,15 @@
+/**
+ * LARSEN Research team - INRIA
+ * Multi-agent tunnel exploration module
+ * 
+ * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
+ * maintainer: LARSEN, INRIA Nancy Grand-Est, France
+ *
+ * tunnel_commander.c - calculates and sends the drone's movement based on:
+ *  - Obstacles with the multiranger deck
+ *  - RSSI values between the nearby drones
+ */
+
 #include "tunnel_commander.h"
 #include "tunnel_config.h"
 

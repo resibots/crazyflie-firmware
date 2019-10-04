@@ -1,3 +1,13 @@
+/**
+ * LARSEN Research team - INRIA
+ * Multi-agent tunnel exploration module
+ * 
+ * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
+ * maintainer: LARSEN, INRIA Nancy Grand-Est, France
+ *
+ * tunnel.c - Tunnel exploration module's entry point. Calls each submodule.
+ */
+
 #include "tunnel.h"
 
 #include "tunnel_config.h"
@@ -16,6 +26,7 @@
 
 #include "crtp.h"
 #include "p2p.h"
+#include "radiolink.h"
 
 typedef enum {
   CRTP_TUNNEL_CHANNEL_PING      = 0x00,
@@ -25,6 +36,9 @@ typedef enum {
 static void tunnelTask(void *param) {
     systemWaitStart();
     vTaskDelay(2000);
+
+    // Set the max radio TX Power
+    radiolinkSetPowerDbm(4);
 
     // Stop red LED (it gets annoying ^^)
     ledseqStop(SYS_LED, seq_alive);
