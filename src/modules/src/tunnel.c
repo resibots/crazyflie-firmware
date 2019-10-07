@@ -13,6 +13,7 @@
 #include "tunnel_config.h"
 #include "tunnel_ping.h"
 #include "tunnel_commander.h"
+#include "tunnel_parameters.h"
 
 #define DEBUG_MODULE "TUN"
 #include "debug.h"
@@ -30,7 +31,8 @@
 
 typedef enum {
   CRTP_TUNNEL_CHANNEL_PING      = 0x00,
-  CRTP_TUNNEL_CHANNEL_COMMANDER = 0x01,
+  CRTP_TUNNEL_CHANNEL_PARAM     = 0x01,
+  CRTP_TUNNEL_CHANNEL_COMMANDER = 0x02,
 } CRTPTunnelChannel;
 
 static void tunnelTask(void *param) {
@@ -61,22 +63,20 @@ static void tunnelTask(void *param) {
 void crtpTunnelHandler(CRTPPacket *p) {
   if(p->channel == CRTP_TUNNEL_CHANNEL_PING)
     crtpTunnelPingHandler(p);
+  else if(p->channel == CRTP_TUNNEL_CHANNEL_PARAM)
+    crtpTunnelParametersHandler(p);
   else if(p->channel == CRTP_TUNNEL_CHANNEL_COMMANDER)
     crtpTunnelCommanderHandler(p);
 }
 
-void p2pParamHandler(P2PPacket *p) {
-  setNDrones(p->rxdata[0]); // set nDrones for now only TODO
-}
-
 void tunnelInit() {
   // Init submodules
-  tunnelCommanderInit();
   tunnelPingInit();
+  tunnelParametersInit();
+  tunnelCommanderInit();
 
   // Subscribe to packet callbacks
-  crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);
-  p2pRegisterPortCB(P2P_PORT_PARAM,    p2pParamHandler);
+  crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);  
 
   // Create the main tunnel task
   xTaskCreate(tunnelTask, TUNNELEXPLORER_TASK_NAME, TUNNELEXPLORER_TASK_STACKSIZE, NULL, 
@@ -87,6 +87,7 @@ bool tunnelTest() {
   bool pass = true;
 
   pass &= tunnelPingTest();
+  pass &= tunnelParametersTest();
   pass &= tunnelCommanderTest();
 
   return pass;

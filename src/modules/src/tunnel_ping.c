@@ -54,24 +54,7 @@ void tunnelPingUpdate() {
 }
 
 void crtpTunnelPingHandler(CRTPPacket *p) {
-  if(p->data[0] == 0x00) { // ask for a ping
-    sendPing(p->data[1]);
-  }
-
-  //TODO put elsewhere
-  else if(p->data[0] == 0x01) { // set number of drones
-    setNDrones(p->data[1]);
-    DEBUG_PRINT("Set nDrones=%i\n", getNDrones());
-
-    P2PPacket p2p_p;
-    p2p_p.txdest = 0x0F; // broadcast
-    p2p_p.port   = P2P_PORT_PARAM;
-    p2p_p.txdata[0] = getNDrones();
-    p2p_p.size = 1;
-    p2pSendPacket(&p2p_p);
-    p2pSendPacket(&p2p_p);
-    p2pSendPacket(&p2p_p);
-  }
+  sendPing(p->data[0]);
 }
 
 static void p2pPingHandler(P2PPacket *p) {
