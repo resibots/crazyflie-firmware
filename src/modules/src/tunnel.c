@@ -5,7 +5,8 @@
  * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
  * maintainer: LARSEN, INRIA Nancy Grand-Est, France
  *
- * tunnel.c - Tunnel exploration module's entry point. Calls each submodule.
+ * tunnel.c - Tunnel exploration module's entry point. 
+ *            Calls each submodule and manages the main drone states.
  */
 
 #include "tunnel.h"
@@ -50,9 +51,9 @@ static void tunnelTask(void *param) {
     TickType_t lastWakeTime = xTaskGetTickCount();
 
     while (1) {
-      vTaskDelayUntil(&lastWakeTime, M2T(100));
+      vTaskDelayUntil(&lastWakeTime, M2T(50));
 
-      // Update commander
+      // Calculate the new drone movement and send it to the stabilizer
       tunnelCommanderUpdate();
 
       // Handle ping routines
@@ -76,10 +77,10 @@ void tunnelInit() {
   tunnelCommanderInit();
 
   // Subscribe to packet callbacks
-  crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);  
+  crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);
 
   // Create the main tunnel task
-  xTaskCreate(tunnelTask, TUNNELEXPLORER_TASK_NAME, TUNNELEXPLORER_TASK_STACKSIZE, NULL, 
+  xTaskCreate(tunnelTask, TUNNELEXPLORER_TASK_NAME, TUNNELEXPLORER_TASK_STACKSIZE, NULL,
               TUNNELEXPLORER_TASK_PRI, NULL);
 }
 
