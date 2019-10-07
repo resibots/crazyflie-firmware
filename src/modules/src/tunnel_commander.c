@@ -81,7 +81,8 @@ void tunnelCommanderUpdate() {
   tunnelAvoiderUpdate();
 
   // Send the movement command
-  // sendSetpointHover(0.3f * (float)cmd_vel.x, 0.3f * (float)cmd_vel.y + repulsion, 0, 0.2f);
+  if(getTunnelCanFly())
+    sendSetpointHover(0.3f * (float)cmd_vel.x, 0.3f * (float)cmd_vel.y /*+ repulsion*/, 0, 0.2f);
 }
 
 void crtpTunnelCommanderHandler(CRTPPacket *p) {

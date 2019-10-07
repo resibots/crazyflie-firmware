@@ -15,17 +15,29 @@
 #include "p2p.h"
 #include "led.h"
 
-void crtpTunnelParametersHandler(CRTPPacket *p) {
-  setNDrones(p->data[1]);
+typedef enum {
+  TUNNEL_PARAM_NDRONES = 0x00,
+  TUNNEL_PARAM_CANFLY  = 0x01
+} TunnelParameter;
 
-  P2PPacket p2p_p;
-  p2p_p.txdest = 0x0F; // broadcast
-  p2p_p.port   = P2P_PORT_PARAM;
-  p2p_p.txdata[0] = getNDrones();
-  p2p_p.size = 1;
-  p2pSendPacket(&p2p_p);
-  p2pSendPacket(&p2p_p);
-  p2pSendPacket(&p2p_p);
+void crtpTunnelParametersHandler(CRTPPacket *p) {
+  switch(p->data[0]) {
+    case TUNNEL_PARAM_NDRONES:
+      setNDrones(p->data[1]);
+
+      // Broadcast the new number of drones to the other drones
+      P2PPacket p2p_p;
+      p2p_p.txdest = 0x0F; // broadcast
+      p2p_p.port   = P2P_PORT_PARAM;
+      p2p_p.txdata[0] = getNDrones();
+      p2p_p.size = 1;
+      p2pSendPacket(&p2p_p);
+      p2pSendPacket(&p2p_p);
+      p2pSendPacket(&p2p_p);
+      break;
+    case TUNNEL_PARAM_CANFLY:
+      setTunnelCanFly(p->data[1]);
+  }
 }
 
 void p2pParametersHandler(P2PPacket *p) {

@@ -11,6 +11,12 @@ uint8_t getNDrones();
 // Sets the number of drones in the chain
 void setNDrones(uint8_t ndrones);
 
+// Returns if the operator said the drone can fly
+uint8_t getTunnelCanFly();
+
+// Sets if the Tunnel module can use the motors
+void setTunnelCanFly(uint8_t canfly);
+
 // Get the last 4 bits of this drone's address
 uint8_t getDroneId();
 
