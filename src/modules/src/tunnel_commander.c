@@ -73,7 +73,7 @@ void tunnelCommanderUpdate() {
   if(rangeGet(rangeUp) < 200) {
     ledSetAll();
     sendSetpointStop();
-    vTaskDelay(5000);
+    setTunnelCanFly(false);
     ledClearAll();
   }
 
@@ -91,6 +91,7 @@ void tunnelCommanderUpdate() {
   if(getTunnelCanFly())
     sendSetpointHover(0.3f * (float)manual_vel.vx + repulsion.vx, 
                       0.3f * (float)manual_vel.vy + repulsion.vy, 0, 0.2f);
+  else sendSetpointStop();
 }
 
 void crtpTunnelCommanderHandler(CRTPPacket *p) {
