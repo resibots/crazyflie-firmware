@@ -13,6 +13,7 @@
 #include "tunnel_commander.h"
 #include "tunnel_config.h"
 #include "tunnel_avoider.h"
+#include "tunnel_behavior.h"
 
 #define DEBUG_MODULE "TUN_CMD"
 #include "debug.h"
@@ -77,8 +78,13 @@ void tunnelCommanderUpdate() {
     ledClearAll();
   }
 
+  //TODO get desired movement from behavior
+  tunnelBehaviorUpdate();
+
   //TODO get repulsion from avoider
   tunnelAvoiderUpdate();
+
+  //TODO calculate final movement
 
   // Send the movement command
   if(getTunnelCanFly())
@@ -108,12 +114,14 @@ void crtpTunnelCommanderHandler(CRTPPacket *p) {
 
 void tunnelCommanderInit() {
   tunnelAvoiderInit();
+  tunnelBehaviorInit();
 }
 
 bool tunnelCommanderTest() {
   bool pass = true;
 
   pass &= tunnelAvoiderTest();
+  pass &= tunnelBehaviorTest();
 
   return pass;
 }

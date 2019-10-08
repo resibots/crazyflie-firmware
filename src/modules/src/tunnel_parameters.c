@@ -44,12 +44,10 @@ void p2pParametersHandler(P2PPacket *p) {
   setNDrones(p->rxdata[0]); // set nDrones for now only TODO
 }
 
-// Initialize the param submodule
 void tunnelParametersInit() {
     p2pRegisterPortCB(P2P_PORT_PARAM, p2pParametersHandler);
 }
 
-// Test if the param submodule initialized successfully
 bool tunnelParametersTest() {
     return true;
 }
