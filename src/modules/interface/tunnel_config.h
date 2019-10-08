@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <string.h>
 
+// Red and green right-sided LEDs show if the drone senses obstacles on the sides
+// #define TUNNEL_MULTIRANGER_LEDS
+
 // Returns the number of drones to be considered in the chain
 uint8_t getNDrones();
 

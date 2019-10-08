@@ -5,9 +5,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "tunnel_commander.h"
+
 // Update function that needs to be called regularly
-//TODO return the calculated desired force
-void tunnelBehaviorUpdate();
+void tunnelBehaviorUpdate(Tunnel2DVel *vel);
 
 // Initialize the behavior submodule
 void tunnelBehaviorInit();

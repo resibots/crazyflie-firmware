@@ -8,6 +8,8 @@
  * tunnel_commander.c - calculates and sends the drone's movement based on:
  *  - Obstacles with the multiranger deck
  *  - RSSI values between the nearby drones
+ * 
+ * Is part of the navigation stack (commander, avoider & behavior).
  */
 
 #include "tunnel_commander.h"
@@ -34,10 +36,7 @@
 #include "commander.h"
 #include "crtp_commander.h"
 
-struct {
-  int8_t x;
-  int8_t y;
-} cmd_vel;
+static Tunnel2DVel manual_vel;
 
 void sendSetpointHover(float vx,float vy, float yawrate, float zDistance) {
   uint8_t type = 5; // hoverType, see crtp_commander_generic.c:71
@@ -79,16 +78,19 @@ void tunnelCommanderUpdate() {
   }
 
   //TODO get desired movement from behavior
-  tunnelBehaviorUpdate();
+  Tunnel2DVel movement;
+  tunnelBehaviorUpdate(&movement);
 
   //TODO get repulsion from avoider
-  tunnelAvoiderUpdate();
+  Tunnel2DVel repulsion;
+  tunnelAvoiderUpdate(&repulsion);
 
   //TODO calculate final movement
 
   // Send the movement command
   if(getTunnelCanFly())
-    sendSetpointHover(0.3f * (float)cmd_vel.x, 0.3f * (float)cmd_vel.y /*+ repulsion*/, 0, 0.2f);
+    sendSetpointHover(0.3f * (float)manual_vel.vx + repulsion.vx, 
+                      0.3f * (float)manual_vel.vy + repulsion.vy, 0, 0.2f);
 }
 
 void crtpTunnelCommanderHandler(CRTPPacket *p) {
@@ -98,10 +100,10 @@ void crtpTunnelCommanderHandler(CRTPPacket *p) {
     DEBUG_PRINT("%i,", p->data[i]);
   DEBUG_PRINT("\n");
 
-  cmd_vel.x = (int8_t)p->data[0];
-  cmd_vel.y = (int8_t)p->data[1];
+  manual_vel.vx = (int8_t)p->data[0];
+  manual_vel.vy = (int8_t)p->data[1];
 
-  DEBUG_PRINT("CMD = %i %i\n", cmd_vel.x, cmd_vel.y);
+  DEBUG_PRINT("CMD = %i %i\n", manual_vel.vx, manual_vel.vy);
 
   CRTPPacket pk;
   pk.port = CRTP_PORT_TUNNEL;

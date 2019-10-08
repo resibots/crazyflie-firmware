@@ -7,6 +7,12 @@
 
 #include "crtp.h"
 
+// Common structure used for the navigation stack (commander, avoider & behavior)
+typedef struct {
+  float vx;
+  float vy;
+} Tunnel2DVel;
+
 // Send a hover setpoint to the drone's stabilizer
 void sendSetpointHover(float vx,float vy, float yawrate, float zDistance);
 

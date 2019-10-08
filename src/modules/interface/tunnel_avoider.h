@@ -5,9 +5,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "tunnel_commander.h"
+
 // Update function that needs to be called regularly
-//TODO return the calculated repulsion force
-void tunnelAvoiderUpdate();
+void tunnelAvoiderUpdate(Tunnel2DVel *vel);
 
 // Initialize the avoider submodule
 void tunnelAvoiderInit(void);
