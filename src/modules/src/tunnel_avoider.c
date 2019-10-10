@@ -19,36 +19,31 @@
 
 #define LINSCALE(domain_low, domain_high, codomain_low, codomain_high, value) (((codomain_high - codomain_low) / (domain_high - domain_low)) * (value - domain_low) + codomain_low)
 
-void tunnelAvoiderUpdate(Tunnel2DVel *vel) {
-  // TODO return the repulsion force somehow (+ 2D repulsion)
-
-  float left  = rangeGet(rangeLeft);
-  float right = rangeGet(rangeRight);
-
+void tunnelAvoiderUpdate(TunnelHover *vel) {
 #ifdef TUNNEL_MULTIRANGER_LEDS
   // LEDs for some visual obstacle detection feedback
-  if(left < 300) ledSet(LED_GREEN_R, true);
+  if(rangeGet(rangeLeft) < 300) ledSet(LED_GREEN_R, true);
   else ledSet(LED_GREEN_R, false);
-  if(right < 300) ledSet(LED_RED_R, true);
+  if(rangeGet(rangeRight) < 300) ledSet(LED_RED_R, true);
   else ledSet(LED_RED_R, false);
 #endif
-  
-  // If there are two walls on each side, center the drone
-  float repulsion = 0;
-  if(left < 2000 && right < 2000) {
-    float diff = left - right;
-    if(diff < 0) diff *= -1;
-    float sign = (left - right > 0) ? 1.f : -1.f;
-  
-    if(diff > 500) 
-      repulsion = sign * 0.5f;
-    else 
-      repulsion = sign * LINSCALE(0.f, 500.f, 0.1f, 0.5f, diff);
-  }
 
-  // Return the calculation
-  vel->vx = 0;
-  vel->vy = repulsion;
+  // Avoid the obstacles with pushing forces
+#ifdef TUNNEL_AVOID_LEFTRIGHT
+  if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST) 
+    vel->vy -= TUNNEL_RANGER_AVOID_FORCE * rangeGet(rangeLeft)  / 1000;
+  if(rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST)
+    vel->vy += TUNNEL_RANGER_AVOID_FORCE * rangeGet(rangeRight) / 1000;
+#endif
+#ifdef TUNNEL_AVOID_FRONTBACK
+  if(rangeGet(rangeFront) < TUNNEL_RANGER_TRIGGER_DIST)
+    vel->vx -= TUNNEL_RANGER_AVOID_FORCE * rangeGet(rangeFront) / 1000;
+  if(rangeGet(rangeBack) < TUNNEL_RANGER_TRIGGER_DIST)
+    vel->vx += TUNNEL_RANGER_AVOID_FORCE * rangeGet(rangeBack)  / 1000;
+#endif
+#ifdef TUNNEL_AVOID_UPDOWN
+  //TODO up down avoiding
+#endif
 }
 
 void tunnelAvoiderInit(void) {
@@ -58,3 +53,18 @@ void tunnelAvoiderInit(void) {
 bool tunnelAvoiderTest(void) {
     return true;
 }
+
+/* Old method
+// If there are two walls on each side, center the drone
+float repulsion = 0;
+if(left < 2000 && right < 2000) {
+  float diff = left - right;
+  if(diff < 0) diff *= -1;
+  float sign = (left - right > 0) ? 1.f : -1.f;
+
+  if(diff > 500) 
+    repulsion = sign * 0.5f;
+  else 
+    repulsion = sign * LINSCALE(0.f, 500.f, 0.1f, 0.5f, diff);
+}
+*/

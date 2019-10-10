@@ -36,19 +36,23 @@
 #include "commander.h"
 #include "crtp_commander.h"
 
-static Tunnel2DVel manual_vel;
+typedef enum {
+  TUNNEL_COMMANDER_MOVE = 0x00
+} TunnelCommanderRequest;
 
-void sendSetpointHover(float vx,float vy, float yawrate, float zDistance) {
+static TunnelHover manual_vel;
+
+void sendSetpointHover(TunnelHover *hover) {
   uint8_t type = 5; // hoverType, see crtp_commander_generic.c:71
   CRTPPacket pk;
   pk.port = CRTP_PORT_SETPOINT_GENERIC;
   pk.channel = 0;
   uint8_t *p = pk.data; memcpy(p, &type, sizeof(type));
-  p += sizeof(type);    memcpy(p, &vx, sizeof(vx));
-  p += sizeof(vx);      memcpy(p, &vy, sizeof(vy));
-  p += sizeof(vy);      memcpy(p, &yawrate, sizeof(yawrate));
-  p += sizeof(yawrate); memcpy(p, &zDistance, sizeof(zDistance));
-  pk.size = sizeof(type) + sizeof(vx) + sizeof(vy) + sizeof(yawrate) + sizeof(zDistance);
+  p += sizeof(type);    memcpy(p, &hover->vx, sizeof(hover->vx));
+  p += sizeof(hover->vx);      memcpy(p, &hover->vy, sizeof(hover->vy));
+  p += sizeof(hover->vy);      memcpy(p, &hover->yawrate, sizeof(hover->yawrate));
+  p += sizeof(hover->yawrate); memcpy(p, &hover->zDistance, sizeof(hover->zDistance));
+  pk.size = sizeof(type) + sizeof(hover->vx) + sizeof(hover->vy) + sizeof(hover->yawrate) + sizeof(hover->zDistance);
 
   setpoint_t setpoint;
   crtpCommanderGenericDecodeSetpoint(&setpoint, &pk);
@@ -70,52 +74,55 @@ void sendSetpointStop() {
 
 void tunnelCommanderUpdate() {
   // Red switch for tests
+#ifdef TUNNEL_RED_SWITCH
   if(rangeGet(rangeUp) < 200) {
-    ledSetAll();
     sendSetpointStop();
     setTunnelCanFly(false);
-    ledClearAll();
   }
+#endif
 
-  //TODO get desired movement from behavior
-  Tunnel2DVel movement;
+  // Get desired movement from behavior
+  TunnelHover movement;
   tunnelBehaviorUpdate(&movement);
 
-  //TODO get repulsion from avoider
-  Tunnel2DVel repulsion;
+  // Get repulsion from avoider
+  TunnelHover repulsion;
   tunnelAvoiderUpdate(&repulsion);
 
-  //TODO calculate final movement
+  // Calculate final movement
+  movement.vx += manual_vel.vx + repulsion.vx;
+  movement.vy += manual_vel.vy + repulsion.vy;
+  movement.yawrate = 0;
+  movement.zDistance = 0.2f;
 
   // Send the movement command
   if(getTunnelCanFly())
-    sendSetpointHover(0.3f * (float)manual_vel.vx + repulsion.vx, 
-                      0.3f * (float)manual_vel.vy + repulsion.vy, 0, 0.2f);
-  else sendSetpointStop();
+    sendSetpointHover(&movement);
+}
+
+static void processTunnelCommanderPacket(uint8_t* data) {
+  switch(data[0]) {
+    // Directly move the drone: rxdata = [TUNNEL_COMMANDER_MOVE][int8_t vx][int8_t vy]
+    case TUNNEL_COMMANDER_MOVE:
+      manual_vel.vx = 0.3f * (float)(int8_t)data[1];
+      manual_vel.vy = 0.3f * (float)(int8_t)data[2];
+      break;
+  }
 }
 
 void crtpTunnelCommanderHandler(CRTPPacket *p) {
-  /*
-  DEBUG_PRINT("Tmsg s=%i c=", p->size);
-  for(int i = 0; i < p->size; i++)
-    DEBUG_PRINT("%i,", p->data[i]);
-  DEBUG_PRINT("\n");
+  processTunnelCommanderPacket(p->data);
+}
 
-  manual_vel.vx = (int8_t)p->data[0];
-  manual_vel.vy = (int8_t)p->data[1];
-
-  DEBUG_PRINT("CMD = %i %i\n", manual_vel.vx, manual_vel.vy);
-
-  CRTPPacket pk;
-  pk.port = CRTP_PORT_TUNNEL;
-  pk.channel = 1;
-  memcpy(pk.data, p->data, p->size);
-  pk.size = p->size;
-  crtpSendPacket(&pk);
-  */
+void p2pTunnelCommanderHandler(P2PPacket *p) {
+  processTunnelCommanderPacket(p->rxdata);
 }
 
 void tunnelCommanderInit() {
+  // Register commander callbacks. CRTP callback is called from tunnel.c
+  p2pRegisterPortCB(P2P_PORT_COMMANDER, p2pTunnelCommanderHandler);
+
+  // Initialize submodules
   tunnelAvoiderInit();
   tunnelBehaviorInit();
 }

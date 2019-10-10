@@ -32,10 +32,10 @@
 
 #define P2P_MAX_DATA_SIZE 30
 
-typedef enum { //TODO 
-  P2P_PORT_PING   = 0x00,
-  P2P_PORT_PARAM  = 0x01,
-  P2P_PORT_TUNNEL = 0x09
+typedef enum {
+  P2P_PORT_PING       = 0x00,
+  P2P_PORT_PARAM      = 0x01,
+  P2P_PORT_COMMANDER  = 0x02,
 } P2PPort;
 
 typedef struct _P2PPacket

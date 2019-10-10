@@ -8,7 +8,7 @@
 #include "tunnel_commander.h"
 
 // Update function that needs to be called regularly
-void tunnelAvoiderUpdate(Tunnel2DVel *vel);
+void tunnelAvoiderUpdate(TunnelHover *vel);
 
 // Initialize the avoider submodule
 void tunnelAvoiderInit(void);

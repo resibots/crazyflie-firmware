@@ -8,7 +8,7 @@
 #include "tunnel_commander.h"
 
 // Update function that needs to be called regularly
-void tunnelBehaviorUpdate(Tunnel2DVel *vel);
+void tunnelBehaviorUpdate(TunnelHover *vel);
 
 // Initialize the behavior submodule
 void tunnelBehaviorInit();

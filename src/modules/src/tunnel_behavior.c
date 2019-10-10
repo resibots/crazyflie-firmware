@@ -13,7 +13,7 @@
 
 #include "tunnel_behavior.h"
 
-void tunnelBehaviorUpdate(Tunnel2DVel *vel) {
+void tunnelBehaviorUpdate(TunnelHover *vel) {
   
 }
 
