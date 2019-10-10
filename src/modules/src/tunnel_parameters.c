@@ -20,28 +20,51 @@ typedef enum {
   TUNNEL_PARAM_CANFLY  = 0x01
 } TunnelParameter;
 
-void crtpTunnelParametersHandler(CRTPPacket *p) {
-  switch(p->data[0]) {
+static void tunnelProcessParamPacket(uint8_t *data, bool broadcast) {
+  switch(data[0]) {
     case TUNNEL_PARAM_NDRONES:
-      setNDrones(p->data[1]);
+      setNDrones(data[1]);
 
-      // Broadcast the new number of drones to the other drones
-      P2PPacket p2p_p;
-      p2p_p.txdest = 0x0F; // broadcast
-      p2p_p.port   = P2P_PORT_PARAM;
-      p2p_p.txdata[0] = getNDrones();
-      p2p_p.size = 1;
-      p2pSendPacket(&p2p_p);
-      p2pSendPacket(&p2p_p);
-      p2pSendPacket(&p2p_p);
+      if(broadcast) {
+        // Broadcast the new number of drones to the other drones
+        P2PPacket p2p_p;
+        p2p_p.txdest = 0x0F; // broadcast
+        p2p_p.port   = P2P_PORT_PARAM;
+        p2p_p.txdata[0] = TUNNEL_PARAM_NDRONES;
+        p2p_p.txdata[1] = getNDrones();
+        p2p_p.size = 2;
+        p2pSendPacket(&p2p_p);
+        p2pSendPacket(&p2p_p);
+        p2pSendPacket(&p2p_p);
+      }
       break;
     case TUNNEL_PARAM_CANFLY:
-      setTunnelCanFly(p->data[1]);
+      setTunnelCanFly(data[1]);
+
+      if(broadcast) {
+        // Broadcast the new state to the other drones
+        P2PPacket p2p_p;
+        p2p_p.txdest = 0x0F; // broadcast
+        p2p_p.port   = P2P_PORT_PARAM;
+        p2p_p.txdata[0] = TUNNEL_PARAM_CANFLY;
+        p2p_p.txdata[1] = (uint8_t)getTunnelCanFly();
+        p2p_p.size = 2;
+        p2pSendPacket(&p2p_p);
+        p2pSendPacket(&p2p_p);
+        p2pSendPacket(&p2p_p);
+      }
+      break;
   }
 }
 
+void crtpTunnelParametersHandler(CRTPPacket *p) {
+  // Set the parameter and tell the other drones too
+  tunnelProcessParamPacket(p->data, true);
+}
+
 void p2pParametersHandler(P2PPacket *p) {
-  setNDrones(p->rxdata[0]); // set nDrones for now only TODO
+  // Set the parameter only
+  tunnelProcessParamPacket(p->rxdata, false);
 }
 
 void tunnelParametersInit() {
