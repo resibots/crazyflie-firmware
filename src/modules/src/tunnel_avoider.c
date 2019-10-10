@@ -18,10 +18,11 @@
 #include "led.h"
 
 #define LINSCALE(domain_low, domain_high, codomain_low, codomain_high, value) (((codomain_high - codomain_low) / (domain_high - domain_low)) * (value - domain_low) + codomain_low)
+#define CONSTRAIN(min, value, max) (value > max) ? max : ((value < min) ? min : value) 
 
 void tunnelAvoiderUpdate(TunnelHover *vel) {
-#ifdef TUNNEL_MULTIRANGER_LEDS
   // LEDs for some visual obstacle detection feedback
+#ifdef TUNNEL_MULTIRANGER_LEDS
   if(rangeGet(rangeLeft) < 300) ledSet(LED_GREEN_R, true);
   else ledSet(LED_GREEN_R, false);
   if(rangeGet(rangeRight) < 300) ledSet(LED_RED_R, true);
@@ -31,19 +32,23 @@ void tunnelAvoiderUpdate(TunnelHover *vel) {
   // Avoid the obstacles with pushing forces
 #ifdef TUNNEL_AVOID_LEFTRIGHT
   if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST) 
-    vel->vy -= TUNNEL_RANGER_AVOID_FORCE * rangeGet(rangeLeft)  / 1000;
+    vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeLeft));
   if(rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST)
-    vel->vy += TUNNEL_RANGER_AVOID_FORCE * rangeGet(rangeRight) / 1000;
+    vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeRight));
 #endif
 #ifdef TUNNEL_AVOID_FRONTBACK
   if(rangeGet(rangeFront) < TUNNEL_RANGER_TRIGGER_DIST)
-    vel->vx -= TUNNEL_RANGER_AVOID_FORCE * rangeGet(rangeFront) / 1000;
+    vel->vx -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeFront));
   if(rangeGet(rangeBack) < TUNNEL_RANGER_TRIGGER_DIST)
-    vel->vx += TUNNEL_RANGER_AVOID_FORCE * rangeGet(rangeBack)  / 1000;
+    vel->vx += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeBack));
 #endif
 #ifdef TUNNEL_AVOID_UPDOWN
-  //TODO up down avoiding
+  //TODO up down avoiding?
 #endif
+
+  // Constrain their values 
+  vel->vx = CONSTRAIN(-1 * TUNNEL_RANGER_AVOID_FORCE, vel->vx, TUNNEL_RANGER_AVOID_FORCE);
+  vel->vy = CONSTRAIN(-1 * TUNNEL_RANGER_AVOID_FORCE, vel->vy, TUNNEL_RANGER_AVOID_FORCE);
 }
 
 void tunnelAvoiderInit(void) {
