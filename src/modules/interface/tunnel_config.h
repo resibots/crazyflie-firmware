@@ -8,6 +8,12 @@
 // Set tunnelCanFly to false (disable the motors) when putting a hand over the drone
 #define TUNNEL_RED_SWITCH
 
+// Default height used by all the movement behaviors
+#define TUNNEL_DEFAULT_HEIGHT 0.3f
+
+// Take off and landing speeds (m/s)
+#define TAKE_OFF_VELOCITY 0.5f
+
 // Choose which directions to avoid 
 #define TUNNEL_AVOID_LEFTRIGHT
 #define TUNNEL_AVOID_FRONTBACK
@@ -32,7 +38,7 @@ void setNDrones(uint8_t ndrones);
 uint8_t getTunnelCanFly();
 
 // Sets if the Tunnel module can use the motors
-void setTunnelCanFly(uint8_t canfly);
+void setTunnelCanFly(bool canfly);
 
 // Get the last 4 bits of this drone's address
 uint8_t getDroneId();

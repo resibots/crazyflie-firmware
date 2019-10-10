@@ -9,6 +9,7 @@
  */
 
 #include "tunnel_config.h"
+#include "tunnel_behavior.h"
 
 #include "configblock.h"
 
@@ -22,7 +23,15 @@ void setNDrones(uint8_t ndrones) { nDrones = ndrones; }
 static bool tunnelCanFly;
 
 uint8_t getTunnelCanFly() { return tunnelCanFly; }
-void setTunnelCanFly(uint8_t canfly) { tunnelCanFly = canfly; }
+
+void setTunnelCanFly(bool canfly) {
+  if(canfly != tunnelCanFly && canfly == true)
+    tunnelSetBehavior(TUNNEL_BEHAVIOR_TAKE_OFF); // TODO transfer to a better moment in the final version
+  else if(canfly != tunnelCanFly && canfly == false)
+    tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
+
+  tunnelCanFly = canfly;
+}
 
 uint8_t getDroneId() {
   return (uint8_t)configblockGetRadioAddress() & 0x0F;

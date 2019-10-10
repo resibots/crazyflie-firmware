@@ -46,7 +46,7 @@ void tunnelAvoiderUpdate(TunnelHover *vel) {
   //TODO up down avoiding?
 #endif
 
-  // Constrain their values 
+  // Constrain their values just in case (TODO useful?)
   vel->vx = CONSTRAIN(-1 * TUNNEL_RANGER_AVOID_FORCE, vel->vx, TUNNEL_RANGER_AVOID_FORCE);
   vel->vy = CONSTRAIN(-1 * TUNNEL_RANGER_AVOID_FORCE, vel->vy, TUNNEL_RANGER_AVOID_FORCE);
 }

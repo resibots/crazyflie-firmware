@@ -90,14 +90,16 @@ void tunnelCommanderUpdate() {
   tunnelAvoiderUpdate(&repulsion);
 
   // Calculate final movement
-  movement.vx += manual_vel.vx + repulsion.vx;
-  movement.vy += manual_vel.vy + repulsion.vy;
-  movement.yawrate = 0;
-  movement.zDistance = 0.2f;
+  movement.vx      += manual_vel.vx      + repulsion.vx     ;
+  movement.vy      += manual_vel.vy      + repulsion.vy     ;
+  movement.yawrate += manual_vel.yawrate + repulsion.yawrate;
 
-  // Send the movement command
-  if(getTunnelCanFly())
-    sendSetpointHover(&movement);
+  // Send the movement command (only when this module is allowed to send setpoints)
+  if(getTunnelCanFly()) {
+    if(movement.zDistance > 0)
+      sendSetpointHover(&movement);
+    else sendSetpointStop();
+  }
 }
 
 static void processTunnelCommanderPacket(uint8_t* data) {
