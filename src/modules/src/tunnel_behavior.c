@@ -20,12 +20,14 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include "led.h"
-
-static float zTarget = 0.1;
-static unsigned long prevTime = 0;
+#include "estimator_kalman.h"
 
 static TunnelBehavior currentBehavior;
+
+// Take off Behavior
+
+static float zTarget = 0.1f;
+static unsigned long prevTime = 0;
 
 static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel) {
   // Don't move on other axis
@@ -40,9 +42,8 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel) {
   }
   vel->zDistance = zTarget;
 
-  // End the behavior when the default height is 
+  // End the behavior when the default height is reached
   if(zTarget >= TUNNEL_DEFAULT_HEIGHT) {
-    zTarget = 0.1;
     vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
     tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
     return;
@@ -50,10 +51,9 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel) {
   tunnelSetBehavior(TUNNEL_BEHAVIOR_TAKE_OFF);
 }
 
-void tunnelBehaviorUpdate(TunnelHover *vel) {
-  if(currentBehavior == TUNNEL_BEHAVIOR_TAKE_OFF) ledSet(LED_GREEN_R, true);
-  else ledSet(LED_GREEN_R, false); //TODO remove
+// Main functions
 
+void tunnelBehaviorUpdate(TunnelHover *vel) {
   switch (currentBehavior) {
     case TUNNEL_BEHAVIOR_IDLE:
       vel->vx = 0;
@@ -74,8 +74,16 @@ void tunnelBehaviorUpdate(TunnelHover *vel) {
 }
 
 void tunnelSetBehavior(TunnelBehavior behavior) {
+  if(behavior != currentBehavior) {
+    if(behavior == TUNNEL_BEHAVIOR_TAKE_OFF) {
+      zTarget = 0.1f;
+      estimatorKalmanInit();
+    }
+  }
   currentBehavior = behavior;
 }
+
+// Submodule initialization
 
 void tunnelBehaviorInit() {
   currentBehavior = TUNNEL_BEHAVIOR_IDLE;
