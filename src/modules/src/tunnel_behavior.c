@@ -29,11 +29,14 @@ static TunnelBehavior currentBehavior;
 static float zTarget = 0.1f;
 static unsigned long prevTime = 0;
 
-static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel) {
+static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions) {
   // Don't move on other axis
   vel->vx = 0;
   vel->vy = 0;
   vel->yawrate = 0;
+
+  // Disable collisions during takeoff
+  *enableCollisions = false;
 
   // Slowly increase the height
   if(xTaskGetTickCount() > prevTime + 100) {
@@ -53,22 +56,27 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel) {
 
 // Main functions
 
-void tunnelBehaviorUpdate(TunnelHover *vel) {
+void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
   switch (currentBehavior) {
+    case TUNNEL_BEHAVIOR_LAND: //TODO
     case TUNNEL_BEHAVIOR_IDLE:
       vel->vx = 0;
       vel->vy = 0;
       vel->yawrate = 0;
       vel->zDistance = 0;
+
+      *enableCollisions = false;
       break;
     case TUNNEL_BEHAVIOR_TAKE_OFF:
-      tunnelBehaviorTakeOffUpdate(vel);
+      tunnelBehaviorTakeOffUpdate(vel, enableCollisions);
       break;
     case TUNNEL_BEHAVIOR_HOVER:
       vel->vx = 0;
       vel->vy = 0;
       vel->yawrate = 0;
       vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
+
+      *enableCollisions = true;
       break;
   }
 }

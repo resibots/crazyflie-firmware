@@ -75,19 +75,21 @@ void sendSetpointStop() {
 void tunnelCommanderUpdate() {
   // Red switch for tests
 #ifdef TUNNEL_RED_SWITCH
-  if(rangeGet(rangeUp) < 200) {
+  if(rangeGet(rangeUp) < 50) {
     sendSetpointStop();
     setTunnelCanFly(false);
   }
 #endif
 
   // Get desired movement from behavior
+  bool enableAvoider = true;
   TunnelHover movement;
-  tunnelBehaviorUpdate(&movement);
+  tunnelBehaviorUpdate(&movement, &enableAvoider);
 
   // Get repulsion from avoider
   TunnelHover repulsion;
-  tunnelAvoiderUpdate(&repulsion);
+  if(enableAvoider)
+    tunnelAvoiderUpdate(&repulsion);
 
   // Calculate final movement
   movement.vx      += manual_vel.vx      + repulsion.vx     ;

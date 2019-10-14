@@ -16,7 +16,7 @@ typedef enum {
 } TunnelBehavior;
 
 // Update function that needs to be called regularly
-void tunnelBehaviorUpdate(TunnelHover *vel);
+void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions);
 
 // Set the new drone behavior. TODO no init for now
 void tunnelSetBehavior(TunnelBehavior behavior);
