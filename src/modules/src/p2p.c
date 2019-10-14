@@ -48,9 +48,6 @@
 #include "ledseq.h"
 #include "system.h"
 
-#define DEBUG_MODULE "P2P"
-#include "debug.h"
-
 static bool isInit;
 
 static int nopFunc(void);

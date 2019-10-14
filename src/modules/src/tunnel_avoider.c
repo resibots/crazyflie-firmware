@@ -31,7 +31,7 @@ void tunnelAvoiderUpdate(TunnelHover *vel) {
 
   // Avoid the obstacles with pushing forces
 #ifdef TUNNEL_AVOID_LEFTRIGHT
-  if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST) 
+  if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST)
     vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeLeft));
   if(rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST)
     vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeRight));
@@ -44,6 +44,12 @@ void tunnelAvoiderUpdate(TunnelHover *vel) {
 #endif
 #ifdef TUNNEL_AVOID_UPDOWN
   //TODO up down avoiding?
+#endif
+
+  // Turn based on the ranging distances, used to follow tunnel turns
+#ifdef TUNNEL_TURNING_ENABLE
+  if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST)
+    vel->yawrate = -1.f * TUNNEL_RANGER_TURN_FORCE * (float)(rangeGet(rangeLeft) - rangeGet(rangeRight));
 #endif
 
   // Constrain their values just in case (TODO useful?)

@@ -87,14 +87,12 @@ void tunnelCommanderUpdate() {
   tunnelBehaviorUpdate(&movement, &enableAvoider);
 
   // Get repulsion from avoider
-  TunnelHover repulsion;
-  if(enableAvoider)
-    tunnelAvoiderUpdate(&repulsion);
+  if(enableAvoider) tunnelAvoiderUpdate(&movement);
 
   // Calculate final movement
-  movement.vx      += manual_vel.vx      + repulsion.vx     ;
-  movement.vy      += manual_vel.vy      + repulsion.vy     ;
-  movement.yawrate += manual_vel.yawrate + repulsion.yawrate;
+  movement.vx      += manual_vel.vx     ;
+  movement.vy      += manual_vel.vy     ;
+  movement.yawrate += manual_vel.yawrate;
 
   // Send the movement command (only when this module is allowed to send setpoints)
   if(getTunnelCanFly()) {
@@ -129,6 +127,12 @@ void tunnelCommanderInit() {
   // Initialize submodules
   tunnelAvoiderInit();
   tunnelBehaviorInit();
+
+  // Initialize structures
+  manual_vel.vx        = 0;
+  manual_vel.vy        = 0;
+  manual_vel.yawrate   = 0;
+  manual_vel.zDistance = 0;
 }
 
 bool tunnelCommanderTest() {
