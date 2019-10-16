@@ -13,6 +13,18 @@
 
 #include "configblock.h"
 
+// Follower and leader IDs getters and setters
+struct {
+  uint8_t followerID : 4;
+  uint8_t leaderID   : 4;
+} chainPeers;
+
+uint8_t getFollowerID() { return chainPeers.followerID; }
+void setFollowerID(uint8_t newID) { chainPeers.followerID = newID; }
+
+uint8_t getLeaderID() { return chainPeers.leaderID; }
+void setLeaderID(uint8_t newID) { chainPeers.leaderID = newID; }
+
 // Number of available drones in the tunnel exploration crew
 static uint8_t nDrones = 3; // 15 max because of the 4-bit addresses
 

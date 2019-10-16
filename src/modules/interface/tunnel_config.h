@@ -6,6 +6,13 @@
 #include <string.h>
 
 /****************
+      MAIN
+*****************/
+
+// Main tunnel loop frequency rate
+#define TUNNEL_TASK_RATE_HZ 20
+
+/****************
       DEBUG
 *****************/
 
@@ -61,6 +68,18 @@ OBSTACLE AVOIDING
 /****************
      RUNTIME
 *****************/
+
+// Returns the current follower's ID
+uint8_t getFollowerID();
+
+// Sets the current follower's ID
+void setFollowerID(uint8_t newID);
+
+// Returns the current leader's ID
+uint8_t getLeaderID();
+
+// Sets the current leader's ID
+void setLeaderID(uint8_t newID);
 
 // Returns the number of drones to be considered in the chain
 uint8_t getNDrones();

@@ -30,6 +30,17 @@
 #include "p2p.h"
 #include "radiolink.h"
 
+static bool isInit = false;
+
+// Manage drone state transitions
+static DroneState droneState;
+DroneState tunnelGetDroneState() { return droneState; }
+
+// Manage drone role transitions
+static DroneRole droneRole;
+DroneRole tunnelGetDroneRole() { return droneRole; }
+void tunnelSetDroneRole(DroneRole newRole) { droneRole = newRole; }
+
 typedef enum {
   CRTP_TUNNEL_CHANNEL_PING      = 0x00,
   CRTP_TUNNEL_CHANNEL_PARAM     = 0x01,
@@ -51,7 +62,7 @@ static void tunnelTask(void *param) {
     TickType_t lastWakeTime = xTaskGetTickCount();
 
     while (1) {
-      vTaskDelayUntil(&lastWakeTime, M2T(50));
+      vTaskDelayUntil(&lastWakeTime, M2T(1000 / TUNNEL_TASK_RATE_HZ));
 
       // Calculate the new drone movement and send it to the stabilizer
       tunnelCommanderUpdate();
@@ -71,6 +82,24 @@ void crtpTunnelHandler(CRTPPacket *p) {
 }
 
 void tunnelInit() {
+  if(isInit)
+    return;
+
+  // State definitions
+  tunnelSetDroneState(DRONE_STATE_IDLE);
+  tunnelSetDroneRole((getDroneId() == 0) ? DRONE_ROLE_HEAD : DRONE_ROLE_FOLLOWER);
+
+  // Set follower and leader
+  if(getDroneId() > 0)
+    setLeaderID(getDroneId() - 1);
+  if(getDroneId() < getNDrones() - 1)
+    setFollowerID(getDroneId() + 1);
+  
+  // Don't fly if we're not in the active chain
+  // TODO refresh this when changing NDrones
+  if(getDroneId() >= getNDrones())
+    tunnelSetDroneState(DRONE_STATE_INACTIVE);
+
   // Init submodules
   tunnelPingInit();
   tunnelParametersInit();
@@ -82,10 +111,12 @@ void tunnelInit() {
   // Create the main tunnel task
   xTaskCreate(tunnelTask, TUNNELEXPLORER_TASK_NAME, TUNNELEXPLORER_TASK_STACKSIZE, NULL,
               TUNNELEXPLORER_TASK_PRI, NULL);
+  
+  isInit = true;
 }
 
 bool tunnelTest() {
-  bool pass = true;
+  bool pass = isInit;
 
   pass &= tunnelPingTest();
   pass &= tunnelParametersTest();
