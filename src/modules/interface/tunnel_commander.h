@@ -14,6 +14,9 @@ void sendSetpointHover(TunnelHover *hover);
 // Send a stop setpoint to the drone's stabilizer
 void sendSetpointStop();
 
+// Get the estimated distance of how deep we are in the tunnel (in meters)
+float tunnelGetDistance();
+
 // Update function that needs to be called regularly
 void tunnelCommanderUpdate();
 

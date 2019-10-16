@@ -13,6 +13,7 @@
 
 #include "tunnel_behavior.h"
 #include "tunnel_config.h"
+#include "tunnel_commander.h"
 
 #include "debug.h"
 #define DEBUG_MODULE "BEH"
@@ -23,6 +24,29 @@
 #include "estimator_kalman.h"
 
 static TunnelBehavior currentBehavior;
+
+// Goto Behavior
+
+static float gotoGoal = 0;
+
+void setBehaviorGotoGoal(float goal) {
+  gotoGoal = goal;
+}
+
+static void tunnelBehaviorGotoUpdate(TunnelHover *vel, bool *enableCollisions) {
+  // Don't move on other axis
+  vel->vy = 0;
+  vel->yawrate = 0;
+  vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
+
+  // Move forward or backward to reach the destination
+  float tunnelDistance = tunnelGetDistance();
+  if(gotoGoal - tunnelDistance > 0.05f)
+    vel->vx = 0.3f;
+  else if(gotoGoal - tunnelDistance < -0.05f)
+    vel->vx = -0.3f;
+  else tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
+}
 
 // Take off Behavior
 
@@ -49,9 +73,7 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions
   if(zTarget >= TUNNEL_DEFAULT_HEIGHT) {
     vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
     tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
-    return;
   }
-  tunnelSetBehavior(TUNNEL_BEHAVIOR_TAKE_OFF);
 }
 
 // Main functions
@@ -77,6 +99,9 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
       vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
 
       *enableCollisions = true;
+      break;
+    case TUNNEL_BEHAVIOR_GOTO:
+      tunnelBehaviorGotoUpdate(vel, enableCollisions);
       break;
   }
 }

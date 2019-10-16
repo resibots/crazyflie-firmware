@@ -29,6 +29,9 @@
 // Max drone speed in m/s
 #define TUNNEL_MAX_SPEED 0.6f
 
+// Default drone speed in m/s used in behaviors 
+#define TUNNEL_DEFAULT_SPEED 0.3f
+
 // Max drone yaw speed in deg/s
 #define TUNNEL_MAX_TURN_SPEED 30.f
 

@@ -39,10 +39,13 @@
 #include "estimator_kalman.h"
 
 typedef enum {
-  TUNNEL_COMMANDER_MOVE = 0x00
+  TUNNEL_COMMANDER_MOVE = 0x00,
+  TUNNEL_COMMANDER_GOTO = 0x01
 } TunnelCommanderRequest;
 
 static TunnelHover manual_vel;
+static float tunnelDistance = 0;
+static uint32_t prevUpdate = 0;
 
 void getEstimatedPos(point_t *pos) {
   estimatorKalmanGetEstimatedPos(pos);
@@ -92,6 +95,10 @@ void sendSetpointStop() {
   commanderSetSetpoint(&setpoint, COMMANDER_PRIORITY_CRTP);
 }
 
+float tunnelGetDistance() {
+  return tunnelDistance;
+}
+
 void tunnelCommanderUpdate() {
   // Red switch for tests
 #ifdef TUNNEL_RED_SWITCH
@@ -119,11 +126,17 @@ void tunnelCommanderUpdate() {
   movement.vy      = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      movement.vy, TUNNEL_MAX_SPEED);
   movement.yawrate = CONSTRAIN(-1 * TUNNEL_MAX_TURN_SPEED, movement.yawrate, TUNNEL_MAX_TURN_SPEED);
 
+  // Refresh the estimated distance in tunnel
+  if(prevUpdate != 0)
+    tunnelDistance += movement.vx * (xTaskGetTickCount() - prevUpdate) / 1000.f;
+
   // Send the movement command (only when this module is allowed to send setpoints)
   if(getTunnelCanFly()) {
     if(movement.zDistance > 0)
       sendSetpointHover(&movement);
     else sendSetpointStop();
+
+    prevUpdate = xTaskGetTickCount();
   }
 }
 
@@ -131,8 +144,12 @@ static void processTunnelCommanderPacket(uint8_t* data) {
   switch(data[0]) {
     // Directly move the drone: rxdata = [TUNNEL_COMMANDER_MOVE][int8_t vx][int8_t vy]
     case TUNNEL_COMMANDER_MOVE:
-      manual_vel.vx = 0.3f * (float)(int8_t)data[1];
-      manual_vel.vy = 0.3f * (float)(int8_t)data[2];
+      manual_vel.vx = TUNNEL_DEFAULT_SPEED * (float)(int8_t)data[1];
+      manual_vel.vy = TUNNEL_DEFAULT_SPEED * (float)(int8_t)data[2];
+      break;
+    case TUNNEL_COMMANDER_GOTO:
+      setBehaviorGotoGoal((float)data[1] / 10.f);
+      tunnelSetBehavior(TUNNEL_BEHAVIOR_GOTO);
       break;
   }
 }
