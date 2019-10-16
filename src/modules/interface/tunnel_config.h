@@ -27,7 +27,7 @@
 #define TUNNEL_QUAD_SHAPE_PLUS // Used to avoid obstacles with 4 distance sensors
 
 // Max drone speed in m/s
-#define TUNNEL_MAX_SPEED 1.f
+#define TUNNEL_MAX_SPEED 0.6f
 
 // Max drone yaw speed in deg/s
 #define TUNNEL_MAX_TURN_SPEED 30.f

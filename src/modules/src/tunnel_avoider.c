@@ -50,6 +50,7 @@ void tunnelAvoiderUpdate(TunnelHover *vel) {
 #endif
 
 #ifdef TUNNEL_QUAD_SHAPE_PLUS
+  /* Using independant repulsion forces, not used anymore
   float force_lr = 0, force_fb = 0;
   if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST)
     force_lr -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeLeft));
@@ -60,13 +61,26 @@ void tunnelAvoiderUpdate(TunnelHover *vel) {
   if(rangeGet(rangeBack) < TUNNEL_RANGER_TRIGGER_DIST)
     force_fb += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeBack));
   vel->vx += SQRT2_2 * (force_fb - force_lr);
-  vel->vy += SQRT2_2 * (force_fb + force_lr);
+  vel->vy += SQRT2_2 * (force_fb + force_lr);*/
+
+  #ifdef TUNNEL_AVOID_LEFTRIGHT
+    if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeFront) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (rangeGet(rangeLeft) + rangeGet(rangeFront)) / 2.f);
+    if(rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeBack) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (rangeGet(rangeRight) + rangeGet(rangeBack)) / 2.f);
+  #endif
+  #ifdef TUNNEL_AVOID_FRONTBACK
+    if(rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeFront) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->vx -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (rangeGet(rangeRight) + rangeGet(rangeFront)) / 2.f);
+    if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeBack) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->vx += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (rangeGet(rangeLeft) + rangeGet(rangeBack)) / 2.f);
+  #endif
 
   #ifdef TUNNEL_TURNING_ENABLE
     if(rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeBack) < TUNNEL_RANGER_TRIGGER_DIST)
-      vel->yawrate += TUNNEL_RANGER_TURN_FORCE * (float)(rangeGet(rangeRight) - rangeGet(rangeBack));
+      vel->yawrate += TUNNEL_RANGER_TURN_FORCE * (rangeGet(rangeRight) - rangeGet(rangeBack));
     if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeFront) < TUNNEL_RANGER_TRIGGER_DIST)
-      vel->yawrate += TUNNEL_RANGER_TURN_FORCE * (float)(rangeGet(rangeLeft) - rangeGet(rangeFront));
+      vel->yawrate += TUNNEL_RANGER_TURN_FORCE * (rangeGet(rangeLeft) - rangeGet(rangeFront));
   #endif
 #endif
 }

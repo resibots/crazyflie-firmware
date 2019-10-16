@@ -36,12 +36,23 @@
 #include "p2p.h"
 #include "commander.h"
 #include "crtp_commander.h"
+#include "estimator_kalman.h"
 
 typedef enum {
   TUNNEL_COMMANDER_MOVE = 0x00
 } TunnelCommanderRequest;
 
 static TunnelHover manual_vel;
+
+void getEstimatedPos(point_t *pos) {
+  estimatorKalmanGetEstimatedPos(pos);
+
+#ifdef TUNNEL_QUAD_SHAPE_PLUS
+  float backup_x = pos->x;
+  pos->x = (pos->x   - pos->y) * SQRT2_2;
+  pos->y = (backup_x + pos->y) * SQRT2_2;
+#endif
+}
 
 void sendSetpointHover(TunnelHover *hover) {
   uint8_t type = 5; // hoverType, see crtp_commander_generic.c:71
