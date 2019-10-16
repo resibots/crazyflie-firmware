@@ -15,6 +15,7 @@
 #include "tunnel_ping.h"
 #include "tunnel_commander.h"
 #include "tunnel_parameters.h"
+#include "tunnel_behavior.h"
 
 #define DEBUG_MODULE "TUN"
 #include "debug.h"
@@ -35,6 +36,22 @@ static bool isInit = false;
 // Manage drone state transitions
 static DroneState droneState;
 DroneState tunnelGetDroneState() { return droneState; }
+void tunnelSetDroneState(DroneState newState) {
+  switch(newState) {
+    case DRONE_STATE_INACTIVE:
+    case DRONE_STATE_IDLE:
+    case DRONE_STATE_CRASHED:
+      sendSetpointStop();
+      tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
+      setTunnelCanFly(false);
+      break;
+    case DRONE_STATE_FLYING:
+      setTunnelCanFly(true);
+      tunnelSetBehavior(TUNNEL_BEHAVIOR_TAKE_OFF);
+      break;
+  }
+  droneState = newState;
+}
 
 // Manage drone role transitions
 static DroneRole droneRole;
@@ -45,7 +62,15 @@ typedef enum {
   CRTP_TUNNEL_CHANNEL_PING      = 0x00,
   CRTP_TUNNEL_CHANNEL_PARAM     = 0x01,
   CRTP_TUNNEL_CHANNEL_COMMANDER = 0x02,
+  CRTP_TUNNEL_CHANNEL_COMMAND   = 0x03,
 } CRTPTunnelChannel;
+
+typedef enum {
+  CRTP_TUNNEL_COMMAND_TAKE_OFF = 0x00, // Start flying and do our thing!
+  CRTP_TUNNEL_COMMAND_LAND     = 0x01, // Land no matter where we are (e.g. to manually save battery)
+  CRTP_TUNNEL_COMMAND_RTH      = 0x02, // Return to home automatically
+  CRTP_TUNNEL_COMMAND_STOP     = 0x03, // Stop the motors and return to Idle state (for emergencies or tests)
+} CRTPTunnelCommand;
 
 static void tunnelTask(void *param) {
     systemWaitStart();
@@ -79,6 +104,22 @@ void crtpTunnelHandler(CRTPPacket *p) {
     crtpTunnelParametersHandler(p);
   else if(p->channel == CRTP_TUNNEL_CHANNEL_COMMANDER)
     crtpTunnelCommanderHandler(p);
+  else if(p->channel == CRTP_TUNNEL_CHANNEL_COMMAND) {
+    switch(p->data[0]) {
+      case CRTP_TUNNEL_COMMAND_TAKE_OFF:
+        tunnelSetDroneState(DRONE_STATE_FLYING);
+        break;
+      case CRTP_TUNNEL_COMMAND_LAND:
+        tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
+        break;
+      case CRTP_TUNNEL_COMMAND_RTH:
+        //TODO
+        break;
+      case CRTP_TUNNEL_COMMAND_STOP:
+        tunnelSetDroneState(DRONE_STATE_IDLE);
+        break;
+    }
+  }
 }
 
 void tunnelInit() {
