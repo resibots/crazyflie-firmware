@@ -14,6 +14,7 @@
 
 #include "tunnel_commander.h"
 #include "tunnel_config.h"
+#include "tunnel_helpers.h"
 #include "tunnel_avoider.h"
 #include "tunnel_behavior.h"
 
@@ -44,6 +45,14 @@ static TunnelHover manual_vel;
 
 void sendSetpointHover(TunnelHover *hover) {
   uint8_t type = 5; // hoverType, see crtp_commander_generic.c:71
+
+#ifdef TUNNEL_QUAD_SHAPE_PLUS
+  // https://fr.wikipedia.org/wiki/Rotation_plane#Formules_de_changement_d'axes_de_coordonn%C3%A9es
+  float backup_vx = hover->vx;
+  hover->vx = (hover->vx + hover->vy) * SQRT2_2;
+  hover->vy = (hover->vy - backup_vx) * SQRT2_2;
+#endif
+
   CRTPPacket pk;
   pk.port = CRTP_PORT_SETPOINT_GENERIC;
   pk.channel = 0;
@@ -93,6 +102,11 @@ void tunnelCommanderUpdate() {
   movement.vx      += manual_vel.vx     ;
   movement.vy      += manual_vel.vy     ;
   movement.yawrate += manual_vel.yawrate;
+
+  // Constrain the velocities
+  movement.vx      = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      movement.vx, TUNNEL_MAX_SPEED);
+  movement.vy      = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      movement.vy, TUNNEL_MAX_SPEED);
+  movement.yawrate = CONSTRAIN(-1 * TUNNEL_MAX_TURN_SPEED, movement.yawrate, TUNNEL_MAX_TURN_SPEED);
 
   // Send the movement command (only when this module is allowed to send setpoints)
   if(getTunnelCanFly()) {

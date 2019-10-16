@@ -13,12 +13,10 @@
 
 #include "tunnel_avoider.h"
 #include "tunnel_config.h"
+#include "tunnel_helpers.h"
 
 #include "range.h"
-#include "led.h"
-
-#define LINSCALE(domain_low, domain_high, codomain_low, codomain_high, value) (((codomain_high - codomain_low) / (domain_high - domain_low)) * (value - domain_low) + codomain_low)
-#define CONSTRAIN(min, value, max) (value > max) ? max : ((value < min) ? min : value) 
+#include "led.h" 
 
 void tunnelAvoiderUpdate(TunnelHover *vel) {
   // LEDs for some visual obstacle detection feedback
@@ -29,32 +27,48 @@ void tunnelAvoiderUpdate(TunnelHover *vel) {
   else ledSet(LED_RED_R, false);
 #endif
 
+#ifdef TUNNEL_QUAD_SHAPE_X
   // Avoid the obstacles with pushing forces
-#ifdef TUNNEL_AVOID_LEFTRIGHT
-  if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST)
-    vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeLeft));
-  if(rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST)
-    vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeRight));
-#endif
-#ifdef TUNNEL_AVOID_FRONTBACK
-  if(rangeGet(rangeFront) < TUNNEL_RANGER_TRIGGER_DIST)
-    vel->vx -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeFront));
-  if(rangeGet(rangeBack) < TUNNEL_RANGER_TRIGGER_DIST)
-    vel->vx += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeBack));
-#endif
-#ifdef TUNNEL_AVOID_UPDOWN
-  //TODO up down avoiding?
-#endif
+  #ifdef TUNNEL_AVOID_LEFTRIGHT
+    if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeLeft));
+    if(rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeRight));
+  #endif
+  #ifdef TUNNEL_AVOID_FRONTBACK
+    if(rangeGet(rangeFront) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->vx -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeFront));
+    if(rangeGet(rangeBack) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->vx += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeBack));
+  #endif
 
   // Turn based on the ranging distances, used to follow tunnel turns
-#ifdef TUNNEL_TURNING_ENABLE
-  if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST)
-    vel->yawrate = -1.f * TUNNEL_RANGER_TURN_FORCE * (float)(rangeGet(rangeLeft) - rangeGet(rangeRight));
+  #ifdef TUNNEL_TURNING_ENABLE
+    if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->yawrate = ((vel->vx > 0) ? 1.f : -1.f) * TUNNEL_RANGER_TURN_FORCE * (float)(rangeGet(rangeLeft) - rangeGet(rangeRight));
+  #endif
 #endif
 
-  // Constrain their values just in case (TODO useful?)
-  vel->vx = CONSTRAIN(-1 * TUNNEL_RANGER_AVOID_FORCE, vel->vx, TUNNEL_RANGER_AVOID_FORCE);
-  vel->vy = CONSTRAIN(-1 * TUNNEL_RANGER_AVOID_FORCE, vel->vy, TUNNEL_RANGER_AVOID_FORCE);
+#ifdef TUNNEL_QUAD_SHAPE_PLUS
+  float force_lr = 0, force_fb = 0;
+  if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST)
+    force_lr -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeLeft));
+  if(rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST)
+    force_lr += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeRight));
+  if(rangeGet(rangeFront) < TUNNEL_RANGER_TRIGGER_DIST)
+    force_fb -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeFront));
+  if(rangeGet(rangeBack) < TUNNEL_RANGER_TRIGGER_DIST)
+    force_fb += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, rangeGet(rangeBack));
+  vel->vx += SQRT2_2 * (force_fb - force_lr);
+  vel->vy += SQRT2_2 * (force_fb + force_lr);
+
+  #ifdef TUNNEL_TURNING_ENABLE
+    if(rangeGet(rangeRight) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeBack) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->yawrate += TUNNEL_RANGER_TURN_FORCE * (float)(rangeGet(rangeRight) - rangeGet(rangeBack));
+    if(rangeGet(rangeLeft) < TUNNEL_RANGER_TRIGGER_DIST && rangeGet(rangeFront) < TUNNEL_RANGER_TRIGGER_DIST)
+      vel->yawrate += TUNNEL_RANGER_TURN_FORCE * (float)(rangeGet(rangeLeft) - rangeGet(rangeFront));
+  #endif
+#endif
 }
 
 void tunnelAvoiderInit(void) {
@@ -64,18 +78,3 @@ void tunnelAvoiderInit(void) {
 bool tunnelAvoiderTest(void) {
     return true;
 }
-
-/* Old method
-// If there are two walls on each side, center the drone
-float repulsion = 0;
-if(left < 2000 && right < 2000) {
-  float diff = left - right;
-  if(diff < 0) diff *= -1;
-  float sign = (left - right > 0) ? 1.f : -1.f;
-
-  if(diff > 500) 
-    repulsion = sign * 0.5f;
-  else 
-    repulsion = sign * LINSCALE(0.f, 500.f, 0.1f, 0.5f, diff);
-}
-*/
