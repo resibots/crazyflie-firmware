@@ -44,8 +44,6 @@
 #include "queuemonitor.h"
 
 #include "log.h"
-#include "led.h"
-#include "ledseq.h"
 #include "system.h"
 
 static bool isInit;
@@ -82,6 +80,7 @@ static void p2pRxTask(void *param);
 
 static xQueueHandle queues[P2P_NBR_OF_PORTS];
 static volatile P2pCallback callbacks[P2P_NBR_OF_PORTS];
+static volatile P2pCallback rssiCallback;
 static void updateStats();
 
 void p2pInit(void)
@@ -187,6 +186,7 @@ void p2pRxTask(void *param)
     {
       if (!link->receivePacket(&p))
       {
+        // Send the message to the polling port queue if it exists
         if (queues[p.port])
         {
           if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL)
@@ -196,9 +196,16 @@ void p2pRxTask(void *param)
           }          
         }
 
+        // Call the right port callback if it has been subscribed
         if (callbacks[p.port])
         {
           callbacks[p.port](&p);
+        }
+
+        // Call the RSSI callback if it has been subscribed
+        if(rssiCallback)
+        {
+          rssiCallback(&p);
         }
 
         stats.rxCount++;
@@ -218,6 +225,11 @@ void p2pRegisterPortCB(int port, P2pCallback cb)
     return;
   
   callbacks[port] = cb;
+}
+
+void p2pRegisterRssiCB(P2pCallback cb)
+{
+  rssiCallback = cb;
 }
 
 int p2pSendPacket(P2PPacket *p)

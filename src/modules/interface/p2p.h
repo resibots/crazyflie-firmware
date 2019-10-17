@@ -108,6 +108,16 @@ void p2pInitTaskQueue(P2PPort taskId);
 void p2pRegisterPortCB(int port, P2pCallback cb);
 
 /**
+ * Register a callback to be called when a new RSSI value is available.
+ *
+ * @param[in] cb Callback that will be called when a packet is received.
+ *
+ * @note Only one callback can be registered! The last callback
+ *       registered will be the one called
+ */
+void p2pRegisterRssiCB(P2pCallback cb);
+
+/**
  * Put a packet in the TX task
  *
  * If the TX stack is full, the oldest lowest priority packet is dropped

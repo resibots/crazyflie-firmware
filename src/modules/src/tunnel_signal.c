@@ -12,10 +12,11 @@
 #include "tunnel_signal.h"
 
 #include "tunnel_config.h"
+#include "tunnel_commander.h"
+#include "p2p.h"
 
 // Kalman global parameters
 #define KALMAN_A 1.f // State vector
-#define KALMAN_B 0.f // Control vector
 #define KALMAN_C 1.f // Measurement vector
 
 typedef struct {
@@ -35,7 +36,7 @@ static void kalmanUpdate(SignalLogFiltered *signal, float newRssi, float speed) 
     signal->signalLog.rssi = (1 / KALMAN_C) * newRssi;
     signal->cov = (1 / KALMAN_C) * TUNNEL_SIGNAL_KALMAN_Q * (1 / KALMAN_C);
   } else {
-    float predRssi = (KALMAN_A * signal->signalLog.rssi) + (KALMAN_B * speed);
+    float predRssi = (KALMAN_A * signal->signalLog.rssi) + (TUNNEL_SIGNAL_KALMAN_B * speed);
     float predCov  = ((KALMAN_A * signal->cov) * KALMAN_A) + TUNNEL_SIGNAL_KALMAN_R;
 
     // Kalman gain
@@ -45,6 +46,14 @@ static void kalmanUpdate(SignalLogFiltered *signal, float newRssi, float speed) 
     signal->signalLog.rssi = predRssi + K * (newRssi - (KALMAN_C * predRssi));
     signal->cov = predCov - (K * KALMAN_C * predCov);
   }
+}
+
+static void tunnelRssiHandler(P2PPacket* p) {
+  if(p->origin == getFollowerID())
+    tunnelSetFollowerSignal(p->rssi, tunnelGetCurrentMovement()->vx);
+  if(p->origin == getLeaderID())
+    tunnelSetLeaderSignal(p->rssi, tunnelGetCurrentMovement()->vx);
+  //TODO get the CRTP RSSI from radiolink
 }
 
 static void signalInit(SignalLogFiltered *signal) {
@@ -58,14 +67,16 @@ SignalLog *tunnelGetFollowerSignal() { return &followerSignal.signalLog; }
 SignalLog *tunnelGetLeaderSignal() { return &leaderSignal.signalLog; }
 SignalLog *tunnelGetBaseSignal() { return &baseSignal.signalLog; }
 
-void tunnelSetFollowerSignal(uint8_t newRssi, float speed) { kalmanUpdate(&followerSignal, (float)newRssi, speed); }
-void tunnelSetLeaderSignal(uint8_t newRssi, float speed) { kalmanUpdate(&leaderSignal, (float)newRssi, speed); }
-void tunnelSetBaseSignal(uint8_t newRssi, float speed) { kalmanUpdate(&baseSignal, (float)newRssi, speed); }
+void tunnelSetFollowerSignal(uint8_t newRssi, float speed) { kalmanUpdate(&followerSignal, newRssi, speed); }
+void tunnelSetLeaderSignal(uint8_t newRssi, float speed) { kalmanUpdate(&leaderSignal, newRssi, speed); }
+void tunnelSetBaseSignal(uint8_t newRssi, float speed) { kalmanUpdate(&baseSignal, newRssi, speed); }
 
 void tunnelSignalInit() {
   signalInit(&followerSignal);
   signalInit(&leaderSignal);
   signalInit(&baseSignal);
+
+  p2pRegisterRssiCB(tunnelRssiHandler);
 }
 
 bool tunnelSignalTest() {
