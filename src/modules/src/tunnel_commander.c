@@ -43,7 +43,8 @@ typedef enum {
   TUNNEL_COMMANDER_GOTO = 0x01
 } TunnelCommanderRequest;
 
-static TunnelHover manual_vel;
+static TunnelHover currentMovement;
+static TunnelHover manualMovement;
 static float tunnelDistance = 0;
 static uint32_t prevUpdate = 0;
 
@@ -99,6 +100,10 @@ float tunnelGetDistance() {
   return tunnelDistance;
 }
 
+TunnelHover *tunnelGetCurrentMovement() {
+  return &currentMovement;
+}
+
 void tunnelCommanderUpdate() {
   // Red switch for tests
 #ifdef TUNNEL_RED_SWITCH
@@ -110,31 +115,31 @@ void tunnelCommanderUpdate() {
 
   // Get desired movement from behavior
   bool enableAvoider = true;
-  TunnelHover movement;
-  tunnelBehaviorUpdate(&movement, &enableAvoider);
+  TunnelHover currentMovement;
+  tunnelBehaviorUpdate(&currentMovement, &enableAvoider);
 
   // Get repulsion from avoider
-  if(enableAvoider) tunnelAvoiderUpdate(&movement);
+  if(enableAvoider) tunnelAvoiderUpdate(&currentMovement);
 
   // Calculate final movement
-  movement.vx      += manual_vel.vx     ;
-  movement.vy      += manual_vel.vy     ;
-  movement.yawrate += manual_vel.yawrate;
+  currentMovement.vx      += manualMovement.vx     ;
+  currentMovement.vy      += manualMovement.vy     ;
+  currentMovement.yawrate += manualMovement.yawrate;
 
   // Constrain the command values
-  movement.vx        = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      movement.vx, TUNNEL_MAX_SPEED);
-  movement.vy        = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      movement.vy, TUNNEL_MAX_SPEED);
-  movement.yawrate   = CONSTRAIN(-1 * TUNNEL_MAX_TURN_SPEED, movement.yawrate, TUNNEL_MAX_TURN_SPEED);
-  movement.zDistance = CONSTRAIN(TUNNEL_MIN_HEIGHT,          movement.zDistance, TUNNEL_MAX_HEIGHT);
+  currentMovement.vx        = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      currentMovement.vx, TUNNEL_MAX_SPEED);
+  currentMovement.vy        = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      currentMovement.vy, TUNNEL_MAX_SPEED);
+  currentMovement.yawrate   = CONSTRAIN(-1 * TUNNEL_MAX_TURN_SPEED, currentMovement.yawrate, TUNNEL_MAX_TURN_SPEED);
+  currentMovement.zDistance = CONSTRAIN(TUNNEL_MIN_HEIGHT,          currentMovement.zDistance, TUNNEL_MAX_HEIGHT);
 
   // Refresh the estimated distance in tunnel
   if(prevUpdate != 0)
-    tunnelDistance += movement.vx * (xTaskGetTickCount() - prevUpdate) / 1000.f;
+    tunnelDistance += currentMovement.vx * (xTaskGetTickCount() - prevUpdate) / 1000.f;
 
   // Send the movement command (only when this module is allowed to send setpoints)
   if(getTunnelCanFly()) {
-    if(movement.zDistance > 0)
-      sendSetpointHover(&movement);
+    if(currentMovement.zDistance > 0)
+      sendSetpointHover(&currentMovement);
     else sendSetpointStop();
 
     prevUpdate = xTaskGetTickCount();
@@ -145,8 +150,8 @@ static void processTunnelCommanderPacket(uint8_t* data) {
   switch(data[0]) {
     // Directly move the drone: rxdata = [TUNNEL_COMMANDER_MOVE][int8_t vx][int8_t vy]
     case TUNNEL_COMMANDER_MOVE:
-      manual_vel.vx = TUNNEL_DEFAULT_SPEED * (float)(int8_t)data[1];
-      manual_vel.vy = TUNNEL_DEFAULT_SPEED * (float)(int8_t)data[2];
+      manualMovement.vx = TUNNEL_DEFAULT_SPEED * (float)(int8_t)data[1];
+      manualMovement.vy = TUNNEL_DEFAULT_SPEED * (float)(int8_t)data[2];
       break;
     case TUNNEL_COMMANDER_GOTO:
       setBehaviorGotoGoal((float)data[1] / 10.f);
@@ -172,10 +177,10 @@ void tunnelCommanderInit() {
   tunnelBehaviorInit();
 
   // Initialize structures
-  manual_vel.vx        = 0;
-  manual_vel.vy        = 0;
-  manual_vel.yawrate   = 0;
-  manual_vel.zDistance = 0;
+  manualMovement.vx        = 0;
+  manualMovement.vy        = 0;
+  manualMovement.yawrate   = 0;
+  manualMovement.zDistance = 0;
 }
 
 bool tunnelCommanderTest() {
