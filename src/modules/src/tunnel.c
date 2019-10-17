@@ -127,7 +127,7 @@ void tunnelInit() {
 
   // State definitions
   tunnelSetDroneState(DRONE_STATE_IDLE);
-  tunnelSetDroneRole((getDroneId() == 0) ? DRONE_ROLE_HEAD : DRONE_ROLE_FOLLOWER);
+  tunnelSetDroneRole((getDroneId() == 0) ? DRONE_ROLE_HEAD : DRONE_ROLE_RELAY);
 
   // Set follower and leader
   if(getDroneId() > 0)

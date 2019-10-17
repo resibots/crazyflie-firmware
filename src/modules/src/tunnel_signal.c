@@ -19,6 +19,9 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+// Number of unfiltered signals (index corresponds to the agent id)
+#define N_AGENTS 16
+
 // Kalman global parameters
 #define KALMAN_A 1.f // State vector
 #define KALMAN_C 1.f // Measurement vector
@@ -32,6 +35,7 @@ typedef struct {
 static SignalLogFiltered followerSignal;
 static SignalLogFiltered leaderSignal;
 static SignalLogFiltered baseSignal;
+static SignalLog unfilteredSignals[N_AGENTS];
 
 // Private functions, used for filtering
 
@@ -60,7 +64,8 @@ static void tunnelP2PRssiHandler(P2PPacket* p) {
   if(p->origin == getLeaderID())
     kalmanUpdate(&leaderSignal, p->rssi, tunnelGetCurrentMovement()->vx);
   else {
-    //TODO keep the last value of each message just in case, no filtering
+    unfilteredSignals[p->origin].timestamp = xTaskGetTickCount();
+    unfilteredSignals[p->origin].rssi = p->rssi;
   }
 }
 
@@ -68,9 +73,9 @@ static void tunnelCRTPRssiHandler(uint8_t rssi) {
   kalmanUpdate(&baseSignal, rssi, tunnelGetCurrentMovement()->vx);
 }
 
-static void signalInit(SignalLogFiltered *signal) {
-  signal->signalLog.timestamp = 0;
-  signal->signalLog.rssi = 0;
+static void signalInit(SignalLog *signal) {
+  signal->timestamp = 0;
+  signal->rssi = 0;
 }
 
 // Public functions
@@ -78,12 +83,19 @@ static void signalInit(SignalLogFiltered *signal) {
 SignalLog *tunnelGetFollowerSignal() { return &followerSignal.signalLog; }
 SignalLog *tunnelGetLeaderSignal() { return &leaderSignal.signalLog; }
 SignalLog *tunnelGetBaseSignal() { return &baseSignal.signalLog; }
+SignalLog *tunnelGetUnfilteredSignal(uint8_t id) { 
+  if(id >= N_AGENTS) return NULL;
+  return &unfilteredSignals[id]; 
+}
 
 void tunnelSignalInit() {
   // Initialize the structures with default values
-  signalInit(&followerSignal);
-  signalInit(&leaderSignal);
-  signalInit(&baseSignal);
+  signalInit(&followerSignal.signalLog);
+  signalInit(&leaderSignal.signalLog);
+  signalInit(&baseSignal.signalLog);
+
+  for(int i = 0; i < N_AGENTS; i++)
+    signalInit(&unfilteredSignals[i]);
 
   // Subscribe to new RSSI values
   p2pRegisterRssiCB(tunnelP2PRssiHandler);
