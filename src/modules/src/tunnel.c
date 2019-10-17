@@ -16,6 +16,7 @@
 #include "tunnel_commander.h"
 #include "tunnel_parameters.h"
 #include "tunnel_behavior.h"
+#include "tunnel_signal.h"
 
 #define DEBUG_MODULE "TUN"
 #include "debug.h"
@@ -143,6 +144,7 @@ void tunnelInit() {
   tunnelPingInit();
   tunnelParametersInit();
   tunnelCommanderInit();
+  tunnelSignalInit();
 
   // Subscribe to packet callbacks
   crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);
@@ -160,6 +162,7 @@ bool tunnelTest() {
   pass &= tunnelPingTest();
   pass &= tunnelParametersTest();
   pass &= tunnelCommanderTest();
+  pass &= tunnelSignalTest();
 
   return pass;
 }

@@ -70,6 +70,16 @@ OBSTACLE AVOIDING
 #define TUNNEL_RANGER_TURN_FORCE .1f
 
 /****************
+      SIGNAL
+*****************/
+
+// Process noise in the RSSI kalman filtering
+#define TUNNEL_SIGNAL_KALMAN_R 1.f
+
+// Measurement noise in the RSSI kalman filtering
+#define TUNNEL_SIGNAL_KALMAN_Q 1.f
+
+/****************
      RUNTIME
 *****************/
 
