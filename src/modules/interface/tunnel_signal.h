@@ -15,11 +15,6 @@ SignalLog *tunnelGetFollowerSignal();
 SignalLog *tunnelGetLeaderSignal();
 SignalLog *tunnelGetBaseSignal();
 
-// Signal setters, filters the value automatically
-void tunnelSetFollowerSignal(uint8_t newRssi, float speed);
-void tunnelSetLeaderSignal(uint8_t newRssi, float speed);
-void tunnelSetBaseSignal(uint8_t newRssi, float speed);
-
 // Initialize the param submodule
 void tunnelSignalInit();
 

@@ -51,13 +51,16 @@ static void kalmanUpdate(SignalLogFiltered *signal, float newRssi, float speed) 
 
 static void tunnelP2PRssiHandler(P2PPacket* p) {
   if(p->origin == getFollowerID())
-    tunnelSetFollowerSignal(p->rssi, tunnelGetCurrentMovement()->vx);
+    kalmanUpdate(&followerSignal, p->rssi, tunnelGetCurrentMovement()->vx);
   if(p->origin == getLeaderID())
-    tunnelSetLeaderSignal(p->rssi, tunnelGetCurrentMovement()->vx);
+    kalmanUpdate(&leaderSignal, p->rssi, tunnelGetCurrentMovement()->vx);
+  else {
+    //TODO keep the last value of each message just in case, no filtering
+  }
 }
 
 static void tunnelCRTPRssiHandler(uint8_t rssi) {
-  tunnelSetBaseSignal(rssi, tunnelGetCurrentMovement()->vx);
+  kalmanUpdate(&baseSignal, rssi, tunnelGetCurrentMovement()->vx);
 }
 
 static void signalInit(SignalLogFiltered *signal) {
@@ -71,15 +74,13 @@ SignalLog *tunnelGetFollowerSignal() { return &followerSignal.signalLog; }
 SignalLog *tunnelGetLeaderSignal() { return &leaderSignal.signalLog; }
 SignalLog *tunnelGetBaseSignal() { return &baseSignal.signalLog; }
 
-void tunnelSetFollowerSignal(uint8_t newRssi, float speed) { kalmanUpdate(&followerSignal, newRssi, speed); }
-void tunnelSetLeaderSignal(uint8_t newRssi, float speed) { kalmanUpdate(&leaderSignal, newRssi, speed); }
-void tunnelSetBaseSignal(uint8_t newRssi, float speed) { kalmanUpdate(&baseSignal, newRssi, speed); }
-
 void tunnelSignalInit() {
+  // Initialize the structures with default values
   signalInit(&followerSignal);
   signalInit(&leaderSignal);
   signalInit(&baseSignal);
 
+  // Subscribe to new RSSI values
   p2pRegisterRssiCB(tunnelP2PRssiHandler);
   radiolinkRegisterRssiCB(tunnelCRTPRssiHandler);
 }
