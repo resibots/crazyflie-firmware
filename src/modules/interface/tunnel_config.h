@@ -22,6 +22,10 @@
 // Default height used by all the movement behaviors
 #define TUNNEL_DEFAULT_HEIGHT 0.3f
 
+// Even when centering in the tunnel, constrain the height (e.g. for the flow sensor)
+#define TUNNEL_MIN_HEIGHT 0.f
+#define TUNNEL_MAX_HEIGHT 0.5f
+
 // Red and green right-sided LEDs show if the drone senses obstacles on the sides
 // #define TUNNEL_MULTIRANGER_LEDS
 

@@ -41,8 +41,6 @@ void tunnelSetDroneState(DroneState newState) {
     case DRONE_STATE_INACTIVE:
     case DRONE_STATE_IDLE:
     case DRONE_STATE_CRASHED:
-      sendSetpointStop();
-      tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
       setTunnelCanFly(false);
       break;
     case DRONE_STATE_FLYING:

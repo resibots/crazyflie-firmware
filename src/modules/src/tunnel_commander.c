@@ -121,10 +121,11 @@ void tunnelCommanderUpdate() {
   movement.vy      += manual_vel.vy     ;
   movement.yawrate += manual_vel.yawrate;
 
-  // Constrain the velocities
-  movement.vx      = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      movement.vx, TUNNEL_MAX_SPEED);
-  movement.vy      = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      movement.vy, TUNNEL_MAX_SPEED);
-  movement.yawrate = CONSTRAIN(-1 * TUNNEL_MAX_TURN_SPEED, movement.yawrate, TUNNEL_MAX_TURN_SPEED);
+  // Constrain the command values
+  movement.vx        = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      movement.vx, TUNNEL_MAX_SPEED);
+  movement.vy        = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      movement.vy, TUNNEL_MAX_SPEED);
+  movement.yawrate   = CONSTRAIN(-1 * TUNNEL_MAX_TURN_SPEED, movement.yawrate, TUNNEL_MAX_TURN_SPEED);
+  movement.zDistance = CONSTRAIN(TUNNEL_MIN_HEIGHT,          movement.zDistance, TUNNEL_MAX_HEIGHT);
 
   // Refresh the estimated distance in tunnel
   if(prevUpdate != 0)

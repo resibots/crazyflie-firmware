@@ -10,6 +10,7 @@
 
 #include "tunnel_config.h"
 #include "tunnel_behavior.h"
+#include "tunnel_commander.h"
 
 #include "configblock.h"
 
@@ -37,8 +38,10 @@ static bool tunnelCanFly;
 uint8_t getTunnelCanFly() { return tunnelCanFly; }
 
 void setTunnelCanFly(bool canfly) {
-  if(canfly != tunnelCanFly && canfly == false)
+  if(canfly != tunnelCanFly && canfly == false) {
+    sendSetpointStop();
     tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
+  }
 
   tunnelCanFly = canfly;
 }
