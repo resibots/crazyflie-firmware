@@ -9,11 +9,12 @@
 
 // List of available behaviors
 typedef enum {
-  TUNNEL_BEHAVIOR_IDLE = 0, // Stay on the ground, motors off
-  TUNNEL_BEHAVIOR_TAKE_OFF, // Take off slowly with a specified velocity
-  TUNNEL_BEHAVIOR_HOVER,    // Stay still at the current position
-  TUNNEL_BEHAVIOR_GOTO,     // Reach a specified tunnelDistance
-  TUNNEL_BEHAVIOR_LAND      // Land slowly with a specified velocity
+  TUNNEL_BEHAVIOR_IDLE = 0,      // Stay on the ground, motors off
+  TUNNEL_BEHAVIOR_TAKE_OFF,      // Take off slowly with a specified velocity
+  TUNNEL_BEHAVIOR_HOVER,         // Stay still at the current position
+  TUNNEL_BEHAVIOR_GOTO,          // Reach a specified tunnelDistance
+  TUNNEL_BEHAVIOR_SIGNAL_MIDDLE, // Stay between the leader and follower (RSSI based)
+  TUNNEL_BEHAVIOR_LAND           // Land slowly with a specified velocity
 } TunnelBehavior;
 
 // Used for the Goto Behavior only, sets the destination

@@ -16,6 +16,9 @@
 #include "p2p.h"
 #include "radiolink.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 // Kalman global parameters
 #define KALMAN_A 1.f // State vector
 #define KALMAN_C 1.f // Measurement vector
@@ -47,6 +50,8 @@ static void kalmanUpdate(SignalLogFiltered *signal, float newRssi, float speed) 
     signal->signalLog.rssi = predRssi + K * (newRssi - (KALMAN_C * predRssi));
     signal->cov = predCov - (K * KALMAN_C * predCov);
   }
+
+  signal->signalLog.timestamp = xTaskGetTickCount();
 }
 
 static void tunnelP2PRssiHandler(P2PPacket* p) {
