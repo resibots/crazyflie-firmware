@@ -63,6 +63,7 @@ static int radiolinkReceiveP2PPacket(P2PPacket *p);
 
 //Local RSSI variable used to enable logging of RSSI values from Radio
 static uint8_t rssi;
+static volatile RSSICallback rssiCallback;
 static bool isConnected;
 static uint32_t lastPacketTick;
 
@@ -188,6 +189,9 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
   {
     //Extract RSSI sample sent from radio
     memcpy(&rssi, slp->data, sizeof(uint8_t)); //rssi will not change on disconnect
+
+    // Call the RSSI callback if it exists
+    if(rssiCallback) rssiCallback(slp->data[0]);
   } else if (slp->type == SYSLINK_RADIO_P2P)
   {
     slp->length -= 3; // Decrease to get P2P rxdata size only (the 3 constant bytes before don't count).
@@ -264,6 +268,11 @@ static int radiolinkSendP2PPacket(P2PPacket *p)
   syslinkSendPacket(&slp);
 
   return true;
+}
+
+void radiolinkRegisterRssiCB(RSSICallback cb)
+{
+  rssiCallback = cb;
 }
 
 struct crtpLinkOperations * radiolinkGetCRLink()

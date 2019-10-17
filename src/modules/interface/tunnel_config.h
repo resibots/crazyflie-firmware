@@ -74,13 +74,13 @@ OBSTACLE AVOIDING
 *****************/
 
 // Process noise in the RSSI kalman filtering
-#define TUNNEL_SIGNAL_KALMAN_R 1.f
+#define TUNNEL_SIGNAL_KALMAN_R 0.01f
 
 // Measurement noise in the RSSI kalman filtering
-#define TUNNEL_SIGNAL_KALMAN_Q 1.f
+#define TUNNEL_SIGNAL_KALMAN_Q 5.f
 
 // Control vector, predict an evolution based on the drone's current speed
-#define TUNNEL_SIGNAL_KALMAN_B 1.f
+#define TUNNEL_SIGNAL_KALMAN_B 3.f
 
 /****************
      RUNTIME

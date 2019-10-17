@@ -14,6 +14,7 @@
 #include "tunnel_config.h"
 #include "tunnel_commander.h"
 #include "p2p.h"
+#include "radiolink.h"
 
 // Kalman global parameters
 #define KALMAN_A 1.f // State vector
@@ -48,12 +49,15 @@ static void kalmanUpdate(SignalLogFiltered *signal, float newRssi, float speed) 
   }
 }
 
-static void tunnelRssiHandler(P2PPacket* p) {
+static void tunnelP2PRssiHandler(P2PPacket* p) {
   if(p->origin == getFollowerID())
     tunnelSetFollowerSignal(p->rssi, tunnelGetCurrentMovement()->vx);
   if(p->origin == getLeaderID())
     tunnelSetLeaderSignal(p->rssi, tunnelGetCurrentMovement()->vx);
-  //TODO get the CRTP RSSI from radiolink
+}
+
+static void tunnelCRTPRssiHandler(uint8_t rssi) {
+  tunnelSetBaseSignal(rssi, tunnelGetCurrentMovement()->vx);
 }
 
 static void signalInit(SignalLogFiltered *signal) {
@@ -76,7 +80,8 @@ void tunnelSignalInit() {
   signalInit(&leaderSignal);
   signalInit(&baseSignal);
 
-  p2pRegisterRssiCB(tunnelRssiHandler);
+  p2pRegisterRssiCB(tunnelP2PRssiHandler);
+  radiolinkRegisterRssiCB(tunnelCRTPRssiHandler);
 }
 
 bool tunnelSignalTest() {
