@@ -9,10 +9,10 @@
 #include "crtp.h"
 
 // Send a regular P2P packet. It will go through the least amount of drones possible
-void tunnelSendP2PPacket(P2PPacket *p);
+bool tunnelSendP2PPacket(P2PPacket *p);
 
 // Send a regular CRTP packet. It will go through the least amount of drones possible
-void tunnelSendCRTPPacket(CRTPPacket *p);
+bool tunnelSendCRTPPacket(CRTPPacket *p);
 
 // Initialize the param submodule
 void tunnelRelayInit();
