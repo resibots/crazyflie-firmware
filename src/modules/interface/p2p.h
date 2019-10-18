@@ -37,6 +37,7 @@ typedef enum {
   P2P_PORT_PARAM     = 0x01,
   P2P_PORT_COMMANDER = 0x02,
   P2P_PORT_CHAIN     = 0x03,
+  P2P_PORT_RELAY     = 0x0F, // Relay a packet that must be sent to another drone
 } P2PPort;
 
 typedef struct _P2PPacket

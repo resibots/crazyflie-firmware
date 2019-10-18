@@ -17,6 +17,7 @@
 #include "tunnel_parameters.h"
 #include "tunnel_behavior.h"
 #include "tunnel_signal.h"
+#include "tunnel_relay.h"
 
 #define DEBUG_MODULE "TUN"
 #include "debug.h"
@@ -93,6 +94,13 @@ static void tunnelTask(void *param) {
 
       // Handle ping routines
       tunnelPingUpdate();
+
+      CRTPPacket p; //TODO REMOVE, TESTS ONLY
+      p.channel = 0;
+      p.port = CRTP_PORT_TUNNEL;
+      p.data[0] = tunnelGetBaseSignal()->rssi;
+      p.size = 1;
+      crtpSendPacket(&p);
     }
 }
 
@@ -145,6 +153,7 @@ void tunnelInit() {
   tunnelParametersInit();
   tunnelCommanderInit();
   tunnelSignalInit();
+  tunnelRelayInit();
 
   // Subscribe to packet callbacks
   crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);
@@ -163,6 +172,7 @@ bool tunnelTest() {
   pass &= tunnelParametersTest();
   pass &= tunnelCommanderTest();
   pass &= tunnelSignalTest();
+  pass &= tunnelRelayTest();
 
   return pass;
 }
