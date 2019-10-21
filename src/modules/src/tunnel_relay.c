@@ -17,23 +17,38 @@
 
 #include "tunnel_relay.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include "tunnel_config.h"
 #include "tunnel_signal.h"
 
+#include "led.h"
+#include "ledseq.h"
+
+#define DISCONNECT_TIMEOUT 500
+
 //TODO handle packet max size errors
 
-static uint8_t selectFurthestDestination(uint8_t destination) {
-  int8_t distance = destination - getDroneId();
-
-  // If the destination is our neighbor, send it directly
-  // TODO send directly instead of relay
+// Returns true if the destination is our follower or leader
+// or if we received a good rssi from the destination not long ago
+static bool isDestinationNear(uint8_t destination) {
   if(destination == getLeaderID() || destination == getFollowerID())
-    return destination;
-  //TODO finish
+    return true;
+  SignalLog* s = tunnelGetUnfilteredSignal(destination);
+  return s->rssi > 0 && s->rssi < TUNNEL_RSSI_DANGER &&
+         (xTaskGetTickCount() - s->timestamp) < DISCONNECT_TIMEOUT;
 }
 
-static bool isDestinationNear(uint8_t destination) {
-  return true; //TODO finish
+// Select the furthest destination possible from us (or the destination itself)
+static uint8_t selectFurthestDestination(uint8_t destination) {
+  int8_t direction = (destination - getDroneId() > 0) ? 1 : -1;
+
+  int8_t stepDest = getDroneId() + direction;
+  while(!isDestinationNear(stepDest) && stepDest != destination) {
+    stepDest += direction;
+  }
+  return stepDest;
 }
 
 // We received a Relay Rx packet and transform to a P2P Tx packet
@@ -56,18 +71,32 @@ static void transformP2PTxToRelayTx(P2PPacket* p, uint8_t relayID) {
 
 // A Relay Rx message is sent to another relay
 static void transformRelayRxToRelayTx(P2PPacket* p) {
-  //TODO 
+  // Change packet destination to the furthest available drone
+  uint8_t finalDest = p->rxdata[p->size - 1] >> 4 & 0x0F;
+  p->txdest = selectFurthestDestination(finalDest);
+
+  p->port = P2P_PORT_RELAY;
+  memcpy(p->txdata, p->rxdata, p->size);
 }
 
 bool tunnelSendP2PPacket(P2PPacket *p) {
-  // If the drone is near enough, send a direct P2P packet
+  // If we are sending a packet to ourselves, send to the P2P queue directly
+  if(p->txdest == getDroneId()) {
+    //TODO
+    ledseqRun(LED_BLUE_L, seq_linkup);
+    return true;
+  }
+
+  // If the drone is our neighbor or near, send a direct P2P packet
   if(isDestinationNear(p->txdest)) {
+    ledseqRun(LED_GREEN_R, seq_linkup);
     if(p->size <= P2P_MAX_DATA_SIZE)
       return false;
     p2pSendPacket(p);
   }
   // If not, initiate a relay chain and send the first relay packet
   else {
+    ledseqRun(LED_RED_R, seq_linkup);
     if(p->size >= P2P_MAX_DATA_SIZE)
       return false;
     transformP2PTxToRelayTx(p, selectFurthestDestination(p->txdest));
@@ -78,9 +107,13 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
 
 bool tunnelSendCRTPPacket(CRTPPacket *p) {
   //TODO handle CRTP here?
+  return false;
 }
 
 static void tunnelP2PRelayHandler(P2PPacket *p) {
+  if(p->rxdest == getDroneId()) //TODO handle?
+    return;
+
   // If the relay packet has reached destination, transform it to a regular P2P packet 
   // and send it to the main P2P Queue!
   if(isDestinationNear(p->txdest)) {
@@ -91,8 +124,6 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
   // If the packet has not reached its destination yet, find the furthest drone available
   // and send the packet to it
   else {
-    uint8_t finalDest = p->rxdata[p->size - 1] >> 4 & 0x0F;
-    p->txdest = selectFurthestDestination(finalDest);
     transformRelayRxToRelayTx(p);
     p2pSendPacket(p);
   }

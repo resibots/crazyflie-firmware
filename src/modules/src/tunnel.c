@@ -95,12 +95,14 @@ static void tunnelTask(void *param) {
       // Handle ping routines
       tunnelPingUpdate();
 
-      CRTPPacket p; //TODO REMOVE, TESTS ONLY
-      p.channel = 0;
-      p.port = CRTP_PORT_TUNNEL;
-      p.data[0] = tunnelGetBaseSignal()->rssi;
-      p.size = 1;
-      crtpSendPacket(&p);
+      // P2PPacket p;
+      // p.txdest = 1;
+      // p.port = 7; // useless port
+      // p.txdata[0] = 0xAB;
+      // p.txdata[0] = 0xCD;
+      // p.txdata[0] = 0xEF;
+      // p.size = 3;
+      // tunnelSendP2PPacket(&p);
     }
 }
 

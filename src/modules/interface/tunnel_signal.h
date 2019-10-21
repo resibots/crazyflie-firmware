@@ -14,6 +14,7 @@ typedef struct {
 SignalLog *tunnelGetFollowerSignal();
 SignalLog *tunnelGetLeaderSignal();
 SignalLog *tunnelGetBaseSignal();
+SignalLog *tunnelGetUnfilteredSignal(uint8_t id);
 
 // Initialize the param submodule
 void tunnelSignalInit();
