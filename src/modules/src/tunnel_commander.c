@@ -107,7 +107,7 @@ TunnelHover *tunnelGetCurrentMovement() {
 void tunnelCommanderUpdate() {
   // Red switch for tests
 #ifdef TUNNEL_RED_SWITCH
-  if(rangeGet(rangeUp) < 50) {
+  if(0 < rangeGet(rangeUp) && rangeGet(rangeUp) < 50) {
     sendSetpointStop();
     setTunnelCanFly(false);
   }
@@ -119,7 +119,8 @@ void tunnelCommanderUpdate() {
   tunnelBehaviorUpdate(&currentMovement, &enableAvoider);
 
   // Get repulsion from avoider
-  if(enableAvoider) tunnelAvoiderUpdate(&currentMovement);
+  if(enableAvoider && tunnelAvoiderCheckDeck())
+    tunnelAvoiderUpdate(&currentMovement);
 
   // Calculate final movement
   currentMovement.vx      += manualMovement.vx     ;

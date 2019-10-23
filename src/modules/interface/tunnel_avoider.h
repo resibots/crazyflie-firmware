@@ -7,6 +7,9 @@
 
 #include "tunnel_commander.h"
 
+// Check if the deck is working, if not warn it through an LED and skip
+bool tunnelAvoiderCheckDeck();
+
 // Update function that needs to be called regularly
 void tunnelAvoiderUpdate(TunnelHover *vel);
 

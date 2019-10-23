@@ -158,6 +158,16 @@ const ledseq_t seq_testPassed[] = {
   {false, LEDSEQ_STOP},
 };
 
+const ledseq_t seq_warn[] = {
+  { true, LEDSEQ_WAITMS(50)},
+  {false, LEDSEQ_WAITMS(50)},
+  { true, LEDSEQ_WAITMS(50)},
+  {false, LEDSEQ_WAITMS(50)},
+  { true, LEDSEQ_WAITMS(200)},
+  {false, LEDSEQ_WAITMS(500)},
+  {false, LEDSEQ_LOOP},
+};
+
 /* Led sequence handling machine implementation */
 #define SEQ_NUM (sizeof(sequences)/sizeof(sequences[0]))
 

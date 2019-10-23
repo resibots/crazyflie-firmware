@@ -26,6 +26,7 @@
 #include "estimator_kalman.h"
 
 static TunnelBehavior currentBehavior;
+static TunnelBehavior previousBehavior;
 
 // Signal middle Behavior
 
@@ -149,7 +150,7 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
   }
 }
 
-void tunnelSetBehavior(TunnelBehavior behavior) {
+static void setBehavior(TunnelBehavior behavior) {
   if(behavior != currentBehavior) {
     if(behavior == TUNNEL_BEHAVIOR_TAKE_OFF) {
       zTarget = 0.1f;
@@ -157,6 +158,15 @@ void tunnelSetBehavior(TunnelBehavior behavior) {
     }
   }
   currentBehavior = behavior;
+}
+
+void tunnelSetBehavior(TunnelBehavior behavior) {
+  previousBehavior = currentBehavior;
+  setBehavior(behavior);
+}
+
+void tunnelSetPreviousBehavior() {
+  setBehavior(previousBehavior);
 }
 
 // Submodule initialization
