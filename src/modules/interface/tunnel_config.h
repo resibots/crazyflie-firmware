@@ -34,8 +34,8 @@
 *****************/
 
 // Choose one quad direction configuration
-// #define TUNNEL_QUAD_SHAPE_X    // Normal orientation
-#define TUNNEL_QUAD_SHAPE_PLUS // Used to avoid obstacles with 4 distance sensors
+#define TUNNEL_QUAD_SHAPE_X    // Normal orientation, uses 2 avoiding sensors
+// #define TUNNEL_QUAD_SHAPE_PLUS // Used to avoid obstacles with 4 distance sensors
 
 // Max drone speed in m/s
 #define TUNNEL_MAX_SPEED 0.6f

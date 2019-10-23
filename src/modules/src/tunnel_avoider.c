@@ -14,6 +14,7 @@
 #include "tunnel_avoider.h"
 #include "tunnel_config.h"
 #include "tunnel_helpers.h"
+#include "tunnel_behavior.h"
 
 #include "range.h"
 #include "led.h" 
@@ -21,8 +22,24 @@
 
 // Special avoiding behaviors
 
-void tunnelBehaviorAvoiderUpdate(TunnelHover *vel) {
+#define ANGLE_STEP 10
+static int measuresBuffer[90 / ANGLE_STEP];
+static int currentAngle = 0;
 
+void tunnelBehaviorAvoiderUpdate(TunnelHover *vel, bool *enableCollisions) {
+  // Don't move on other axis
+  vel->vx = 0;
+  vel->vy = 0;
+  vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
+
+  // Turn around and log the distances
+
+  // Disable avoider while scanning 
+  *enableCollisions = false;
+
+  if(true) { //TODO implement the behavior and set the right condition
+    tunnelSetPreviousBehavior();
+  }
 }
 
 // Regular avoiding
@@ -47,6 +64,11 @@ void tunnelAvoiderUpdate(TunnelHover *vel) {
 #endif
 
 #ifdef TUNNEL_QUAD_SHAPE_X
+  if(left > TUNNEL_RANGER_TRIGGER_DIST || right > TUNNEL_RANGER_TRIGGER_DIST || front < 200) {
+    tunnelSetBehavior(TUNNEL_BEHAVIOR_ALIGN);
+    return;
+  }
+
   // Avoid the obstacles with pushing forces
   #ifdef TUNNEL_AVOID_LEFTRIGHT
     if(left < TUNNEL_RANGER_TRIGGER_DIST)

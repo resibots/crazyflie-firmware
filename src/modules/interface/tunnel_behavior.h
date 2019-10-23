@@ -14,6 +14,7 @@ typedef enum {
   TUNNEL_BEHAVIOR_HOVER,         // Stay still at the current position
   TUNNEL_BEHAVIOR_GOTO,          // Reach a specified tunnelDistance
   TUNNEL_BEHAVIOR_SIGNAL_MIDDLE, // Stay between the leader and follower (RSSI based)
+  TUNNEL_BEHAVIOR_ALIGN,         // Turn 90 degrees and scan the room, then point to the tunnel
   TUNNEL_BEHAVIOR_LAND           // Land slowly with a specified velocity
 } TunnelBehavior;
 
@@ -25,6 +26,10 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions);
 
 // Set the new drone behavior. TODO no init for now
 void tunnelSetBehavior(TunnelBehavior behavior);
+
+// Go back to the previous active behavior
+// WARNING works only one time, will do nothing if repeated without manually changing the current behavior
+void tunnelSetPreviousBehavior();
 
 // Initialize the behavior submodule
 void tunnelBehaviorInit();
