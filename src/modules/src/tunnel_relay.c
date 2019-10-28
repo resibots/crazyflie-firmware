@@ -83,20 +83,17 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
   // If we are sending a packet to ourselves, send to the P2P queue directly
   if(p->txdest == getDroneId()) {
     //TODO
-    ledseqRun(LED_BLUE_L, seq_linkup);
     return true;
   }
 
   // If the drone is our neighbor or near, send a direct P2P packet
   if(isDestinationNear(p->txdest)) {
-    ledseqRun(LED_GREEN_R, seq_linkup);
-    if(p->size <= P2P_MAX_DATA_SIZE)
+    if(p->size >= P2P_MAX_DATA_SIZE)
       return false;
     p2pSendPacket(p);
   }
   // If not, initiate a relay chain and send the first relay packet
   else {
-    ledseqRun(LED_RED_R, seq_linkup);
     if(p->size >= P2P_MAX_DATA_SIZE)
       return false;
     transformP2PTxToRelayTx(p, selectFurthestDestination(p->txdest));

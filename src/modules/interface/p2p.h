@@ -180,7 +180,7 @@ int p2pReceivePacketBlock(P2PPort taskId, P2PPacket *p);
  * 
  * @note formatted==false will print the paquet as a simple hecadecimal array
  */
-void p2pPrintPacket(P2PPacket *p, bool raw);
+void p2pPrintPacket(P2PPacket *p, bool format);
 
 /**
  * Function pointer structure to be filled by the P2P link to permits P2P to
