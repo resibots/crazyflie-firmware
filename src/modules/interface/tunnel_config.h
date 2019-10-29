@@ -9,6 +9,9 @@
       MAIN
 *****************/
 
+// Default number of active drones, can be changed at runtime
+#define DEFAULT_N_DRONES 4
+
 // Main tunnel loop frequency rate
 #define TUNNEL_TASK_RATE_HZ 20
 
@@ -103,6 +106,9 @@ uint8_t getLeaderID();
 
 // Sets the current leader's ID
 void setLeaderID(uint8_t newID);
+
+// Sets the drone's follower and leader to ID-1 and ID+1
+void tunnelAutoSetFollowerLeader();
 
 // Returns the number of drones to be considered in the chain
 uint8_t getNDrones();

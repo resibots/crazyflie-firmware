@@ -11,6 +11,7 @@
 
 #include "tunnel_ping.h"
 #include "tunnel_config.h"
+#include "tunnel_relay.h"
 
 #define DEBUG_MODULE "TUN_PING"
 #include "debug.h"
@@ -28,6 +29,7 @@
 
 static P2PPacket reply;
 static unsigned long pingStartTime = 0;
+static unsigned long relayStartTime = 0;
 
 void sendPing(bool propagate) {
   DEBUG_PRINT("Sending ping...\n");
@@ -51,10 +53,28 @@ void sendPing(bool propagate) {
 void tunnelPingUpdate() {
   if(getDroneId() == 0 && xTaskGetTickCount() - pingStartTime > 1000)
     sendPing(true);
+
+  if(getDroneId() == 0 && xTaskGetTickCount() - relayStartTime > 500) {
+    P2PPacket p;
+    p.txdest = 3;
+    p.port = 7; // useless port
+    p.txdata[0] = 0xAB;
+    p.txdata[0] = 0xCD;
+    p.txdata[0] = 0xEF;
+    p.size = 3;
+    tunnelSendP2PPacket(&p);
+
+    relayStartTime = xTaskGetTickCount();
+  }
 }
 
 void crtpTunnelPingHandler(CRTPPacket *p) {
   sendPing(p->data[0]);
+}
+
+static void tmpHandler(P2PPacket *p) {
+  ledseqRun(LED_GREEN_R, seq_linkup);
+  DEBUG_PRINT("Got final dummy packet!\n");
 }
 
 static void p2pPingHandler(P2PPacket *p) {
@@ -123,6 +143,7 @@ static void p2pPingHandler(P2PPacket *p) {
 
 void tunnelPingInit() {
   p2pRegisterPortCB(P2P_PORT_PING,     p2pPingHandler);
+  p2pRegisterPortCB(7, tmpHandler); //TODO remove
 }
 
 bool tunnelPingTest() {

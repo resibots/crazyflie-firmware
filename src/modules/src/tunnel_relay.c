@@ -23,6 +23,9 @@
 #include "tunnel_config.h"
 #include "tunnel_signal.h"
 
+#define DEBUG_MODULE "REL"
+#include "debug.h"
+
 #include "led.h"
 #include "ledseq.h"
 
@@ -83,13 +86,14 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
   // If we are sending a packet to ourselves, send to the P2P queue directly
   if(p->txdest == getDroneId()) {
     //TODO
-    return true;
+    return false;
   }
 
   // If the drone is our neighbor or near, send a direct P2P packet
   if(isDestinationNear(p->txdest)) {
     if(p->size >= P2P_MAX_DATA_SIZE)
       return false;
+    DEBUG_PRINT("Sending direct P2P to %i\n", p->txdest);
     p2pSendPacket(p);
   }
   // If not, initiate a relay chain and send the first relay packet
@@ -97,6 +101,7 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
     if(p->size >= P2P_MAX_DATA_SIZE)
       return false;
     transformP2PTxToRelayTx(p, selectFurthestDestination(p->txdest));
+    DEBUG_PRINT("Sending relay P2P to %i\n", p->txdest);
     p2pSendPacket(p);
   }
   return true;
@@ -108,20 +113,31 @@ bool tunnelSendCRTPPacket(CRTPPacket *p) {
 }
 
 static void tunnelP2PRelayHandler(P2PPacket *p) {
-  if(p->rxdest == getDroneId()) //TODO handle?
+  // Filter relay packets that are not for this drone
+  if(p->rxdest != getDroneId())
     return;
+  
+  uint8_t finalDest = p->rxdata[p->size - 1] >> 4 & 0x0F;
+  DEBUG_PRINT("Got relay P2P from %i, final=%i\n", p->origin, finalDest);
+  if(finalDest == getDroneId()) {
+    // A relay packet should not reach final destination, must arrive as a regular P2P packet
+    DEBUG_PRINT("WARNING Dropping relay, reached dest\n");
+    return;
+  }
 
-  // If the relay packet has reached destination, transform it to a regular P2P packet 
-  // and send it to the main P2P Queue!
-  if(isDestinationNear(p->txdest)) {
+  // If the final destination is near, transform it to a regular P2P packet 
+  // and send it to the final drone as a regular P2P Packet
+  if(isDestinationNear(finalDest)) {
     transformRelayRxToP2PTx(p);
+    DEBUG_PRINT("Relaying P2P to final %i\n", p->txdest);
     p2pSendPacket(p);
   }
 
-  // If the packet has not reached its destination yet, find the furthest drone available
-  // and send the packet to it
+  // If the packet has not reached its destination yet, find the furthest relay
+  // available and send the packet to it
   else {
     transformRelayRxToRelayTx(p);
+    DEBUG_PRINT("Relaying P2P to relay %i\n", p->txdest);
     p2pSendPacket(p);
   }
 }

@@ -84,6 +84,9 @@ static void tunnelTask(void *param) {
     ledseqStop(SYS_LED, seq_calibrated);
     ledSet(SYS_LED, false);
 
+    // Print some information
+    DEBUG_PRINT("Drone ID: %i\n", getDroneId());
+
     TickType_t lastWakeTime = xTaskGetTickCount();
 
     while (1) {
@@ -94,15 +97,6 @@ static void tunnelTask(void *param) {
 
       // Handle ping routines
       tunnelPingUpdate();
-
-      // P2PPacket p;
-      // p.txdest = 1;
-      // p.port = 7; // useless port
-      // p.txdata[0] = 0xAB;
-      // p.txdata[0] = 0xCD;
-      // p.txdata[0] = 0xEF;
-      // p.size = 3;
-      // tunnelSendP2PPacket(&p);
     }
 }
 
@@ -140,10 +134,7 @@ void tunnelInit() {
   tunnelSetDroneRole((getDroneId() == 0) ? DRONE_ROLE_HEAD : DRONE_ROLE_RELAY);
 
   // Set follower and leader
-  if(getDroneId() > 0)
-    setLeaderID(getDroneId() - 1);
-  if(getDroneId() < getNDrones() - 1)
-    setFollowerID(getDroneId() + 1);
+  tunnelAutoSetFollowerLeader();
   
   // Don't fly if we're not in the active chain
   // TODO refresh this when changing NDrones

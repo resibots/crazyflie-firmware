@@ -26,11 +26,21 @@ void setFollowerID(uint8_t newID) { chainPeers.followerID = newID; }
 uint8_t getLeaderID() { return chainPeers.leaderID; }
 void setLeaderID(uint8_t newID) { chainPeers.leaderID = newID; }
 
+void tunnelAutoSetFollowerLeader() {
+  if(getDroneId() > 0)
+    setLeaderID(getDroneId() - 1);
+  if(getDroneId() < getNDrones() - 1)
+    setFollowerID(getDroneId() + 1);
+}
+
 // Number of available drones in the tunnel exploration crew
-static uint8_t nDrones = 3; // 15 max because of the 4-bit addresses
+static uint8_t nDrones = DEFAULT_N_DRONES; // 15 max because of the 4-bit addresses
 
 uint8_t getNDrones() { return nDrones; }
-void setNDrones(uint8_t ndrones) { nDrones = ndrones; }
+void setNDrones(uint8_t ndrones) {
+  nDrones = ndrones;
+  tunnelAutoSetFollowerLeader();
+}
 
 // Set by the operator. The Tunnel module uses the motors only if this is set to true.
 static bool tunnelCanFly;
