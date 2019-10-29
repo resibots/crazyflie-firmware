@@ -9,13 +9,13 @@
 
 // List of available behaviors
 typedef enum {
-  TUNNEL_BEHAVIOR_IDLE = 0,      // Stay on the ground, motors off
-  TUNNEL_BEHAVIOR_TAKE_OFF,      // Take off slowly with a specified velocity
-  TUNNEL_BEHAVIOR_HOVER,         // Stay still at the current position
-  TUNNEL_BEHAVIOR_GOTO,          // Reach a specified tunnelDistance
-  TUNNEL_BEHAVIOR_SIGNAL_MIDDLE, // Stay between the leader and follower (RSSI based)
-  TUNNEL_BEHAVIOR_ALIGN,         // Turn 90 degrees and scan the room, then point to the tunnel
-  TUNNEL_BEHAVIOR_LAND           // Land slowly with a specified velocity
+  TUNNEL_BEHAVIOR_IDLE          = 0, // Stay on the ground, motors off
+  TUNNEL_BEHAVIOR_TAKE_OFF      = 1, // Take off slowly with a specified velocity
+  TUNNEL_BEHAVIOR_HOVER         = 2, // Stay still at the current position
+  TUNNEL_BEHAVIOR_GOTO          = 3, // Reach a specified tunnelDistance
+  TUNNEL_BEHAVIOR_SIGNAL_MIDDLE = 4, // Stay between the leader and follower (RSSI based)
+  TUNNEL_BEHAVIOR_ALIGN         = 5, // Turn 90 degrees and scan the room, then point to the tunnel
+  TUNNEL_BEHAVIOR_LAND          = 6, // Land slowly with a specified velocity
 } TunnelBehavior;
 
 // Used for the Goto Behavior only, sets the destination
@@ -23,6 +23,9 @@ void setBehaviorGotoGoal(float goal);
 
 // Update function that needs to be called regularly
 void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions);
+
+// Get the current active behavior
+TunnelBehavior tunnelGetCurrentBehavior();
 
 // Set the new drone behavior. TODO no init for now
 void tunnelSetBehavior(TunnelBehavior behavior);

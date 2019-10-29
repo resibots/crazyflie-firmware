@@ -248,7 +248,7 @@ int p2pSendPacketBlock(P2PPacket *p)
   return xQueueSend(txQueue, p, portMAX_DELAY);
 }
 
-void p2pPrintPacket(P2PPacket *p, bool format) {
+void p2pPrintPacket(P2PPacket *p, bool format) { //TODO print format for tx, rx and raw
   if(!format)
     DEBUG_PRINT("P2P s=%i d=%02x%02x%02x%02x%02x%02x\n", p->size, p->raw[0], p->raw[1], p->raw[2], p->raw[3], p->raw[4], p->raw[5]);
   else {

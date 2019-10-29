@@ -10,7 +10,7 @@
 *****************/
 
 // Default number of active drones, can be changed at runtime
-#define DEFAULT_N_DRONES 4
+#define DEFAULT_N_DRONES 3
 
 // Main tunnel loop frequency rate
 #define TUNNEL_TASK_RATE_HZ 20

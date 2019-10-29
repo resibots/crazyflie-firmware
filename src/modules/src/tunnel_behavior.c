@@ -150,6 +150,10 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
   }
 }
 
+TunnelBehavior tunnelGetCurrentBehavior() {
+  return currentBehavior;
+}
+
 static void setBehavior(TunnelBehavior behavior) {
   if(behavior != currentBehavior) {
     if(behavior == TUNNEL_BEHAVIOR_TAKE_OFF) {
