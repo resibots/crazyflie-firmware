@@ -33,7 +33,6 @@
 static P2PPacket reply;
 static unsigned long pingStartTime = 0;
 static unsigned long statusStartTime = 0;
-static unsigned long relayStartTime = 0;
 
 // Once the time has passed, resets the timer and returns true
 static bool timerElapsed(unsigned long *prevTime, unsigned int duration) {
@@ -59,7 +58,7 @@ static uint8_t appendStatus(uint8_t *data) {
 }
 
 void sendPing(bool propagate) {
-  DEBUG_PRINT("Sending ping...\n");
+  // DEBUG_PRINT("Sending ping...\n");
   P2PPacket p2p_p;
 
   if(getDroneId() == 0)
@@ -94,39 +93,19 @@ void tunnelPingUpdate() {
   if(getDroneId() == 0 && timerElapsed(&pingStartTime, 1000))
     sendPing(true);
 
-  // Broadcast our own status regularly
-  if(timerElapsed(&statusStartTime, 200))
+  // Broadcast our own status regularly (don't pollute the air traffic with inactive drones)
+  if(tunnelGetDroneState() != DRONE_STATE_INACTIVE && timerElapsed(&statusStartTime, 200))
     broadcastStatus();
-
-  //TODO test for relay, remove
-  if(getDroneId() == 0 && timerElapsed(&relayStartTime, 500)) {
-    P2PPacket p;
-    p.txdest = 3;
-    p.port = 7; // useless port
-    p.txdata[0] = 0xAB;
-    p.txdata[1] = 0xCD;
-    p.txdata[2] = 0xEF;
-    p.size = 3;
-    tunnelSendP2PPacket(&p);
-  }
 }
 
 void crtpTunnelPingHandler(CRTPPacket *p) {
   sendPing(p->data[0]);
 }
 
-static void tmpHandler(P2PPacket *p) {
-  if(p->rxdest == getDroneId()) {
-    ledseqRun(LED_GREEN_R, seq_testPassed);
-    DEBUG_PRINT("Got final dummy packet!\n");
-    p2pPrintPacket(p, true);
-  }
-}
-
 static void p2pPingHandler(P2PPacket *p) {
   uint8_t rssi = p->rssi;
-  DEBUG_PRINT("Got ping:\n");
-  p2pPrintPacket(p, true);
+  // DEBUG_PRINT("Got ping:\n");
+  // p2pPrintPacket(p, true);
 
   // The first drone doesn't reply to propagating pings
   if(p->rxdest == getDroneId() && getDroneId() == 0 && p->rxdata[0] == 0x01) {
@@ -191,7 +170,6 @@ static void p2pPingHandler(P2PPacket *p) {
 
 void tunnelPingInit() {
   p2pRegisterPortCB(P2P_PORT_PING,     p2pPingHandler);
-  p2pRegisterPortCB(7, tmpHandler); //TODO remove
 }
 
 bool tunnelPingTest() {

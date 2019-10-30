@@ -196,7 +196,7 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
   {
     slp->length -= 3; // Decrease to get P2P rxdata size only (the 3 constant bytes before don't count).
     
-    if(((P2PPacket*)slp)->rxdest == getDroneId())
+    if(((P2PPacket*)(&slp->length))->rxdest == getDroneId())
       ledseqRun(LINK_LED, seq_linkup);
     else ledseqRun(LED_BLUE_L, seq_linkup);
 
@@ -207,7 +207,7 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
   {
     slp->length -= 3; // Decrease to get P2P rxdata size only (the 3 constant bytes before don't count).
 
-    if(((P2PPacket*)slp)->rxdest == getDroneId())
+    if(((P2PPacket*)(&slp->length))->rxdest == getDroneId())
       ledseqRun(LINK_LED, seq_linkup);
     else ledseqRun(LED_BLUE_L, seq_linkup);
 

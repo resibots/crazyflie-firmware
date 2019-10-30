@@ -28,8 +28,6 @@
 #include "system.h"
 #include "configblock.h"
 #include "range.h"
-#include "led.h"
-#include "ledseq.h"
 #include "log.h"
 
 #include "crtp.h"
