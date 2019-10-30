@@ -29,8 +29,6 @@
 #include "led.h"
 #include "ledseq.h"
 
-#define DISCONNECT_TIMEOUT 500
-
 //TODO handle packet max size errors
 
 // Returns true if the destination is our follower or leader
@@ -38,9 +36,14 @@
 static bool isDestinationNear(uint8_t destination) {
   if(destination == getLeaderID() || destination == getFollowerID())
     return true;
-  SignalLog* s = tunnelGetUnfilteredSignal(destination);
+  if(destination == getDroneId() + 1 || (getDroneId() > 0 && destination == getDroneId() - 1))
+    return true;
+  SignalLog* s = tunnelGetSignal(destination);
+  uint8_t r = s->rssi;
+  uint32_t time = xTaskGetTickCount() - s->timestamp;
+  DEBUG_PRINT("Near: d=%i RSSI=%i time=%i\n", destination, r, time);
   return s->rssi > 0 && s->rssi < TUNNEL_RSSI_DANGER &&
-         (xTaskGetTickCount() - s->timestamp) < DISCONNECT_TIMEOUT;
+         (xTaskGetTickCount() - s->timestamp) < TUNNEL_DISCONNECT_TIMEOUT;
 }
 
 // Select the furthest destination possible from us (or the destination itself)
@@ -48,10 +51,13 @@ static uint8_t selectFurthestDestination(uint8_t destination) {
   int8_t direction = (destination - getDroneId() > 0) ? 1 : -1;
 
   int8_t stepDest = getDroneId() + direction;
-  while(!isDestinationNear(stepDest) && stepDest != destination) {
+  uint8_t best = stepDest; // If no one's near, send to our neighbor by default (with hope it'll get the message)
+  while(stepDest != destination) {
     stepDest += direction;
+    if(isDestinationNear(stepDest))
+      best = stepDest;
   }
-  return stepDest;
+  return best;
 }
 
 // We received a Relay Rx packet and transform to a P2P Tx packet
@@ -66,8 +72,7 @@ static void transformRelayRxToP2PTx(P2PPacket* p) {
 static void transformP2PTxToRelayTx(P2PPacket* p, uint8_t relayID) {
   if(p->size >= P2P_MAX_DATA_SIZE)
     return;
-  p->txdata[p->size] = p->header;
-  p->size++;
+  p->txdata[p->size++] = p->header;
   p->txdest = relayID;
   p->port = P2P_PORT_RELAY;
 }
@@ -94,6 +99,7 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
     if(p->size >= P2P_MAX_DATA_SIZE)
       return false;
     DEBUG_PRINT("Sending direct P2P to %i\n", p->txdest);
+    p2pPrintPacket(p, false);
     p2pSendPacket(p);
   }
   // If not, initiate a relay chain and send the first relay packet
@@ -102,6 +108,7 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
       return false;
     transformP2PTxToRelayTx(p, selectFurthestDestination(p->txdest));
     DEBUG_PRINT("Sending relay P2P to %i\n", p->txdest);
+    p2pPrintPacket(p, false);
     p2pSendPacket(p);
   }
   return true;
@@ -119,6 +126,7 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
   
   uint8_t finalDest = p->rxdata[p->size - 1] >> 4 & 0x0F;
   DEBUG_PRINT("Got relay P2P from %i, final=%i\n", p->origin, finalDest);
+  p2pPrintPacket(p, true);
   if(finalDest == getDroneId()) {
     // A relay packet should not reach final destination, must arrive as a regular P2P packet
     DEBUG_PRINT("WARNING Dropping relay, reached dest\n");
@@ -130,6 +138,7 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
   if(isDestinationNear(finalDest)) {
     transformRelayRxToP2PTx(p);
     DEBUG_PRINT("Relaying P2P to final %i\n", p->txdest);
+    p2pPrintPacket(p, false);
     p2pSendPacket(p);
   }
 
@@ -138,8 +147,10 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
   else {
     transformRelayRxToRelayTx(p);
     DEBUG_PRINT("Relaying P2P to relay %i\n", p->txdest);
+    p2pPrintPacket(p, false);
     p2pSendPacket(p);
   }
+  ledseqRun(LED_GREEN_R, seq_linkup);
 }
 
 void tunnelRelayInit() {

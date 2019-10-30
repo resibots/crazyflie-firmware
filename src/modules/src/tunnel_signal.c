@@ -90,6 +90,13 @@ SignalLog *tunnelGetUnfilteredSignal(uint8_t id) {
   if(id >= N_AGENTS) return NULL;
   return &unfilteredSignals[id]; 
 }
+SignalLog *tunnelGetSignal(uint8_t id) {
+  if(id == getFollowerID())
+      return tunnelGetFollowerSignal();
+  else if(id == getLeaderID())
+    return tunnelGetLeaderSignal();
+  else return tunnelGetUnfilteredSignal(id);
+}
 
 void tunnelSignalInit() {
   // Initialize the structures with default values

@@ -91,6 +91,9 @@ OBSTACLE AVOIDING
 // Control vector, predict an evolution based on the drone's current speed
 #define TUNNEL_SIGNAL_KALMAN_B 3.f
 
+// Maximum age of the last message by the other agent to be considered near
+#define TUNNEL_DISCONNECT_TIMEOUT 500
+
 /****************
      RUNTIME
 *****************/

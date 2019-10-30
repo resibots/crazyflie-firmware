@@ -104,8 +104,8 @@ void tunnelPingUpdate() {
     p.txdest = 3;
     p.port = 7; // useless port
     p.txdata[0] = 0xAB;
-    p.txdata[0] = 0xCD;
-    p.txdata[0] = 0xEF;
+    p.txdata[1] = 0xCD;
+    p.txdata[2] = 0xEF;
     p.size = 3;
     tunnelSendP2PPacket(&p);
   }
@@ -116,8 +116,11 @@ void crtpTunnelPingHandler(CRTPPacket *p) {
 }
 
 static void tmpHandler(P2PPacket *p) {
-  ledseqRun(LED_GREEN_R, seq_linkup);
-  DEBUG_PRINT("Got final dummy packet!\n");
+  if(p->rxdest == getDroneId()) {
+    ledseqRun(LED_GREEN_R, seq_testPassed);
+    DEBUG_PRINT("Got final dummy packet!\n");
+    p2pPrintPacket(p, true);
+  }
 }
 
 static void p2pPingHandler(P2PPacket *p) {
@@ -129,7 +132,7 @@ static void p2pPingHandler(P2PPacket *p) {
   if(p->rxdest == getDroneId() && getDroneId() == 0 && p->rxdata[0] == 0x01) {
     uint16_t pingTime = xTaskGetTickCount() - pingStartTime;
     DEBUG_PRINT("Ping returned in %ims.\n", pingTime);
-    ledseqRun(LED_GREEN_R, seq_testPassed);
+    // ledseqRun(LED_GREEN_R, seq_testPassed);
 
     // Send a ping report to the PC (containes RSSI values between each drone)
     CRTPPacket p_log;
@@ -180,8 +183,8 @@ static void p2pPingHandler(P2PPacket *p) {
       reply.size += appendStatus(&reply.txdata[reply.size]);
     }
 
-    DEBUG_PRINT("Replying ping to %i\n", reply.txdest);
-    ledseqRun(LED_GREEN_R, seq_linkup);
+    // DEBUG_PRINT("Replying ping to %i\n", reply.txdest);
+    // ledseqRun(LED_GREEN_R, seq_linkup);
     p2pSendPacket(&reply);
   }
 }
