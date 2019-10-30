@@ -110,6 +110,9 @@ endif
 # Crazyflie sources
 VPATH += src/init src/hal/src src/modules/src src/utils/src src/drivers/bosch/src src/drivers/src src/platform
 
+# Tunnel sources
+VPATH += src/tunnel/src
+
 
 ############### Source files configuration ################
 
@@ -259,6 +262,9 @@ INCLUDES += -I$(FREERTOS)/include -I$(PORT) -Isrc
 INCLUDES += -Isrc/config -Isrc/hal/interface -Isrc/modules/interface
 INCLUDES += -Isrc/utils/interface -Isrc/drivers/interface -Isrc/platform
 INCLUDES += -Ivendor/CMSIS/CMSIS/Include -Isrc/drivers/bosch/interface
+
+# Tunnel include
+INCLUDES += -Isrc/tunnel/interface
 
 INCLUDES += -I$(LIB)/STM32F4xx_StdPeriph_Driver/inc
 INCLUDES += -I$(LIB)/CMSIS/STM32F4xx/Include
