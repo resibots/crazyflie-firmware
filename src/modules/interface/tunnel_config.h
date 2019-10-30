@@ -15,6 +15,11 @@
 // Main tunnel loop frequency rate
 #define TUNNEL_TASK_RATE_HZ 20
 
+// Battery voltage range
+#define BATTERY_MIN 3.2f
+#define BATTERY_MAX 4.3f
+#define BATTERY_RES 16 // number of values available to encode the battery level
+
 /****************
       DEBUG
 *****************/

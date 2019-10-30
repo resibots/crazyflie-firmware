@@ -6,7 +6,8 @@
  * maintainer: LARSEN, INRIA Nancy Grand-Est, France
  *
  * tunnel_ping.c - Sends, processes and propagates ping requests
- * accross the drones chain.
+ * accross the drones chain. Used for reporting the chain status
+ * to the operator.
  */
 
 #include "tunnel_ping.h"
@@ -14,6 +15,8 @@
 #include "tunnel_relay.h"
 #include "tunnel.h"
 #include "tunnel_behavior.h"
+#include "tunnel_helpers.h"
+#include "tunnel_comm.h"
 
 #define DEBUG_MODULE "PING"
 #include "debug.h"
@@ -25,37 +28,12 @@
 #include "system.h"
 #include "led.h"
 #include "ledseq.h"
-#include "pm.h"
 
 #include "crtp.h"
 #include "p2p.h"
 
 static P2PPacket reply;
-static unsigned long pingStartTime = 0;
-static unsigned long statusStartTime = 0;
-
-// Once the time has passed, resets the timer and returns true
-static bool timerElapsed(unsigned long *prevTime, unsigned int duration) {
-  bool result = xTaskGetTickCount() - *prevTime > duration;
-  if(result) *prevTime = xTaskGetTickCount();
-  return result;
-}
-
-#define BATTERY_MIN 3.2f
-#define BATTERY_MAX 4.3f
-#define BATTERY_RES 16 // number of values available to encode the battery level
-
-// Returns the size used and fills general information about the drone
-static uint8_t appendStatus(uint8_t *data) {
-  // Calculate battery level
-  uint8_t batteryVt = BATTERY_RES * (pmGetBatteryVoltage() - BATTERY_MIN) / (BATTERY_MAX - BATTERY_MIN);
-  if(batteryVt > 0x0F) batteryVt = 0x00; // Report a calculation error as a fully empty battery
-
-  // Send battery level, Drone role, Drone state, Current behavior
-  data[0] = ((batteryVt             << 4) & 0xF0) | (tunnelGetDroneRole()       & 0x0F);
-  data[1] = ((tunnelGetDroneState() << 4) & 0xF0) | (tunnelGetCurrentBehavior() & 0x0F);
-  return 2;
-}
+static unsigned long pingPrevTime = 0;
 
 void sendPing(bool propagate) {
   // DEBUG_PRINT("Sending ping...\n");
@@ -70,32 +48,14 @@ void sendPing(bool propagate) {
 
   p2p_p.port      = P2P_PORT_PING;
   p2p_p.txdata[0] = (uint8_t)propagate; // propagate or not
-  p2p_p.size = 1 + appendStatus(&p2p_p.txdata[1]);
+  p2p_p.size = 1 + appendStatusMessage(&p2p_p.txdata[1]);
   p2pSendPacket(&p2p_p);
-}
-
-static void broadcastStatus() {
-  P2PPacket p_status;
-  p_status.txdest = P2P_BROADCAST_ID;
-  p_status.port = P2P_PORT_STATUS;
-
-  // Generate status info and add it to the message
-  p_status.size = appendStatus(p_status.txdata);
-
-  // Report status to PC while at it
-  DEBUG_PRINT("STATUS %02x%02x\n", p_status.txdata[0], p_status.txdata[1]);
-
-  p2pSendPacket(&p_status);
 }
 
 void tunnelPingUpdate() {
   // Drone-by-drone ping that adds the RSSI values
-  if(getDroneId() == 0 && timerElapsed(&pingStartTime, 1000))
+  if(getDroneId() == 0 && timerElapsed(&pingPrevTime, 1000))
     sendPing(true);
-
-  // Broadcast our own status regularly (don't pollute the air traffic with inactive drones)
-  if(tunnelGetDroneState() != DRONE_STATE_INACTIVE && timerElapsed(&statusStartTime, 200))
-    broadcastStatus();
 }
 
 void crtpTunnelPingHandler(CRTPPacket *p) {
@@ -109,7 +69,7 @@ static void p2pPingHandler(P2PPacket *p) {
 
   // The first drone doesn't reply to propagating pings
   if(p->rxdest == getDroneId() && getDroneId() == 0 && p->rxdata[0] == 0x01) {
-    uint16_t pingTime = xTaskGetTickCount() - pingStartTime;
+    uint16_t pingTime = xTaskGetTickCount() - pingPrevTime;
     DEBUG_PRINT("Ping returned in %ims.\n", pingTime);
     // ledseqRun(LED_GREEN_R, seq_testPassed);
 
@@ -123,7 +83,7 @@ static void p2pPingHandler(P2PPacket *p) {
     // Add our RSSI+status if there's room
     if(p_log.size < P2P_MAX_DATA_SIZE - 2) {
       p_log.data[p_log.size++] = rssi;
-      p_log.size += appendStatus(&p_log.data[p_log.size]);
+      p_log.size += appendStatusMessage(&p_log.data[p_log.size]);
     }
 
     // Add the ping time if there's room
@@ -159,7 +119,7 @@ static void p2pPingHandler(P2PPacket *p) {
     // Add our RSSI+status if there's room
     if(reply.size < P2P_MAX_DATA_SIZE - 2) {
       reply.txdata[reply.size++] = rssi;
-      reply.size += appendStatus(&reply.txdata[reply.size]);
+      reply.size += appendStatusMessage(&reply.txdata[reply.size]);
     }
 
     // DEBUG_PRINT("Replying ping to %i\n", reply.txdest);
@@ -169,7 +129,7 @@ static void p2pPingHandler(P2PPacket *p) {
 }
 
 void tunnelPingInit() {
-  p2pRegisterPortCB(P2P_PORT_PING,     p2pPingHandler);
+  p2pRegisterPortCB(P2P_PORT_PING, p2pPingHandler);
 }
 
 bool tunnelPingTest() {

@@ -1,6 +1,9 @@
 #ifndef __TUNNELHELPERS_H
 #define __TUNNELHELPERS_H
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #define M_PI   (3.14159265358979323846f)
 #define M_PI2  (1.57079632679f)
 #define SQRT2_2 0.70710678118654752440f // sqrt(2)/2
@@ -15,5 +18,12 @@ typedef struct {
   float yawrate;      // deg/s
   float zDistance;    // m in the world frame of reference
 } TunnelHover;
+
+// Once the time has passed, resets the timer and returns true
+static bool timerElapsed(unsigned long *prevTime, unsigned int duration) {
+  bool result = xTaskGetTickCount() - *prevTime > duration;
+  if(result) *prevTime = xTaskGetTickCount();
+  return result;
+}
 
 #endif
