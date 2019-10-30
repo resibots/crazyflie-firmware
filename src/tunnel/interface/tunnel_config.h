@@ -118,6 +118,9 @@ void setLeaderID(uint8_t newID);
 // Sets the drone's follower and leader to ID-1 and ID+1
 void tunnelAutoSetFollowerLeader();
 
+// Sets the drone inactive if its outside of the active chain
+void tunnelAutoSetIdleInactive();
+
 // Returns the number of drones to be considered in the chain
 uint8_t getNDrones();
 

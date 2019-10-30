@@ -23,7 +23,8 @@ TunnelHover *tunnelGetCurrentMovement();
 // Update function that needs to be called regularly
 void tunnelCommanderUpdate();
 
-// Process an incoming CRTPPacket concerning setpoints
+// Process an incoming packet concerning setpoints
+void tunnelCommanderProcessPacket(uint8_t* data);
 void crtpTunnelCommanderHandler(CRTPPacket *p);
 
 // Initialize the commander submodule

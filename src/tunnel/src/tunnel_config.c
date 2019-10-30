@@ -8,6 +8,7 @@
  * tunnel_config.c - Manages general chain parameters
  */
 
+#include "tunnel.h"
 #include "tunnel_config.h"
 #include "tunnel_behavior.h"
 #include "tunnel_commander.h"
@@ -33,6 +34,10 @@ void tunnelAutoSetFollowerLeader() {
     setFollowerID(getDroneId() + 1);
 }
 
+void tunnelAutoSetIdleInactive() {
+  tunnelSetDroneState((getDroneId() >= getNDrones()) ? DRONE_STATE_INACTIVE : DRONE_STATE_IDLE);
+}
+
 // Number of available drones in the tunnel exploration crew
 static uint8_t nDrones = DEFAULT_N_DRONES; // 15 max because of the 4-bit addresses
 
@@ -40,6 +45,7 @@ uint8_t getNDrones() { return nDrones; }
 void setNDrones(uint8_t ndrones) {
   nDrones = ndrones;
   tunnelAutoSetFollowerLeader();
+  tunnelAutoSetIdleInactive(); //TODO only if not flying?
 }
 
 // Set by the operator. The Tunnel module uses the motors only if this is set to true.

@@ -36,8 +36,8 @@ static bool isDestinationNear(uint8_t destination) {
   if(destination == getDroneId() + 1 || (getDroneId() > 0 && destination == getDroneId() - 1))
     return true;
   SignalLog* s = tunnelGetSignal(destination);
-  uint8_t r = s->rssi;
-  uint32_t time = xTaskGetTickCount() - s->timestamp;
+  // uint8_t r = s->rssi;
+  // uint32_t time = xTaskGetTickCount() - s->timestamp;
   // DEBUG_PRINT("Near: d=%i RSSI=%i time=%i\n", destination, r, time);
   return s->rssi > 0 && s->rssi < TUNNEL_RSSI_DANGER &&
          (xTaskGetTickCount() - s->timestamp) < TUNNEL_DISCONNECT_TIMEOUT;

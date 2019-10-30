@@ -145,7 +145,7 @@ void tunnelCommanderUpdate() {
   }
 }
 
-static void processTunnelCommanderPacket(uint8_t* data) {
+void tunnelCommanderProcessPacket(uint8_t* data) {
   switch(data[0]) {
     // Directly move the drone: rxdata = [TUNNEL_COMMANDER_MOVE][int8_t vx][int8_t vy]
     case TUNNEL_COMMANDER_MOVE:
@@ -160,11 +160,12 @@ static void processTunnelCommanderPacket(uint8_t* data) {
 }
 
 void crtpTunnelCommanderHandler(CRTPPacket *p) {
-  processTunnelCommanderPacket(p->data);
+  tunnelCommanderProcessPacket(p->data);
 }
 
 void p2pTunnelCommanderHandler(P2PPacket *p) {
-  processTunnelCommanderPacket(p->rxdata);
+  if(p->rxdest == getDroneId())
+    tunnelCommanderProcessPacket(p->rxdata);
 }
 
 void tunnelCommanderInit() {

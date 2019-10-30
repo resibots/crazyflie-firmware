@@ -87,16 +87,11 @@ void tunnelInit() {
   if(isInit) return;
 
   // State definitions
-  tunnelSetDroneState(DRONE_STATE_IDLE);
   tunnelSetDroneRole((getDroneId() == 0) ? DRONE_ROLE_HEAD : DRONE_ROLE_RELAY);
 
   // Set follower and leader
   tunnelAutoSetFollowerLeader();
-  
-  // Don't fly if we're not in the active chain
-  // TODO refresh this when changing NDrones
-  if(getDroneId() >= getNDrones())
-    tunnelSetDroneState(DRONE_STATE_INACTIVE);
+  tunnelAutoSetIdleInactive();
 
   // Init submodules  
   tunnelCommanderInit();
