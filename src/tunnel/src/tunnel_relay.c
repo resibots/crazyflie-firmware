@@ -27,6 +27,7 @@
 #include "debug.h"
 
 //TODO handle packet max size errors
+//TODO find a way to send to the PC from any drone?
 
 // Returns true if the destination is our follower or leader
 // or if we received a good rssi from the destination not long ago

@@ -37,9 +37,10 @@ typedef enum {
 typedef enum {
   CRTP_TUNNEL_COMMAND_TAKE_OFF   = 0x00, // Start flying and do our thing!
   CRTP_TUNNEL_COMMAND_MOVE_DRONE = 0x01, // Ask to move a drone (will be transmitted if necessary)
-  CRTP_TUNNEL_COMMAND_LAND       = 0x02, // Land no matter where we are (e.g. to manually save battery)
-  CRTP_TUNNEL_COMMAND_RTH        = 0x03, // Return to home automatically
-  CRTP_TUNNEL_COMMAND_STOP       = 0x04, // Stop the motors and return to Idle state (for emergencies or tests)
+  CRTP_TUNNEL_COMMAND_SCAN       = 0x02, // Scan the room and send the measurements
+  CRTP_TUNNEL_COMMAND_LAND       = 0x03, // Land no matter where we are (e.g. to manually save battery)
+  CRTP_TUNNEL_COMMAND_RTH        = 0x04, // Return to home automatically
+  CRTP_TUNNEL_COMMAND_STOP       = 0x05, // Stop the motors and return to Idle state (for emergencies or tests)
 } CRTPTunnelCommand;
 
 // Returns the size used and fills general information about the drone
@@ -101,6 +102,9 @@ void crtpTunnelHandler(CRTPPacket *p) {
           p_move.size = p->size - 2;
           tunnelSendP2PPacket(&p_move);
         }
+        break;
+      case CRTP_TUNNEL_COMMAND_SCAN:
+        tunnelSetBehavior(TUNNEL_BEHAVIOR_SCAN);
         break;
       case CRTP_TUNNEL_COMMAND_LAND:
         tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);

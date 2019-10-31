@@ -15,6 +15,7 @@
 #include "tunnel_config.h"
 #include "tunnel_commander.h"
 #include "tunnel_signal.h"
+#include "tunnel_avoider.h"
 
 #include "debug.h"
 #define DEBUG_MODULE "BEH"
@@ -144,6 +145,9 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
     case TUNNEL_BEHAVIOR_GOTO:
       tunnelBehaviorGotoUpdate(vel, enableCollisions);
       break;
+    case TUNNEL_BEHAVIOR_SCAN:
+      tunnelBehaviorScanUpdate(vel, enableCollisions);
+      break;
     case TUNNEL_BEHAVIOR_SIGNAL_MIDDLE:
       tunnelBehaviorSignalMiddleUpdate(vel, enableCollisions);
       break;
@@ -154,19 +158,25 @@ TunnelBehavior tunnelGetCurrentBehavior() {
   return currentBehavior;
 }
 
-static void setBehavior(TunnelBehavior behavior) {
-  if(behavior != currentBehavior) {
-    if(behavior == TUNNEL_BEHAVIOR_TAKE_OFF) {
+static void setBehavior(TunnelBehavior newBehavior) {
+  if(newBehavior != currentBehavior) {
+    DEBUG_PRINT("Setting behavior %i->%i\n", currentBehavior, newBehavior);
+    if(newBehavior == TUNNEL_BEHAVIOR_TAKE_OFF) {
       zTarget = 0.1f;
       estimatorKalmanInit();
     }
+    else if(newBehavior == TUNNEL_BEHAVIOR_SCAN) {
+      tunnelBehaviorScanEnable();
+    }
+    currentBehavior = newBehavior;
   }
-  currentBehavior = behavior;
 }
 
-void tunnelSetBehavior(TunnelBehavior behavior) {
-  previousBehavior = currentBehavior;
-  setBehavior(behavior);
+void tunnelSetBehavior(TunnelBehavior newBehavior) {
+  if(newBehavior != currentBehavior) {
+    previousBehavior = currentBehavior;
+    setBehavior(newBehavior);  
+  }
 }
 
 void tunnelSetPreviousBehavior() {

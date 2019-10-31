@@ -10,8 +10,14 @@
 // Check if the deck is working, if not warn it through an LED and skip
 bool tunnelAvoiderCheckDeck();
 
+// Initialize scan behavior
+void tunnelBehaviorScanEnable();
+
+// Update scan behavior
+void tunnelBehaviorScanUpdate(TunnelHover *vel, bool *enableCollisions);
+
 // Update function that needs to be called regularly
-void tunnelAvoiderUpdate(TunnelHover *vel);
+void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions);
 
 // Initialize the avoider submodule
 void tunnelAvoiderInit(void);

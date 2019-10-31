@@ -112,13 +112,12 @@ void tunnelCommanderUpdate() {
 #endif
 
   // Get desired movement from behavior
-  bool enableAvoider = true;
+  bool enableCollisions = true;
   TunnelHover currentMovement;
-  tunnelBehaviorUpdate(&currentMovement, &enableAvoider);
+  tunnelBehaviorUpdate(&currentMovement, &enableCollisions);
 
   // Get repulsion from avoider
-  if(enableAvoider && tunnelAvoiderCheckDeck())
-    tunnelAvoiderUpdate(&currentMovement);
+  tunnelAvoiderUpdate(&currentMovement, enableCollisions);
 
   // Calculate final movement
   currentMovement.vx      += manualMovement.vx     ;

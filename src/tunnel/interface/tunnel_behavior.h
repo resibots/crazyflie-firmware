@@ -14,7 +14,7 @@ typedef enum {
   TUNNEL_BEHAVIOR_HOVER         = 2, // Stay still at the current position
   TUNNEL_BEHAVIOR_GOTO          = 3, // Reach a specified tunnelDistance
   TUNNEL_BEHAVIOR_SIGNAL_MIDDLE = 4, // Stay between the leader and follower (RSSI based)
-  TUNNEL_BEHAVIOR_ALIGN         = 5, // Turn 90 degrees and scan the room, then point to the tunnel
+  TUNNEL_BEHAVIOR_SCAN          = 5, // Turn 90 degrees and scan the room, then point to the tunnel
   TUNNEL_BEHAVIOR_LAND          = 6, // Land slowly with a specified velocity
 } TunnelBehavior;
 
