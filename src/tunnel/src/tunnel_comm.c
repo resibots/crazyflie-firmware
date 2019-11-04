@@ -41,6 +41,12 @@ typedef enum {
   CRTP_TUNNEL_COMMAND_LAND       = 0x03, // Land no matter where we are (e.g. to manually save battery)
   CRTP_TUNNEL_COMMAND_RTH        = 0x04, // Return to home automatically
   CRTP_TUNNEL_COMMAND_STOP       = 0x05, // Stop the motors and return to Idle state (for emergencies or tests)
+
+  //TODO implement
+  CRTP_TUNNEL_COMMAND_CHAIN_START    = 0x06, // Start flying (head takes off, second drone armed, others idle or inactive)
+  CRTP_TUNNEL_COMMAND_CHAIN_RTH      = 0x07, // Return to home (no more head, all automatic)
+  CRTP_TUNNEL_COMMAND_CHAIN_SHUTDOWN = 0x08, // Emergency only: all drones cut motors off immediately
+  CRTP_TUNNEL_COMMAND_CHAIN_PING     = 0x09, // Ping the chain and return the status of each drone
 } CRTPTunnelCommand;
 
 // Returns the size used and fills general information about the drone

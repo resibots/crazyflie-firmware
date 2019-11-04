@@ -29,6 +29,8 @@
 #include "configblock.h"
 #include "range.h"
 #include "log.h"
+#include "led.h"
+#include "ledseq.h"
 
 #include "crtp.h"
 #include "p2p.h"
@@ -105,9 +107,10 @@ TunnelHover *tunnelGetCurrentMovement() {
 void tunnelCommanderUpdate() {
   // Red switch for tests
 #ifdef TUNNEL_RED_SWITCH
-  if(0 < rangeGet(rangeUp) && rangeGet(rangeUp) < 50) {
+  if(rangeGet(rangeUp) > 0 && rangeGet(rangeUp) < 100) {
     sendSetpointStop();
     setTunnelCanFly(false);
+    ledseqRun(SYS_LED, seq_testPassed);
   }
 #endif
 

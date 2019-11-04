@@ -10,7 +10,7 @@
 *****************/
 
 // Default number of active drones, can be changed at runtime
-#define DEFAULT_N_DRONES 3
+#define DEFAULT_N_DRONES 4
 
 // Main tunnel loop frequency rate
 #define TUNNEL_TASK_RATE_HZ 20
@@ -42,8 +42,8 @@
 *****************/
 
 // Choose one quad direction configuration
-#define TUNNEL_QUAD_SHAPE_X    // Normal orientation, uses 2 avoiding sensors
-// #define TUNNEL_QUAD_SHAPE_PLUS // Used to avoid obstacles with 4 distance sensors
+// #define TUNNEL_QUAD_SHAPE_X    // Normal orientation, uses 2 avoiding sensors
+#define TUNNEL_QUAD_SHAPE_PLUS // Used to avoid obstacles with 4 distance sensors
 
 // Max drone speed in m/s
 #define TUNNEL_MAX_SPEED 0.6f
@@ -65,11 +65,14 @@ OBSTACLE AVOIDING
 #define TUNNEL_AVOID_LEFTRIGHT
 // #define TUNNEL_AVOID_FRONTBACK
 
-// At which distance in mm we should start avoiding obstacles
-#define TUNNEL_RANGER_TRIGGER_DIST 1000
+// Distance at wich we should start avoiding obstacles (cm)
+#define TUNNEL_RANGER_TRIGGER_DIST 200
+
+// Maximum distance before avoiding at all costs (cm)
+#define TUNNEL_RANGER_DANGER_DIST 20
 
 // When avoiding walls, push the drone away with this force (m/sec per ranging m)
-#define TUNNEL_RANGER_AVOID_FORCE 1.f
+#define TUNNEL_RANGER_AVOID_FORCE .3f
 
 // Enable yaw for keeping the head towards the tunnel direction (handle tunnel turns)
 #define TUNNEL_TURNING_ENABLE // Uses 2 or 4 sensors based on TUNNEL_QUAD_SHAPE
