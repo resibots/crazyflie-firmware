@@ -113,8 +113,14 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
 }
 
 bool tunnelSendCRTPPacket(CRTPPacket *p) {
-  //TODO handle CRTP here?
-  return false;
+  P2PPacket p_p2p;
+  p_p2p.port = P2P_PORT_CRTP;
+  p_p2p.txdest = getNDrones() - 1; //TODO generic way of knowing who is connected to CRTP (use pings?)
+  p_p2p.txdata[0] = p->header;
+  memcpy(&p_p2p.txdata[1], p->data, p->size);
+  p_p2p.size = 1/*header*/ + p->size/*data*/;
+  DEBUG_PRINT("Relaying crtp %02x\n", p_p2p.txdata[1]);
+  return tunnelSendP2PPacket(&p_p2p);
 }
 
 static void tunnelP2PRelayHandler(P2PPacket *p) {
@@ -150,8 +156,19 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
   }
 }
 
+static void tunnelP2PCrtpHandler(P2PPacket *p) {
+  DEBUG_PRINT("Got relayed crtp %02x\n", p->rxdata[1]);
+  p2pPrintPacket(p, true);
+  CRTPPacket p_crtp;
+  p_crtp.header = p->rxdata[0];
+  memcpy(p_crtp.data, &p->rxdata[1], p->size - 1);
+  p_crtp.size = p->size - 1;
+  crtpSendPacket(&p_crtp);
+}
+
 void tunnelRelayInit() {
   p2pRegisterPortCB(P2P_PORT_RELAY, tunnelP2PRelayHandler);
+  p2pRegisterPortCB(P2P_PORT_CRTP,  tunnelP2PCrtpHandler);
 }
 
 bool tunnelRelayTest() {

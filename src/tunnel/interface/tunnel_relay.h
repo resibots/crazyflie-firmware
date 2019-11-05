@@ -11,7 +11,7 @@
 // Send a regular P2P packet. It will go through the least amount of drones possible
 bool tunnelSendP2PPacket(P2PPacket *p);
 
-// Send a regular CRTP packet. It will go through the least amount of drones possible
+// Send a CRTP packet to the base. It will go through the least amount of drones possible
 bool tunnelSendCRTPPacket(CRTPPacket *p);
 
 // Initialize the param submodule

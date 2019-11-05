@@ -15,6 +15,7 @@
 #include "tunnel_commander.h"
 #include "tunnel_behavior.h"
 #include "tunnel_comm.h"
+#include "tunnel_relay.h"
 
 #define DEBUG_MODULE "TUN"
 #include "debug.h"

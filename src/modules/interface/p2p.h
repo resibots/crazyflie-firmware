@@ -35,11 +35,15 @@
 #define P2P_BROADCAST_ID 0x0F
 
 typedef enum {
+  // Services
   P2P_PORT_STATUS    = 0x00,
   P2P_PORT_PING      = 0x01,
   P2P_PORT_PARAM     = 0x02,
   P2P_PORT_COMMANDER = 0x03,
   P2P_PORT_CHAIN     = 0x04,
+
+  // Communication
+  P2P_PORT_CRTP      = 0x0E, // Echo the received packet to CRTP if connected to the base
   P2P_PORT_RELAY     = 0x0F, // Relay a packet that must be sent to another drone
 } P2PPort;
 
