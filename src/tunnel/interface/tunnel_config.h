@@ -20,6 +20,9 @@
 #define BATTERY_MAX 4.3f
 #define BATTERY_RES 16 // number of values available to encode the battery level
 
+// Print the drone's status information to the console at ~5Hz
+#define PRINT_TUNNEL_STATUS
+
 /****************
       DEBUG
 *****************/
@@ -85,8 +88,8 @@ OBSTACLE AVOIDING
 *****************/
 
 // RSSI Thresholds used in movement behaviors and state decisions
-#define TUNNEL_RSSI_BEST    40 // Best quality considered (used not to go too close from another drone)
-#define TUNNEL_RSSI_ARMED   60 // Quality to reach before taking off as a new follower drone
+#define TUNNEL_RSSI_BEST    40 // Best quality considered (used to avoid collisions with another drone)
+#define TUNNEL_RSSI_ARMED   60 // Quality to reach before taking off as a new relay drone
 #define TUNNEL_RSSI_DANGER  70 // Threshold before considering the connection will soon be lost
 #define TUNNEL_RSSI_MAXIMUM 80 // TODO useful?
 

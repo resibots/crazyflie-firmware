@@ -77,7 +77,9 @@ static void broadcastStatus() {
   p_status.size = appendStatusMessage(p_status.txdata);
 
   // Report status to PC while at it
+#ifdef PRINT_TUNNEL_STATUS
   DEBUG_PRINT("STATUS %02x%02x\n", p_status.txdata[0], p_status.txdata[1]);
+#endif
 
   p2pSendPacket(&p_status);
 }
