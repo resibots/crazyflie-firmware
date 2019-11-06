@@ -15,6 +15,7 @@
 #include "tunnel_config.h"
 #include "tunnel_helpers.h"
 #include "tunnel_behavior.h"
+#include "tunnel_relay.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -55,12 +56,12 @@ enum {
 } scanBehaviorState = BEHAVIOR_SCAN_STATE_INACTIVE;
 
 static void sendScan() {
-  CRTPPacket p_scan;
+  CRTPTunnelPacket p_scan;
   p_scan.port = CRTP_PORT_TUNNEL;
   p_scan.channel = 0x01;//TODO clean
-  memcpy(p_scan.data, measuresBuffer, N_MEASURES);
+  memcpy(p_scan.basedata, measuresBuffer, N_MEASURES);
   p_scan.size = N_MEASURES;
-  crtpSendPacket(&p_scan);
+  tunnelSendCRTPPacketToBase(&p_scan);
 }
 
 static void saveRangesToBuffer(float frontAngle) {
