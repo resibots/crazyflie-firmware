@@ -26,6 +26,8 @@
 
 #define DEBUG_MODULE "REL"
 #include "debug.h"
+#include "led.h"
+#include "ledseq.h"
 
 //TODO handle packet max size errors
 //TODO find a way to send to the PC from any drone?
@@ -117,8 +119,10 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
 }
 
 static void tunnelP2PCrtpHandler(P2PPacket *p) {
+  uint8_t directionFlag = p->rxdata[1] & 0x10;
+
   // Received a base-to-drone packet
-  if(p->rxdata[1] & 0x10 != 0) {
+  if(directionFlag) {
     CRTPTunnelPacket p_crtp;
     p_crtp.header = p->rxdata[0];
     memcpy(p_crtp.context, &p->rxdata[1], p->size);
@@ -128,6 +132,7 @@ static void tunnelP2PCrtpHandler(P2PPacket *p) {
   
   // Received a drone-to-base packet
   else {
+    ledseqRun(SYS_LED, seq_testPassed);
     CRTPTunnelPacket p_crtp;
     p_crtp.header = p->rxdata[0];
     memcpy(p_crtp.basedata, &p->rxdata[1], p->size - 1);

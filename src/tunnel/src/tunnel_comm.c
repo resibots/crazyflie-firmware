@@ -23,6 +23,8 @@
 
 #define DEBUG_MODULE "TCM"
 #include "debug.h"
+#include "led.h"
+#include "ledseq.h"
 #include "crtp.h"
 
 static bool isInit = false;
