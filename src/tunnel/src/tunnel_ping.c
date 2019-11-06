@@ -35,6 +35,103 @@
 static P2PPacket reply;
 static unsigned long pingPrevTime = 0;
 
+// Private functions
+
+static void sendCRTPPingReport(P2PPacket *p) {
+  uint16_t pingTime = xTaskGetTickCount() - pingPrevTime;
+  DEBUG_PRINT("Ping returned in %ims.\n", pingTime);
+
+  CRTPPacket p_log;
+  p_log.port = CRTP_PORT_TUNNEL;
+  p_log.channel = 0;
+  memcpy(p_log.data, &p->rxdata[1], p->size - 1);
+  p_log.size = p->size - 1;
+
+  // Add our RSSI+status if there's room
+  if(p_log.size < P2P_MAX_DATA_SIZE - 2) {
+    p_log.data[p_log.size++] = p->rssi;
+    p_log.size += appendStatusMessage(&p_log.data[p_log.size]);
+  }
+
+  // Add the ping time if there's room
+  if(p_log.size < P2P_MAX_DATA_SIZE) {
+    p_log.data[p_log.size] = (pingTime > 255) ? 255 : pingTime;
+    p_log.size++;
+  }
+
+  tunnelSendCRTPPacket(&p_log);
+}
+
+static void detectBaseDrone(P2PPacket* p) {
+  for(uint8_t i = 1; i < p->size; i += 3) {
+    bool isConnected = p->rxdata[i] & 0x01;
+
+    if(isConnected) {
+      uint8_t baseDroneID = i / 3;
+      if(baseDroneID >= getNDrones())
+        baseDroneID -= (getNDrones() - 1) * 3;
+
+      setBaseDroneID(baseDroneID);
+      return;
+    }
+  }
+
+  // If no one is connected, default to the tail drone
+  setBaseDroneID(getNDrones() - 1);
+}
+
+static void processFinishedPing(P2PPacket *p) {
+  // Send a ping report to the PC (containes RSSI values between each drone)
+  sendCRTPPingReport(p);
+
+  // Detect if a drone is connected to the base and update our drone estimate ID
+  detectBaseDrone(p);
+
+  // ledseqRun(LED_GREEN_R, seq_testPassed);
+}
+
+static void p2pPingHandler(P2PPacket *p) {
+  // DEBUG_PRINT("Got ping:\n");
+  // p2pPrintPacket(p, true);
+
+  // Detect if a drone is connected to the base and update our drone estimate ID
+  detectBaseDrone(p);
+
+  // The first drone doesn't reply to propagating pings
+  if(p->rxdest == getDroneId() && getDroneId() == 0 && p->rxdata[0] == 0x01) 
+    processFinishedPing(p);
+
+  // Other drones reply or propagate the ping
+  else if(p->rxdest == getDroneId()) {
+    // first byte tells if the ping has to propagate through the chain
+    if(p->size >= 1 && p->rxdata[0] == 0x01) {
+      reply.txdest = getDroneId();
+      if(getDroneId() == 0) // first drone replies to second
+        reply.txdest = 1;
+      else if(getDroneId() == getNDrones() - 1) // last drone replies to n-1
+        reply.txdest = getNDrones() - 2;
+      else // middle drone propagates the ping
+        reply.txdest += (p->rxdest - p->origin > 0) ? 1 : -1;
+    }
+    else reply.txdest = p->origin; // reply back directly
+    
+    // Copy the previous data
+    memcpy(reply.txdata, p->rxdata, p->size);
+    reply.size = p->size;
+    reply.port = P2P_PORT_PING;
+
+    // Add our RSSI+status if there's room
+    if(reply.size < P2P_MAX_DATA_SIZE - 2) {
+      reply.txdata[reply.size++] = p->rssi;
+      reply.size += appendStatusMessage(&reply.txdata[reply.size]);
+    }
+
+    p2pSendPacket(&reply);
+  }
+}
+
+// Public functions
+
 void sendPing(bool propagate) {
   // DEBUG_PRINT("Sending ping...\n");
   P2PPacket p2p_p;
@@ -60,72 +157,6 @@ void tunnelPingUpdate() {
 
 void crtpTunnelPingHandler(CRTPPacket *p) {
   sendPing(p->data[0]);
-}
-
-static void p2pPingHandler(P2PPacket *p) {
-  uint8_t rssi = p->rssi;
-  // DEBUG_PRINT("Got ping:\n");
-  // p2pPrintPacket(p, true);
-
-  // The first drone doesn't reply to propagating pings
-  if(p->rxdest == getDroneId() && getDroneId() == 0 && p->rxdata[0] == 0x01) {
-    uint16_t pingTime = xTaskGetTickCount() - pingPrevTime;
-    DEBUG_PRINT("Ping returned in %ims.\n", pingTime);
-    // ledseqRun(LED_GREEN_R, seq_testPassed);
-
-    // Send a ping report to the PC (containes RSSI values between each drone)
-    CRTPPacket p_log;
-    p_log.port = CRTP_PORT_TUNNEL;
-    p_log.channel = 0;
-    memcpy(p_log.data, &p->rxdata[1], p->size - 1);
-    p_log.size = p->size - 1;
-
-    // Add our RSSI+status if there's room
-    if(p_log.size < P2P_MAX_DATA_SIZE - 2) {
-      p_log.data[p_log.size++] = rssi;
-      p_log.size += appendStatusMessage(&p_log.data[p_log.size]);
-    }
-
-    // Add the ping time if there's room
-    if(p_log.size < P2P_MAX_DATA_SIZE) {
-      p_log.data[p_log.size] = (pingTime > 255) ? 255 : pingTime;
-      p_log.size++;
-    }
-
-    crtpSendPacket(&p_log);
-    return;
-  }
-
-  // Other drones reply or propagate the ping
-  if(p->rxdest == getDroneId()) {
-    // first byte tells if the ping has to propagate through the chain
-    if(p->size >= 1 && p->rxdata[0] == 0x01) { 
-      reply.txdest = getDroneId();
-      if(getDroneId() == 0) // first drone replies to second
-        reply.txdest = 1;
-      else if(getDroneId() == getNDrones() - 1) // last drone replies to n-1
-        reply.txdest = getNDrones() - 2;
-      else // middle drone propagates the ping
-        reply.txdest += (p->rxdest - p->origin > 0) ? 1 : -1;
-    }
-    else // reply back directly
-      reply.txdest = p->origin;
-    
-    // Copy the previous data
-    memcpy(reply.txdata, p->rxdata, p->size);
-    reply.size = p->size;
-    reply.port = P2P_PORT_PING;
-
-    // Add our RSSI+status if there's room
-    if(reply.size < P2P_MAX_DATA_SIZE - 2) {
-      reply.txdata[reply.size++] = rssi;
-      reply.size += appendStatusMessage(&reply.txdata[reply.size]);
-    }
-
-    // DEBUG_PRINT("Replying ping to %i\n", reply.txdest);
-    // ledseqRun(LED_GREEN_R, seq_linkup);
-    p2pSendPacket(&reply);
-  }
 }
 
 void tunnelPingInit() {

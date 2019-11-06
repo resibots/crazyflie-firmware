@@ -36,12 +36,7 @@ static bool isDestinationNear(uint8_t destination) {
     return true;
   if(destination == getDroneId() + 1 || (getDroneId() > 0 && destination == getDroneId() - 1))
     return true;
-  SignalLog* s = tunnelGetSignal(destination);
-  // uint8_t r = s->rssi;
-  // uint32_t time = xTaskGetTickCount() - s->timestamp;
-  // DEBUG_PRINT("Near: d=%i RSSI=%i time=%i\n", destination, r, time);
-  return s->rssi > 0 && s->rssi < TUNNEL_RSSI_DANGER &&
-         (xTaskGetTickCount() - s->timestamp) < TUNNEL_DISCONNECT_TIMEOUT;
+  return tunnelIsDroneConnected(destination);
 }
 
 // Select the furthest destination possible from us (or the destination itself)
@@ -63,7 +58,7 @@ static uint8_t selectFurthestDestination(uint8_t destination) {
 static void transformRelayRxToP2PTx(P2PPacket* p) {
   p->header = p->rxdata[p->size - 1];
   p->size--;
-  memcpy(p->txdata, p->rxdata, p->size); //TODO MAYBE A COPY BUG ?
+  memcpy(p->txdata, p->rxdata, p->size);
 }
 
 // We want to send a Relay Tx packet and transform from a P2P Tx packet
@@ -85,43 +80,7 @@ static void transformRelayRxToRelayTx(P2PPacket* p) {
   memcpy(p->txdata, p->rxdata, p->size);
 }
 
-bool tunnelSendP2PPacket(P2PPacket *p) {
-  // If we are sending a packet to ourselves, send to the P2P queue directly
-  if(p->txdest == getDroneId()) {
-    //TODO
-    return false;
-  }
-
-  // If the drone is our neighbor or near, send a direct P2P packet
-  if(isDestinationNear(p->txdest)) {
-    if(p->size >= P2P_MAX_DATA_SIZE)
-      return false;
-    // DEBUG_PRINT("Sending direct P2P to %i\n", p->txdest);
-    // p2pPrintPacket(p, false);
-    p2pSendPacket(p);
-  }
-  // If not, initiate a relay chain and send the first relay packet
-  else {
-    if(p->size >= P2P_MAX_DATA_SIZE)
-      return false;
-    transformP2PTxToRelayTx(p, selectFurthestDestination(p->txdest));
-    // DEBUG_PRINT("Sending relay P2P to %i\n", p->txdest);
-    // p2pPrintPacket(p, false);
-    p2pSendPacket(p);
-  }
-  return true;
-}
-
-bool tunnelSendCRTPPacket(CRTPPacket *p) {
-  P2PPacket p_p2p;
-  p_p2p.port = P2P_PORT_CRTP;
-  p_p2p.txdest = getNDrones() - 1; //TODO generic way of knowing who is connected to CRTP (use pings?)
-  p_p2p.txdata[0] = p->header;
-  memcpy(&p_p2p.txdata[1], p->data, p->size);
-  p_p2p.size = 1/*header*/ + p->size/*data*/;
-  DEBUG_PRINT("Relaying crtp %02x\n", p_p2p.txdata[1]);
-  return tunnelSendP2PPacket(&p_p2p);
-}
+// Packet callbacks
 
 static void tunnelP2PRelayHandler(P2PPacket *p) {
   // Filter relay packets that are not for this drone
@@ -157,13 +116,52 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
 }
 
 static void tunnelP2PCrtpHandler(P2PPacket *p) {
-  DEBUG_PRINT("Got relayed crtp %02x\n", p->rxdata[1]);
-  p2pPrintPacket(p, true);
   CRTPPacket p_crtp;
   p_crtp.header = p->rxdata[0];
   memcpy(p_crtp.data, &p->rxdata[1], p->size - 1);
   p_crtp.size = p->size - 1;
   crtpSendPacket(&p_crtp);
+}
+
+// Public functions
+
+bool tunnelSendP2PPacket(P2PPacket *p) {
+  // If we are sending a packet to ourselves, send to the P2P queue directly
+  if(p->txdest == getDroneId())
+    return false;
+
+  // If the drone is our neighbor or near, send a direct P2P packet
+  if(isDestinationNear(p->txdest)) {
+    if(p->size >= P2P_MAX_DATA_SIZE)
+      return false;
+    // DEBUG_PRINT("Sending direct P2P to %i\n", p->txdest);
+    // p2pPrintPacket(p, false);
+    return p2pSendPacket(p);
+  }
+  // If not, initiate a relay chain and send the first relay packet
+  else {
+    if(p->size >= P2P_MAX_DATA_SIZE)
+      return false;
+    transformP2PTxToRelayTx(p, selectFurthestDestination(p->txdest));
+    // DEBUG_PRINT("Sending relay P2P to %i\n", p->txdest);
+    // p2pPrintPacket(p, false);
+    return p2pSendPacket(p);
+  }
+  return true;
+}
+
+bool tunnelSendCRTPPacket(CRTPPacket *p) {
+  if(tunnelIsBaseConnected() || getBaseDroneID() == getDroneId())
+    crtpSendPacket(p);
+  else { // If we're not connected, send it to the connected drone
+    P2PPacket p_p2p;
+    p_p2p.port = P2P_PORT_CRTP;
+    p_p2p.txdest = getBaseDroneID();
+    p_p2p.txdata[0] = p->header;
+    memcpy(&p_p2p.txdata[1], p->data, p->size);
+    p_p2p.size = 1/*header*/ + p->size/*data*/;
+    return tunnelSendP2PPacket(&p_p2p);
+  }
 }
 
 void tunnelRelayInit() {

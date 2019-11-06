@@ -162,11 +162,9 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
 {
   static SyslinkPacket txPacket;
 
-  // Consider we are conncted if we receive packets from the Crazyradio or any Crazyflie
-  if (slp->type == SYSLINK_RADIO_RAW || slp->type == SYSLINK_RADIO_RAW_BROADCAST ||
-      slp->type == SYSLINK_RADIO_P2P || slp->type == SYSLINK_RADIO_P2P_BROADCAST) {
+  // Consider we are conncted if we receive packets from the Crazyradio
+  if (slp->type == SYSLINK_RADIO_RAW || slp->type == SYSLINK_RADIO_RAW_BROADCAST)
     lastPacketTick = xTaskGetTickCount();
-  }
 
   if (slp->type == SYSLINK_RADIO_RAW)
   {

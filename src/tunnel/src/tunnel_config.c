@@ -38,6 +38,12 @@ void tunnelAutoSetIdleInactive() {
   tunnelSetDroneState((getDroneId() >= getNDrones()) ? DRONE_STATE_INACTIVE : DRONE_STATE_IDLE);
 }
 
+// Keep track of the drone that is currently connected to the base
+// Should be automatically changed when the true drone notifies itself
+static uint8_t baseDroneID = DEFAULT_N_DRONES - 1;
+void setBaseDroneID(uint8_t id) { baseDroneID = id & 0x0F; }
+uint8_t getBaseDroneID() { return baseDroneID; }
+
 // Number of available drones in the tunnel exploration crew
 static uint8_t nDrones = DEFAULT_N_DRONES; // 15 max because of the 4-bit addresses
 

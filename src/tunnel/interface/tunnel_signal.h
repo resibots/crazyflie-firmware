@@ -10,6 +10,10 @@ typedef struct {
   float rssi;
 } SignalLog;
 
+// Connection getters
+bool tunnelIsDroneConnected(uint8_t id);
+bool tunnelIsBaseConnected();
+
 // Signal getters
 SignalLog *tunnelGetFollowerSignal();
 SignalLog *tunnelGetLeaderSignal();

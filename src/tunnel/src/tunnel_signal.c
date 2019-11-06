@@ -19,6 +19,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "log.h"
+
 // Number of unfiltered signals (index corresponds to the agent id)
 #define N_AGENTS 16
 
@@ -41,6 +43,16 @@ static SignalLogFiltered baseSignal;
 static SignalLog unfilteredSignals[N_AGENTS];
 
 // Private functions, used for filtering
+
+bool tunnelIsDroneConnected(uint8_t id) {
+  SignalLog *s = tunnelGetSignal(id);
+  return s->rssi > 0 && s->rssi < TUNNEL_RSSI_DANGER &&
+         (xTaskGetTickCount() - s->timestamp) < TUNNEL_DISCONNECT_TIMEOUT;
+}
+
+bool tunnelIsBaseConnected() {
+  return logGetUint(logGetVarId("radio", "isConnected"));
+}
 
 static void kalmanUpdate(SignalLogFiltered *signal, float newRssi, float speed) {
   if(signal->signalLog.rssi == 0) {

@@ -23,6 +23,7 @@
 
 #define DEBUG_MODULE "TCM"
 #include "debug.h"
+#include "crtp.h"
 
 static bool isInit = false;
 static unsigned long statusPrevTime = 0;
@@ -35,12 +36,12 @@ typedef enum {
 } CRTPTunnelChannel;
 
 typedef enum {
-  CRTP_TUNNEL_COMMAND_TAKE_OFF   = 0x00, // Start flying and do our thing!
-  CRTP_TUNNEL_COMMAND_MOVE_DRONE = 0x01, // Ask to move a drone (will be transmitted if necessary)
-  CRTP_TUNNEL_COMMAND_SCAN       = 0x02, // Scan the room and send the measurements
-  CRTP_TUNNEL_COMMAND_LAND       = 0x03, // Land no matter where we are (e.g. to manually save battery)
-  CRTP_TUNNEL_COMMAND_RTH        = 0x04, // Return to home automatically
-  CRTP_TUNNEL_COMMAND_STOP       = 0x05, // Stop the motors and return to Idle state (for emergencies or tests)
+  CRTP_TUNNEL_COMMAND_TAKE_OFF       = 0x00, // Start flying and do our thing!
+  CRTP_TUNNEL_COMMAND_MOVE_DRONE     = 0x01, // Ask to move a drone (will be transmitted if necessary)
+  CRTP_TUNNEL_COMMAND_SCAN           = 0x02, // Scan the room and send the measurements
+  CRTP_TUNNEL_COMMAND_LAND           = 0x03, // Land no matter where we are (e.g. to manually save battery)
+  CRTP_TUNNEL_COMMAND_RTH            = 0x04, // Return to home automatically
+  CRTP_TUNNEL_COMMAND_STOP           = 0x05, // Stop the motors and return to Idle state (for emergencies or tests)
 
   //TODO implement
   CRTP_TUNNEL_COMMAND_CHAIN_START    = 0x06, // Start flying (head takes off, second drone armed, others idle or inactive)
@@ -55,8 +56,14 @@ uint8_t appendStatusMessage(uint8_t *pkData) {
   uint8_t batteryVt = BATTERY_RES * (pmGetBatteryVoltage() - BATTERY_MIN) / (BATTERY_MAX - BATTERY_MIN);
   if(batteryVt > 0x0F) batteryVt = 0x00; // Report a calculation error as a fully empty battery
 
+  // Join drone role and connections to leader/follower/base in one byte
+  uint8_t statusBits = ((tunnelGetDroneRole() == DRONE_ROLE_HEAD ? 1 : 0) << 3) | // Set if the drone is the chain's head
+                       (tunnelIsDroneConnected(getLeaderID())             << 2) | // Set if there's a good connection with the leader
+                       (tunnelIsDroneConnected(getFollowerID())           << 1) | // Set if there's a good connection with the follower
+                       tunnelIsBaseConnected();           // Set if the drone is connected to the base via CRTP
+
   // Send battery level, Drone role, Drone state, Current behavior
-  pkData[0] = ((batteryVt             << 4) & 0xF0) | (tunnelGetDroneRole()       & 0x0F);
+  pkData[0] = ((batteryVt             << 4) & 0xF0) | (statusBits                 & 0x0F);
   pkData[1] = ((tunnelGetDroneState() << 4) & 0xF0) | (tunnelGetCurrentBehavior() & 0x0F);
   return 2;
 }
