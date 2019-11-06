@@ -57,9 +57,9 @@ static void tunnelProcessParamPacket(uint8_t *data, bool broadcast) {
   }
 }
 
-void crtpTunnelParametersHandler(CRTPPacket *p) {
+void crtpTunnelParametersHandler(CRTPTunnelPacket *p) {
   // Set the parameter and tell the other drones too
-  tunnelProcessParamPacket(p->data, true);
+  tunnelProcessParamPacket(p->dronedata, true);
 }
 
 void p2pParametersHandler(P2PPacket *p) {

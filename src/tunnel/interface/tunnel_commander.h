@@ -25,7 +25,7 @@ void tunnelCommanderUpdate();
 
 // Process an incoming packet concerning setpoints
 void tunnelCommanderProcessPacket(uint8_t* data);
-void crtpTunnelCommanderHandler(CRTPPacket *p);
+void crtpTunnelCommanderHandler(CRTPTunnelPacket *p);
 
 // Initialize the commander submodule
 void tunnelCommanderInit();

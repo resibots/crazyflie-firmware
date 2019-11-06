@@ -161,8 +161,8 @@ void tunnelCommanderProcessPacket(uint8_t* data) {
   }
 }
 
-void crtpTunnelCommanderHandler(CRTPPacket *p) {
-  tunnelCommanderProcessPacket(p->data);
+void crtpTunnelCommanderHandler(CRTPTunnelPacket *p) {
+  tunnelCommanderProcessPacket(p->dronedata);
 }
 
 void p2pTunnelCommanderHandler(P2PPacket *p) {

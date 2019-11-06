@@ -22,6 +22,7 @@
 
 #include "tunnel_config.h"
 #include "tunnel_signal.h"
+#include "tunnel_comm.h"
 
 #define DEBUG_MODULE "REL"
 #include "debug.h"
@@ -116,17 +117,28 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
 }
 
 static void tunnelP2PCrtpHandler(P2PPacket *p) {
-  CRTPPacket p_crtp;
-  p_crtp.header = p->rxdata[0];
-  memcpy(p_crtp.data, &p->rxdata[1], p->size - 1);
-  p_crtp.size = p->size - 1;
-  crtpSendPacket(&p_crtp);
+  // Received a base-to-drone packet
+  if(p->rxdata[1] & 0x10 != 0) {
+    CRTPTunnelPacket p_crtp;
+    p_crtp.header = p->rxdata[0];
+    memcpy(p_crtp.context, &p->rxdata[1], p->size);
+    p_crtp.size = p->size - 2;
+    processIncomingCRTPPacket(&p_crtp);
+  } 
+  
+  // Received a drone-to-base packet
+  else {
+    CRTPTunnelPacket p_crtp;
+    p_crtp.header = p->rxdata[0];
+    memcpy(p_crtp.basedata, &p->rxdata[1], p->size - 1);
+    p_crtp.size = p->size - 1;
+    crtpSendPacket(&p_crtp);
+  }
 }
 
 // Public functions
 
 bool tunnelSendP2PPacket(P2PPacket *p) {
-  // If we are sending a packet to ourselves, send to the P2P queue directly
   if(p->txdest == getDroneId())
     return false;
 
@@ -150,7 +162,7 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
   return true;
 }
 
-bool tunnelSendCRTPPacket(CRTPPacket *p) {
+bool tunnelSendCRTPPacketToBase(CRTPTunnelPacket *p) {
   if(tunnelIsBaseConnected() || getBaseDroneID() == getDroneId())
     crtpSendPacket(p);
   else { // If we're not connected, send it to the connected drone
@@ -158,10 +170,26 @@ bool tunnelSendCRTPPacket(CRTPPacket *p) {
     p_p2p.port = P2P_PORT_CRTP;
     p_p2p.txdest = getBaseDroneID();
     p_p2p.txdata[0] = p->header;
-    memcpy(&p_p2p.txdata[1], p->data, p->size);
+    memcpy(&p_p2p.txdata[1], p->basedata, p->size);
+    p_p2p.txdata[1] &= 0xEF; // Mark the packet as drone-to-base
     p_p2p.size = 1/*header*/ + p->size/*data*/;
     return tunnelSendP2PPacket(&p_p2p);
   }
+}
+
+bool tunnelSendCRTPPacketToDrone(CRTPTunnelPacket *p) {
+  if(p->destination != getDroneId()) {
+    P2PPacket p_p2p;
+    p_p2p.port = P2P_PORT_CRTP;
+    p_p2p.txdest = p->destination;
+    p_p2p.txdata[0] = p->header;
+    p_p2p.txdata[1] = p->context;
+    memcpy(&p_p2p.txdata[2], p->dronedata, p->size);
+    p_p2p.size = 2/*header+context*/ + p->size/*data*/;
+    return tunnelSendP2PPacket(&p_p2p);
+  } 
+  else
+    ledseqRun(SYS_LED, seq_testPassed);
 }
 
 void tunnelRelayInit() {

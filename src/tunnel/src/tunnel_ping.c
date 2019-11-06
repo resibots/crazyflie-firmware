@@ -41,25 +41,25 @@ static void sendCRTPPingReport(P2PPacket *p) {
   uint16_t pingTime = xTaskGetTickCount() - pingPrevTime;
   DEBUG_PRINT("Ping returned in %ims.\n", pingTime);
 
-  CRTPPacket p_log;
+  CRTPTunnelPacket p_log;
   p_log.port = CRTP_PORT_TUNNEL;
   p_log.channel = 0;
-  memcpy(p_log.data, &p->rxdata[1], p->size - 1);
+  memcpy(p_log.basedata, &p->rxdata[1], p->size - 1);
   p_log.size = p->size - 1;
 
   // Add our RSSI+status if there's room
-  if(p_log.size < P2P_MAX_DATA_SIZE - 2) {
-    p_log.data[p_log.size++] = p->rssi;
-    p_log.size += appendStatusMessage(&p_log.data[p_log.size]);
+  if(p_log.size < CRTP_MAX_DATA_SIZE - 2) {
+    p_log.basedata[p_log.size++] = p->rssi;
+    p_log.size += appendStatusMessage(&p_log.basedata[p_log.size]);
   }
 
   // Add the ping time if there's room
-  if(p_log.size < P2P_MAX_DATA_SIZE) {
-    p_log.data[p_log.size] = (pingTime > 255) ? 255 : pingTime;
+  if(p_log.size < CRTP_MAX_DATA_SIZE) {
+    p_log.basedata[p_log.size] = (pingTime > 255) ? 255 : pingTime;
     p_log.size++;
   }
 
-  tunnelSendCRTPPacket(&p_log);
+  tunnelSendCRTPPacketToBase(&p_log);
 }
 
 static void detectBaseDrone(P2PPacket* p) {
@@ -155,8 +155,8 @@ void tunnelPingUpdate() {
     sendPing(true);
 }
 
-void crtpTunnelPingHandler(CRTPPacket *p) {
-  sendPing(p->data[0]);
+void crtpTunnelPingHandler(CRTPTunnelPacket *p) {
+  sendPing(p->dronedata[0]);
 }
 
 void tunnelPingInit() {

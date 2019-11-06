@@ -37,11 +37,10 @@ typedef enum {
 
 typedef enum {
   CRTP_TUNNEL_COMMAND_TAKE_OFF       = 0x00, // Start flying and do our thing!
-  CRTP_TUNNEL_COMMAND_MOVE_DRONE     = 0x01, // Ask to move a drone (will be transmitted if necessary)
-  CRTP_TUNNEL_COMMAND_SCAN           = 0x02, // Scan the room and send the measurements
-  CRTP_TUNNEL_COMMAND_LAND           = 0x03, // Land no matter where we are (e.g. to manually save battery)
-  CRTP_TUNNEL_COMMAND_RTH            = 0x04, // Return to home automatically
-  CRTP_TUNNEL_COMMAND_STOP           = 0x05, // Stop the motors and return to Idle state (for emergencies or tests)
+  CRTP_TUNNEL_COMMAND_SCAN           = 0x01, // Scan the room and send the measurements
+  CRTP_TUNNEL_COMMAND_LAND           = 0x02, // Land no matter where we are (e.g. to manually save battery)
+  CRTP_TUNNEL_COMMAND_RTH            = 0x03, // Return to home automatically
+  CRTP_TUNNEL_COMMAND_STOP           = 0x04, // Stop the motors and return to Idle state (for emergencies or tests)
 
   //TODO implement
   CRTP_TUNNEL_COMMAND_CHAIN_START    = 0x06, // Start flying (head takes off, second drone armed, others idle or inactive)
@@ -93,7 +92,7 @@ void tunnelCommUpdate() {
     broadcastStatus();
 }
 
-void crtpTunnelHandler(CRTPPacket *p) {
+void processIncomingCRTPPacket(CRTPTunnelPacket* p) {
   if(p->channel == CRTP_TUNNEL_CHANNEL_PING)
     crtpTunnelPingHandler(p);
   else if(p->channel == CRTP_TUNNEL_CHANNEL_PARAM)
@@ -101,22 +100,9 @@ void crtpTunnelHandler(CRTPPacket *p) {
   else if(p->channel == CRTP_TUNNEL_CHANNEL_COMMANDER)
     crtpTunnelCommanderHandler(p);
   else if(p->channel == CRTP_TUNNEL_CHANNEL_COMMAND) {
-    switch(p->data[0]) {
+    switch(p->dronedata[0]) {
       case CRTP_TUNNEL_COMMAND_TAKE_OFF:
         tunnelSetDroneState(DRONE_STATE_FLYING);
-        break;
-      case CRTP_TUNNEL_COMMAND_MOVE_DRONE:
-        DEBUG_PRINT("Moving drone %i\n", p->data[1]);
-        if(p->data[1] == getDroneId())
-          tunnelCommanderProcessPacket(&p->data[2]);
-        else {
-          P2PPacket p_move;
-          p_move.port = P2P_PORT_COMMANDER;
-          p_move.txdest = p->data[1];
-          memcpy(p_move.txdata, &p->data[2], p->size - 2);
-          p_move.size = p->size - 2;
-          tunnelSendP2PPacket(&p_move);
-        }
         break;
       case CRTP_TUNNEL_COMMAND_SCAN:
         tunnelSetBehavior(TUNNEL_BEHAVIOR_SCAN);
@@ -132,6 +118,16 @@ void crtpTunnelHandler(CRTPPacket *p) {
         break;
     }
   }
+}
+
+void crtpTunnelHandler(CRTPTunnelPacket *p) {
+  p->direction = 1; // mark the packet as base-to-drone
+  p->size--; //TODO decrease size but careful when calling from relay!!!
+
+  if(p->destination == getDroneId())
+    processIncomingCRTPPacket(p);
+  else
+    tunnelSendCRTPPacketToDrone(p);
 }
 
 void tunnelCommInit() {

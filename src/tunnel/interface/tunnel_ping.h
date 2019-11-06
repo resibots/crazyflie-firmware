@@ -14,8 +14,8 @@ void sendPing(bool propagate);
 // Update function that needs to be called regularly
 void tunnelPingUpdate();
 
-// Process an incoming CRTPPacket concerning pings
-void crtpTunnelPingHandler(CRTPPacket *p);
+// Process an incoming CRTPTunnelPacket concerning pings
+void crtpTunnelPingHandler(CRTPTunnelPacket *p);
 
 // Initialize the ping submodule
 void tunnelPingInit();

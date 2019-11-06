@@ -8,7 +8,7 @@
 #include "crtp.h"
 
 // Handle CRTP parameters requests (must be called in the main callback)
-void crtpTunnelParametersHandler(CRTPPacket *p);
+void crtpTunnelParametersHandler(CRTPTunnelPacket *p);
 
 // Initialize the param submodule
 void tunnelParametersInit();
