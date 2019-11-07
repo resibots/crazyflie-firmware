@@ -55,7 +55,7 @@ typedef enum {
 uint8_t appendStatusMessage(uint8_t *pkData) {
   // Calculate battery level
   uint8_t batteryVt = BATTERY_RES * (pmGetBatteryVoltage() - BATTERY_MIN) / (BATTERY_MAX - BATTERY_MIN);
-  if(batteryVt > 0x0F) batteryVt = 0x00; // Report a calculation error as a fully empty battery
+  if(!pmIsDischarging() || batteryVt > 0x0F) batteryVt = 0x0F;
 
   // Join drone role and connections to leader/follower/base in one byte
   uint8_t statusBits = ((tunnelGetDroneRole() == DRONE_ROLE_HEAD ? 1 : 0) << 3) | // Set if the drone is the chain's head

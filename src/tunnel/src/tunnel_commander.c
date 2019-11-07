@@ -100,6 +100,10 @@ float tunnelGetDistance() {
   return tunnelDistance;
 }
 
+void tunnelSetDistance(float distance) {
+  tunnelDistance = distance;
+}
+
 TunnelHover *tunnelGetCurrentMovement() {
   return &currentMovement;
 }
@@ -149,7 +153,7 @@ void tunnelCommanderUpdate() {
 
 void tunnelCommanderProcessPacket(uint8_t* data) {
   switch(data[0]) {
-    // Directly move the drone: rxdata = [TUNNEL_COMMANDER_MOVE][int8_t vx][int8_t vy]
+    // Directly move the drone: rxdata = [TUNNEL_COMMANDER_XXXX][int8_t vx][int8_t vy]
     case TUNNEL_COMMANDER_MOVE:
       manualMovement.vx = TUNNEL_DEFAULT_SPEED * (float)(int8_t)data[1];
       manualMovement.vy = TUNNEL_DEFAULT_SPEED * (float)(int8_t)data[2];

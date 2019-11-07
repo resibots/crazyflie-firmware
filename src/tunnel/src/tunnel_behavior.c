@@ -114,6 +114,7 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions
   // End the behavior when the default height is reached
   if(zTarget >= TUNNEL_DEFAULT_HEIGHT) {
     vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
+    tunnelSetDistance(0); // Reset distance estimation
     tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
   }
 }
@@ -122,7 +123,6 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions
 
 void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
   switch (currentBehavior) {
-    case TUNNEL_BEHAVIOR_LAND: //TODO
     case TUNNEL_BEHAVIOR_IDLE:
       vel->vx = 0;
       vel->vy = 0;
@@ -150,6 +150,10 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
       break;
     case TUNNEL_BEHAVIOR_SIGNAL_MIDDLE:
       tunnelBehaviorSignalMiddleUpdate(vel, enableCollisions);
+      break;
+    case TUNNEL_BEHAVIOR_LAND:
+      setTunnelCanFly(false);
+      tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
       break;
   }
 }

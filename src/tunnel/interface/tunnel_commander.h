@@ -17,6 +17,9 @@ void sendSetpointStop();
 // Get the estimated distance of how deep we are in the tunnel (in meters)
 float tunnelGetDistance();
 
+// Set the estimated distance of how deep we are in the tunnel (in meters)
+void tunnelSetDistance(float distance);
+
 // Get the current applied movement on the drone
 TunnelHover *tunnelGetCurrentMovement();
 

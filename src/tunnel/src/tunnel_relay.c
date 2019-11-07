@@ -132,7 +132,6 @@ static void tunnelP2PCrtpHandler(P2PPacket *p) {
   
   // Received a drone-to-base packet
   else {
-    ledseqRun(SYS_LED, seq_testPassed);
     CRTPTunnelPacket p_crtp;
     p_crtp.header = p->rxdata[0];
     memcpy(p_crtp.basedata, &p->rxdata[1], p->size - 1);

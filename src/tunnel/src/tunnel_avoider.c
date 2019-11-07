@@ -123,23 +123,23 @@ void tunnelBehaviorScanUpdate(TunnelHover *vel, bool *enableCollisions) {
         vel->yawrate = 0;
 
         // Choose best angle
-        uint8_t best_i = 0, best = 2 * TUNNEL_RANGER_TRIGGER_DIST;
-        for(int i = 0; i < N_MEASURES / 2; i++) {
-          if(measuresBuffer[i]                              > 0 && measuresBuffer[i]                              < TUNNEL_RANGER_TRIGGER_DIST &&
-             measuresBuffer[i + 2 * (90 / SCAN_RESOLUTION)] > 0 && measuresBuffer[i + 2 * (90 / SCAN_RESOLUTION)] < TUNNEL_RANGER_TRIGGER_DIST) {
-            uint8_t dist = measuresBuffer[i] + measuresBuffer[i + 2 * (90 / SCAN_RESOLUTION)];
-            if(dist < best) {
-              best_i = i;
-              best = dist;
-              DEBUG_PRINT("New best i=%i d=%i\n", best_i, best);
-            }
-          }
-        }
+        // uint8_t best_i = 0, best = 2 * TUNNEL_RANGER_TRIGGER_DIST;
+        // for(int i = 0; i < N_MEASURES / 2; i++) {
+        //   if(measuresBuffer[i]                              > 0 && measuresBuffer[i]                              < TUNNEL_RANGER_TRIGGER_DIST &&
+        //      measuresBuffer[i + 2 * (90 / SCAN_RESOLUTION)] > 0 && measuresBuffer[i + 2 * (90 / SCAN_RESOLUTION)] < TUNNEL_RANGER_TRIGGER_DIST) {
+        //     uint8_t dist = measuresBuffer[i] + measuresBuffer[i + 2 * (90 / SCAN_RESOLUTION)];
+        //     if(dist < best) {
+        //       best_i = i;
+        //       best = dist;
+        //       DEBUG_PRINT("New best i=%i d=%i\n", best_i, best);
+        //     }
+        //   }
+        // }
         // goalAngle = best_i * SCAN_RESOLUTION; //TODO verify + choose 180 orientation
         goalAngle = 0;
 
         scanBehaviorState = BEHAVIOR_SCAN_STATE_GOTO;
-        DEBUG_PRINT("Going to chosen i=%i a=%i...\n", best_i, (int)goalAngle);
+        DEBUG_PRINT("Going to chosen a=%i...\n", (int)goalAngle);
         sendScan();
       }
       break;
@@ -193,10 +193,11 @@ void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions) {
 
   // Main avoidance algorithm
 #ifdef TUNNEL_QUAD_SHAPE_X
-  if(currentRanges.left > TUNNEL_RANGER_TRIGGER_DIST || currentRanges.right > TUNNEL_RANGER_TRIGGER_DIST || currentRanges.front < TUNNEL_RANGER_DANGER_DIST) {
-    tunnelSetBehavior(TUNNEL_BEHAVIOR_SCAN);
-    return;
-  }
+  // if(currentRanges.left > TUNNEL_RANGER_TRIGGER_DIST || currentRanges.right > TUNNEL_RANGER_TRIGGER_DIST || currentRanges.front < TUNNEL_RANGER_DANGER_DIST) {
+  //   DEBUG_PRINT("Danger/n");
+  //   tunnelSetBehavior(TUNNEL_BEHAVIOR_SCAN);
+  //   return;
+  // }
 
   // Avoid the obstacles with pushing forces
   #ifdef TUNNEL_AVOID_LEFTRIGHT
@@ -220,20 +221,6 @@ void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions) {
 #endif
 
 #ifdef TUNNEL_QUAD_SHAPE_PLUS
-  // Using independant repulsion forces, not used anymore
-
-  // float force_lr = 0, force_fb = 0;
-  // if(currentRanges.left < TUNNEL_RANGER_TRIGGER_DIST)
-  //   force_lr -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.left);
-  // if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST)
-  //   force_lr += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.right);
-  // if(currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
-  //   force_fb -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.front);
-  // if(currentRanges.back < TUNNEL_RANGER_TRIGGER_DIST)
-  //   force_fb += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.back);
-  // vel->vx += SQRT2_2 * (force_fb - force_lr);
-  // vel->vy += SQRT2_2 * (force_fb + force_lr);
-
   // Using left-right and front-back repulsion forces
 
   // #ifdef TUNNEL_AVOID_LEFTRIGHT // Using the mean of the 2 diagonal sensors for left-right avoiding
@@ -249,10 +236,10 @@ void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions) {
     if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST)
       vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.right);
     // Safety to make sure not to touch obstacles
-    if(currentRanges.left < TUNNEL_RANGER_DANGER_DIST)
-      vel->vy = -TUNNEL_RANGER_AVOID_FORCE / 2;
-    if(currentRanges.back < TUNNEL_RANGER_DANGER_DIST)
-      vel->vy =  TUNNEL_RANGER_AVOID_FORCE / 2;
+    // if(currentRanges.left < TUNNEL_RANGER_DANGER_DIST)
+    //   vel->vy = -TUNNEL_RANGER_AVOID_FORCE / 2;
+    // if(currentRanges.back < TUNNEL_RANGER_DANGER_DIST)
+    //   vel->vy =  TUNNEL_RANGER_AVOID_FORCE / 2;
   #endif
   #ifdef TUNNEL_AVOID_FRONTBACK
     if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
@@ -268,6 +255,19 @@ void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions) {
       vel->yawrate += TUNNEL_RANGER_TURN_FORCE * (currentRanges.left - currentRanges.front);
   #endif
 
+  // Using independant repulsion forces for safety when coming too close of an obstacle
+  float force_lr = 0, force_fb = 0;
+  if(currentRanges.left < TUNNEL_RANGER_DANGER_DIST)
+    force_lr = -TUNNEL_RANGER_AVOID_FORCE / 2;
+  if(currentRanges.right < TUNNEL_RANGER_DANGER_DIST)
+    force_lr =  TUNNEL_RANGER_AVOID_FORCE / 2;
+  if(currentRanges.front < TUNNEL_RANGER_DANGER_DIST)
+    force_fb = -TUNNEL_RANGER_AVOID_FORCE / 2;
+  if(currentRanges.back < TUNNEL_RANGER_DANGER_DIST)
+    force_fb =  TUNNEL_RANGER_AVOID_FORCE / 2;
+  vel->vx += SQRT2_2 * (force_fb - force_lr);
+  vel->vy += SQRT2_2 * (force_fb + force_lr);
+
   // Safety in case a laser looses track of a wall
   int lostWallsFlag = 0;
   if(currentRanges.front == 0 || currentRanges.front > TUNNEL_RANGER_TRIGGER_DIST) {
@@ -282,8 +282,10 @@ void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions) {
     vel->yawrate = -TUNNEL_MAX_TURN_SPEED / 2;
     lostWallsFlag++;
   }
-  if(lostWallsFlag == 2)
-    setTunnelCanFly(false);
+  #ifdef TUNNEL_STOP_ON_WALLS_LOST
+    if(lostWallsFlag == 2)
+      setTunnelCanFly(false);
+  #endif
 #endif
 }
 

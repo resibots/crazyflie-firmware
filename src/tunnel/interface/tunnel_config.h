@@ -46,19 +46,22 @@
 
 // Choose one quad direction configuration
 // #define TUNNEL_QUAD_SHAPE_X    // Normal orientation, uses 2 avoiding sensors
-#define TUNNEL_QUAD_SHAPE_PLUS // Used to avoid obstacles with 4 distance sensors
+#define TUNNEL_QUAD_SHAPE_PLUS // Used to avoid obstacles with 4 distance sensors, M1 goes forward
 
 // Max drone speed in m/s
 #define TUNNEL_MAX_SPEED 0.6f
 
 // Default drone speed in m/s used in behaviors 
-#define TUNNEL_DEFAULT_SPEED 0.3f
+#define TUNNEL_DEFAULT_SPEED 0.2f
 
 // Max drone yaw speed in deg/s
 #define TUNNEL_MAX_TURN_SPEED 30.f
 
 // Take off and landing speeds (m/s)
 #define TAKE_OFF_VELOCITY 0.2f
+
+// If we loose sight of the two walls, cut the motors (used when testing)
+#define TUNNEL_STOP_ON_WALLS_LOST
 
 /****************
 OBSTACLE AVOIDING
@@ -81,7 +84,7 @@ OBSTACLE AVOIDING
 #define TUNNEL_TURNING_ENABLE // Uses 2 or 4 sensors based on TUNNEL_QUAD_SHAPE
 
 // When avoiding walls, turn the drone based on the left-right distance difference (deg/s per mm)
-#define TUNNEL_RANGER_TURN_FORCE .1f
+#define TUNNEL_RANGER_TURN_FORCE .15f
 
 /****************
       SIGNAL
