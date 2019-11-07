@@ -118,6 +118,10 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
   }
 }
 
+static void tunnelP2PTraceHandler(P2PPacket* p) {
+  //TODO handle a new trace packet
+}
+
 static void tunnelP2PCrtpHandler(P2PPacket *p) {
   uint8_t directionFlag = p->rxdata[1] & 0x10;
 
@@ -142,6 +146,7 @@ static void tunnelP2PCrtpHandler(P2PPacket *p) {
 
 // Public functions
 
+// Send a packet to a drone. Will be relayed by the least amount of drones possible
 bool tunnelSendP2PPacket(P2PPacket *p) {
   if(p->txdest == getDroneId())
     return false;
@@ -164,6 +169,25 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
     return p2pSendPacket(p);
   }
   return true;
+}
+
+// Send a packet to all drones between us and the destination
+bool tunnelTraceP2PPacket(P2PPacket *p, TraceMode mode) {
+  // Fill the correct destination
+  switch(mode) {
+    case TRACE_MODE_FORWARD:
+      p->txdest = 0;
+    case TRACE_MODE_BACKWARD:
+      p->txdest = getNDrones() - 1;
+    case TRACE_MODE_ALL:
+      return tunnelTraceP2PPacket(p, TRACE_MODE_BACKWARD) & 
+             tunnelTraceP2PPacket(p, TRACE_MODE_FORWARD);
+  }
+
+  // Prepare the packet tracing
+  //TODO
+
+  return tunnelSendP2PPacket(p);
 }
 
 bool tunnelSendCRTPPacketToBase(CRTPTunnelPacket *p) {
@@ -198,6 +222,7 @@ bool tunnelSendCRTPPacketToDrone(CRTPTunnelPacket *p) {
 
 void tunnelRelayInit() {
   p2pRegisterPortCB(P2P_PORT_RELAY, tunnelP2PRelayHandler);
+  p2pRegisterPortCB(P2P_PORT_TRACE, tunnelP2PTraceHandler);
   p2pRegisterPortCB(P2P_PORT_CRTP,  tunnelP2PCrtpHandler);
 }
 

@@ -43,7 +43,8 @@ typedef enum {
   P2P_PORT_CHAIN     = 0x04,
 
   // Communication
-  P2P_PORT_CRTP      = 0x0E, // Echo the received packet to CRTP if connected to the base
+  P2P_PORT_CRTP      = 0x0D, // Echo the received packet to CRTP if connected to the base
+  P2P_PORT_TRACE     = 0x0E, // Send a packet to all drones between 
   P2P_PORT_RELAY     = 0x0F, // Relay a packet that must be sent to another drone
 } P2PPort;
 
