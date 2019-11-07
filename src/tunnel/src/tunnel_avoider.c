@@ -235,11 +235,6 @@ void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions) {
       vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.front);
     if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST)
       vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.right);
-    // Safety to make sure not to touch obstacles
-    // if(currentRanges.left < TUNNEL_RANGER_DANGER_DIST)
-    //   vel->vy = -TUNNEL_RANGER_AVOID_FORCE / 2;
-    // if(currentRanges.back < TUNNEL_RANGER_DANGER_DIST)
-    //   vel->vy =  TUNNEL_RANGER_AVOID_FORCE / 2;
   #endif
   #ifdef TUNNEL_AVOID_FRONTBACK
     if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)

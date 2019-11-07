@@ -29,12 +29,12 @@
 static TunnelBehavior currentBehavior;
 static TunnelBehavior previousBehavior;
 
-// Signal middle Behavior
+// Positioning Behavior
 
 #define TUNNEL_SIGNAL_DIFF_TOLERANCE 10
 #define TUNNEL_SIGNAL_TIMEOUT 1000
 
-static void tunnelBehaviorSignalMiddleUpdate(TunnelHover *vel, bool *enableCollisions) {
+static void tunnelBehaviorPositioningUpdate(TunnelHover *vel, bool *enableCollisions) {
   // Don't move on other axis
   vel->vy = 0;
   vel->yawrate = 0;
@@ -93,7 +93,7 @@ static void tunnelBehaviorGotoUpdate(TunnelHover *vel, bool *enableCollisions) {
 // Take off Behavior
 
 static float zTarget = 0.1f;
-static unsigned long prevTime = 0;
+static uint32_t prevTime = 0;
 
 static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions) {
   // Don't move on other axis
@@ -101,14 +101,16 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions
   vel->vy = 0;
   vel->yawrate = 0;
 
+  // Handle resets
+  if(prevTime == 0)
+    prevTime = xTaskGetTickCount();
+
   // Disable collisions during takeoff
   *enableCollisions = false;
 
   // Slowly increase the height
-  if(xTaskGetTickCount() > prevTime + 100) {
-    zTarget += TAKE_OFF_VELOCITY * (float)(xTaskGetTickCount() - prevTime) / 1000.f;
-    prevTime = xTaskGetTickCount();
-  }
+  zTarget += TAKE_OFF_VELOCITY * (float)(xTaskGetTickCount() - prevTime) / 1000.f;
+  prevTime = xTaskGetTickCount();
   vel->zDistance = zTarget;
 
   // End the behavior when the default height is reached
@@ -119,7 +121,7 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions
   }
 }
 
-// Main functions
+// Main update function
 
 void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
   switch (currentBehavior) {
@@ -148,8 +150,8 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
     case TUNNEL_BEHAVIOR_SCAN:
       tunnelBehaviorScanUpdate(vel, enableCollisions);
       break;
-    case TUNNEL_BEHAVIOR_SIGNAL_MIDDLE:
-      tunnelBehaviorSignalMiddleUpdate(vel, enableCollisions);
+    case TUNNEL_BEHAVIOR_POSITIONING:
+      tunnelBehaviorPositioningUpdate(vel, enableCollisions);
       break;
     case TUNNEL_BEHAVIOR_LAND:
       setTunnelCanFly(false);
@@ -157,6 +159,8 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
       break;
   }
 }
+
+// Current behavior management
 
 TunnelBehavior tunnelGetCurrentBehavior() {
   return currentBehavior;
@@ -167,6 +171,7 @@ static void setBehavior(TunnelBehavior newBehavior) {
     DEBUG_PRINT("Setting behavior %i->%i\n", currentBehavior, newBehavior);
     if(newBehavior == TUNNEL_BEHAVIOR_TAKE_OFF) {
       zTarget = 0.1f;
+      prevTime = 0;
       estimatorKalmanInit();
     }
     else if(newBehavior == TUNNEL_BEHAVIOR_SCAN) {
