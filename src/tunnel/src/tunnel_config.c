@@ -35,7 +35,10 @@ void tunnelAutoSetFollowerLeader() {
 }
 
 void tunnelAutoSetIdleInactive() {
-  tunnelSetDroneState((getDroneId() >= getNDrones()) ? DRONE_STATE_INACTIVE : DRONE_STATE_IDLE);
+  if(getDroneId() >= getNDrones())
+    tunnelSetDroneState(DRONE_STATE_INACTIVE);
+  else if(tunnelGetDroneState() == DRONE_STATE_INACTIVE)
+    tunnelSetDroneState(DRONE_STATE_IDLE);
 }
 
 // Keep track of the drone that is currently connected to the base

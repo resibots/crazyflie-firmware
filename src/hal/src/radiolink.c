@@ -255,6 +255,13 @@ static int radiolinkSendCRTPPacket(CRTPPacket *p)
   return false;
 }
 
+int radiolinkSendP2PPacketToQueue(P2PPacket *p)
+{
+  xQueueSend(p2pPacketDelivery, p, 0);
+
+  return true;
+}
+
 static int radiolinkSendP2PPacket(P2PPacket *p)
 {
   static SyslinkPacket slp;

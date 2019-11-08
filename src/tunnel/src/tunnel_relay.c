@@ -23,6 +23,7 @@
 #include "tunnel_config.h"
 #include "tunnel_signal.h"
 #include "tunnel_comm.h"
+#include "radiolink.h"
 
 #define DEBUG_MODULE "REL"
 #include "debug.h"
@@ -119,7 +120,29 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
 }
 
 static void tunnelP2PTraceHandler(P2PPacket* p) {
-  //TODO handle a new trace packet
+  if(p->rxdest == getDroneId()) {
+    // Send the paquet to our P2P queue
+    p->header = p->rxdata[p->size - 1];
+    p->size--;
+
+    // DEBUG_PRINT("Popping\n");
+    // p2pPrintPacket(p, true);
+    radiolinkSendP2PPacketToQueue(p);
+
+
+    // Send the paquet to the next drone if needed
+    int8_t finalDest = p->rxdata[p->size++] >> 4 & 0x0F;
+    if(finalDest != getDroneId()) {
+      int8_t direction = (finalDest - (int8_t)getDroneId() > 0) ? 1 : -1;
+      p->txdest = getDroneId() + direction;
+      p->port = P2P_PORT_TRACE;
+      memcpy(p->txdata, p->rxdata, p->size);
+
+      // DEBUG_PRINT("Retracing to %i\n", p->txdest);
+      // p2pPrintPacket(p, false);
+      tunnelSendP2PPacket(p);
+    }
+  }
 }
 
 static void tunnelP2PCrtpHandler(P2PPacket *p) {
@@ -177,22 +200,32 @@ bool tunnelTraceP2PPacket(P2PPacket *p, TraceMode mode) {
   switch(mode) {
     case TRACE_MODE_FORWARD:
       p->txdest = 0;
+      break;
     case TRACE_MODE_BACKWARD:
       p->txdest = getNDrones() - 1;
+      break;
     case TRACE_MODE_ALL:
       return tunnelTraceP2PPacket(p, TRACE_MODE_BACKWARD) & 
-             tunnelTraceP2PPacket(p, TRACE_MODE_FORWARD);
+             tunnelTraceP2PPacket(p, TRACE_MODE_FORWARD); //TODO p will be changed with previous call
   }
 
+  if(p->txdest == getDroneId() || p->size >= P2P_MAX_DATA_SIZE)
+    return false;
+
   // Prepare the packet tracing
-  //TODO
+  p->txdata[p->size++] = p->header;
+  p->txdest = getDroneId() + ((p->txdest - getDroneId() > 0) ? 1 : -1);
+  p->port = P2P_PORT_TRACE;
+
+  // DEBUG_PRINT("Tracing packet to %i\n", p->txdest);
+  // p2pPrintPacket(p, false);
 
   return tunnelSendP2PPacket(p);
 }
 
 bool tunnelSendCRTPPacketToBase(CRTPTunnelPacket *p) {
   if(tunnelIsBaseConnected() || getBaseDroneID() == getDroneId())
-    crtpSendPacket(p);
+    return crtpSendPacket(p);
   else { // If we're not connected, send it to the connected drone
     P2PPacket p_p2p;
     p_p2p.port = P2P_PORT_CRTP;
@@ -215,9 +248,8 @@ bool tunnelSendCRTPPacketToDrone(CRTPTunnelPacket *p) {
     memcpy(&p_p2p.txdata[2], p->dronedata, p->size);
     p_p2p.size = 2/*header+context*/ + p->size/*data*/;
     return tunnelSendP2PPacket(&p_p2p);
-  } 
-  else
-    ledseqRun(SYS_LED, seq_testPassed);
+  }
+  return false;
 }
 
 void tunnelRelayInit() {

@@ -92,6 +92,14 @@ void tunnelCommUpdate() {
   // Broadcast our own status regularly (don't pollute the air traffic with inactive drones)
   if(tunnelGetDroneState() != DRONE_STATE_INACTIVE && timerElapsed(&statusPrevTime, 200))
     broadcastStatus();
+
+  if(getDroneId() == 1) { //TODO remove
+    P2PPacket p_trace;
+    p_trace.port = 7;
+    p_trace.txdata[0] = 0xAB;
+    p_trace.size = 1;
+    tunnelTraceP2PPacket(&p_trace, TRACE_MODE_BACKWARD);
+  }
 }
 
 void processIncomingCRTPPacket(CRTPTunnelPacket* p) {
@@ -124,12 +132,20 @@ void processIncomingCRTPPacket(CRTPTunnelPacket* p) {
 
 void crtpTunnelHandler(CRTPTunnelPacket *p) {
   p->direction = 1; // mark the packet as base-to-drone
-  p->size--; //TODO decrease size but careful when calling from relay!!!
+  p->size--;
 
   if(p->destination == getDroneId())
     processIncomingCRTPPacket(p);
   else
     tunnelSendCRTPPacketToDrone(p);
+}
+
+void callback(P2PPacket* p) { //TODO remove
+  if(p->rxdest == getDroneId()) {
+    // DEBUG_PRINT("Got trace\n");
+    // p2pPrintPacket(p, true);
+    ledseqRun(LED_GREEN_R, seq_testPassed);
+  }
 }
 
 void tunnelCommInit() {
@@ -142,6 +158,7 @@ void tunnelCommInit() {
 
   // Subscribe to packet callbacks
   crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);
+  p2pRegisterPortCB(7, callback); //TODO remove
 
   isInit = true;
 }

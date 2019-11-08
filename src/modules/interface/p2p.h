@@ -55,7 +55,7 @@ typedef struct _P2PPacket
   union {
     struct {
       union {
-        uint8_t header;                 //< Header selecting channel and port
+        uint8_t header;                 //< Header selecting P2P destination (only when sending) and port
         struct {
           uint8_t port        : 4;      //< Selected P2P port
           uint8_t txdest      : 4;      //< Destination or origin address (0xE7E7E7E7EX with X=peer), used for sending only

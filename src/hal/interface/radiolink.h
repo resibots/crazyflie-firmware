@@ -31,6 +31,8 @@
 #include <stdbool.h>
 #include "syslink.h"
 
+#include "p2p.h"
+
 typedef void (*RSSICallback)(uint8_t);
 
 void radiolinkInit(void);
@@ -43,6 +45,7 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp);
 struct crtpLinkOperations * radiolinkGetCRLink();
 struct p2pLinkOperations * radiolinkGetP2PLink();
 void radiolinkRegisterRssiCB(RSSICallback cb);
+int radiolinkSendP2PPacketToQueue(P2PPacket *p);
 
 
 #endif //__RADIO_H__
