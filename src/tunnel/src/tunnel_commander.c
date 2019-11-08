@@ -198,12 +198,3 @@ bool tunnelCommanderTest() {
 
   return pass;
 }
-
-/* TODO old code just in case, remove
-RSSI amd connection LED feedback
-bool isConnected = logGetUint(logGetVarId("radio", "isConnected"));
-int rssi = (int)logGetFloat(logGetVarId("radio", "rssi"));
-uint8_t rssi_scaled = LIMIT(LINSCALE(35, 85, 0, 255, rssi));
-DEBUG_PRINT("connected=%i rssi=%i\n", isConnected, rssi);
-ledSet(LED_GREEN_R, isConnected);
-*/

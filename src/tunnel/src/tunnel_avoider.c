@@ -16,6 +16,7 @@
 #include "tunnel_helpers.h"
 #include "tunnel_behavior.h"
 #include "tunnel_relay.h"
+#include "tunnel_comm.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -58,7 +59,7 @@ enum {
 static void sendScan() {
   CRTPTunnelPacket p_scan;
   p_scan.port = CRTP_PORT_TUNNEL;
-  p_scan.channel = 0x01;//TODO clean
+  p_scan.channel = CRTP_TUNNEL_RESPONSE_CHANNEL_SCAN;
   memcpy(p_scan.basedata, measuresBuffer, N_MEASURES);
   p_scan.size = N_MEASURES;
   tunnelSendCRTPPacketToBase(&p_scan);
@@ -135,7 +136,7 @@ void tunnelBehaviorScanUpdate(TunnelHover *vel, bool *enableCollisions) {
         //     }
         //   }
         // }
-        // goalAngle = best_i * SCAN_RESOLUTION; //TODO verify + choose 180 orientation
+        // goalAngle = best_i * SCAN_RESOLUTION; //TODO how to correctly process the scan and turn to the right direction?
         goalAngle = 0;
 
         scanBehaviorState = BEHAVIOR_SCAN_STATE_GOTO;

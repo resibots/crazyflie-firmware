@@ -94,7 +94,6 @@ OBSTACLE AVOIDING
 #define TUNNEL_RSSI_BEST    40 // Best quality considered (used to avoid collisions with another drone)
 #define TUNNEL_RSSI_ARMED   60 // Quality to reach before taking off as a new relay drone
 #define TUNNEL_RSSI_DANGER  70 // Threshold before considering the connection will soon be lost
-#define TUNNEL_RSSI_MAXIMUM 80 // TODO useful?
 
 // Process noise in the RSSI kalman filtering
 #define TUNNEL_SIGNAL_KALMAN_R 0.01f

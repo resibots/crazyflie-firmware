@@ -33,20 +33,13 @@ static unsigned long statusPrevTime = 0;
 static TunnelStatus currentStatus;
 
 typedef enum {
-  CRTP_TUNNEL_CHANNEL_PING      = 0x00,
-  CRTP_TUNNEL_CHANNEL_PARAM     = 0x01,
-  CRTP_TUNNEL_CHANNEL_COMMANDER = 0x02,
-  CRTP_TUNNEL_CHANNEL_COMMAND   = 0x03,
-} CRTPTunnelChannel;
-
-typedef enum {
   CRTP_TUNNEL_COMMAND_TAKE_OFF       = 0x00, // Start flying and do our thing!
   CRTP_TUNNEL_COMMAND_SCAN           = 0x01, // Scan the room and send the measurements
   CRTP_TUNNEL_COMMAND_LAND           = 0x02, // Land no matter where we are (e.g. to manually save battery)
   CRTP_TUNNEL_COMMAND_RTH            = 0x03, // Return to home automatically
   CRTP_TUNNEL_COMMAND_STOP           = 0x04, // Stop the motors and return to Idle state (for emergencies or tests)
 
-  //TODO implement
+  //TODO implement all chain commands
   CRTP_TUNNEL_COMMAND_CHAIN_START    = 0x06, // Start flying (head takes off, second drone armed, others idle or inactive)
   CRTP_TUNNEL_COMMAND_CHAIN_RTH      = 0x07, // Return to home (no more head, all automatic)
   CRTP_TUNNEL_COMMAND_CHAIN_SHUTDOWN = 0x08, // Emergency only: all drones cut motors off immediately
@@ -100,14 +93,6 @@ void tunnelCommUpdate() {
   refreshDroneStatus();
   if(tunnelGetDroneState() != DRONE_STATE_INACTIVE && timerElapsed(&statusPrevTime, 200))
     broadcastStatus();
-
-  if(getDroneId() == 1) { //TODO remove
-    P2PPacket p_trace;
-    p_trace.port = 7;
-    p_trace.txdata[0] = 0xAB;
-    p_trace.size = 1;
-    tunnelTraceP2PPacket(&p_trace, TRACE_MODE_BACKWARD);
-  }
 }
 
 void processIncomingCRTPPacket(CRTPTunnelPacket* p) {
@@ -129,7 +114,7 @@ void processIncomingCRTPPacket(CRTPTunnelPacket* p) {
         tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
         break;
       case CRTP_TUNNEL_COMMAND_RTH:
-        //TODO
+        //TODO implement RTH
         break;
       case CRTP_TUNNEL_COMMAND_STOP:
         tunnelSetDroneState(DRONE_STATE_IDLE);
@@ -148,14 +133,6 @@ void crtpTunnelHandler(CRTPTunnelPacket *p) {
     tunnelSendCRTPPacketToDrone(p);
 }
 
-void callback(P2PPacket* p) { //TODO remove
-  if(p->rxdest == getDroneId()) {
-    // DEBUG_PRINT("Got trace\n");
-    // p2pPrintPacket(p, true);
-    ledseqRun(LED_GREEN_R, seq_testPassed);
-  }
-}
-
 void tunnelCommInit() {
   if(isInit) return;
 
@@ -166,7 +143,6 @@ void tunnelCommInit() {
 
   // Subscribe to packet callbacks
   crtpRegisterPortCB(CRTP_PORT_TUNNEL, crtpTunnelHandler);
-  p2pRegisterPortCB(7, callback); //TODO remove
 
   isInit = true;
 }

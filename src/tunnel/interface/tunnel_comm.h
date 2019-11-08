@@ -27,6 +27,20 @@ typedef struct {
   };
 } TunnelStatus;
 
+// Channels protocol definition for base-to-drone CRTP packets
+typedef enum {
+  CRTP_TUNNEL_CHANNEL_PING          = 0x00,
+  CRTP_TUNNEL_CHANNEL_PARAM         = 0x01,
+  CRTP_TUNNEL_CHANNEL_COMMANDER     = 0x02,
+  CRTP_TUNNEL_CHANNEL_COMMAND       = 0x03,
+} CRTPTunnelChannel;
+
+// Channels protocol definition for drone-to-base CRTP packets
+typedef enum {
+  CRTP_TUNNEL_RESPONSE_CHANNEL_PING = 0x00,
+  CRTP_TUNNEL_RESPONSE_CHANNEL_SCAN = 0x01,
+} CRTPTunnelResponseChannel;
+
 // Add the drone's status information in an array (usually a packet). Returns the number of bytes used
 uint8_t appendStatusMessage(uint8_t *pkData);
 

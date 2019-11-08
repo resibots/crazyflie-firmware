@@ -31,8 +31,7 @@ static TunnelBehavior previousBehavior;
 
 // Positioning Behavior
 
-#define TUNNEL_SIGNAL_DIFF_TOLERANCE 10
-#define TUNNEL_SIGNAL_TIMEOUT 1000
+#define TUNNEL_SIGNAL_DIFF_TOLERANCE 3
 
 static void tunnelBehaviorPositioningUpdate(TunnelHover *vel, bool *enableCollisions) {
   // Don't move on other axis
@@ -43,9 +42,9 @@ static void tunnelBehaviorPositioningUpdate(TunnelHover *vel, bool *enableCollis
   SignalLog *followerSignal = (getDroneId() >= getNDrones() - 1) ? tunnelGetFollowerSignal() : tunnelGetBaseSignal();
 
   // If the last RSSI value is too old, consider connection lost
-  if(xTaskGetTickCount() - tunnelGetLeaderSignal()->timestamp > TUNNEL_SIGNAL_TIMEOUT)
+  if(tunnelIsDroneConnected(getLeaderID()))
     setTunnelCanFly(false); // TODO wait for reconnect behavior
-  if(xTaskGetTickCount() - followerSignal->timestamp > TUNNEL_SIGNAL_TIMEOUT)
+  if(tunnelIsDroneConnected(getFollowerID()))
     setTunnelCanFly(false); // TODO rollback behavior
 
   //Don't go too close to another drone

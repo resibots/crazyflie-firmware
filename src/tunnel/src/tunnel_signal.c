@@ -47,16 +47,6 @@ static SignalLog unfilteredSignals[N_AGENTS];
 
 // Private functions, used for filtering
 
-bool tunnelIsDroneConnected(uint8_t id) {
-  SignalLog *s = tunnelGetSignal(id);
-  return s->rssi > 0 && s->rssi < TUNNEL_RSSI_DANGER &&
-         (xTaskGetTickCount() - s->timestamp) < TUNNEL_DISCONNECT_TIMEOUT;
-}
-
-bool tunnelIsBaseConnected() {
-  return logGetUint(logGetVarId("radio", "isConnected"));
-}
-
 static void kalmanUpdate(SignalLogFiltered *signal, float newRssi, float speed) {
   if(signal->signalLog.rssi == 0) {
     signal->signalLog.rssi = (1 / KALMAN_C) * newRssi;
@@ -97,6 +87,16 @@ static void signalInit(SignalLog *signal) {
 }
 
 // Public functions
+
+bool tunnelIsDroneConnected(uint8_t id) {
+  SignalLog *s = tunnelGetSignal(id);
+  return s->rssi > 0 && s->rssi < TUNNEL_RSSI_DANGER &&
+         (xTaskGetTickCount() - s->timestamp) < TUNNEL_DISCONNECT_TIMEOUT;
+}
+
+bool tunnelIsBaseConnected() {
+  return logGetUint(logGetVarId("radio", "isConnected"));
+}
 
 SignalLog *tunnelGetFollowerSignal() { return &followerSignal.signalLog; }
 SignalLog *tunnelGetLeaderSignal() { return &leaderSignal.signalLog; }

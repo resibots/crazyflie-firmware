@@ -57,7 +57,7 @@ uint8_t getNDrones() { return nDrones; }
 void setNDrones(uint8_t ndrones) {
   nDrones = ndrones;
   tunnelAutoSetFollowerLeader();
-  tunnelAutoSetIdleInactive(); //TODO only if not flying?
+  tunnelAutoSetIdleInactive();
 }
 
 // Set by the operator. The Tunnel module uses the motors only if this is set to true.

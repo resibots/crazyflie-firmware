@@ -30,9 +30,6 @@
 #include "led.h"
 #include "ledseq.h"
 
-//TODO handle packet max size errors
-//TODO find a way to send to the PC from any drone?
-
 // Returns true if the destination is our follower or leader
 // or if we received a good rssi from the destination not long ago
 static bool isDestinationNear(uint8_t destination) {
@@ -171,21 +168,20 @@ static void tunnelP2PCrtpHandler(P2PPacket *p) {
 
 // Send a packet to a drone. Will be relayed by the least amount of drones possible
 bool tunnelSendP2PPacket(P2PPacket *p) {
+  if(p->size >= P2P_MAX_DATA_SIZE)
+    return false;
+
   if(p->txdest == getDroneId())
     return false;
 
   // If the drone is our neighbor or near, send a direct P2P packet
-  if(isDestinationNear(p->txdest)) {
-    if(p->size >= P2P_MAX_DATA_SIZE)
-      return false;
+  if(isDestinationNear(p->txdest)) {    
     // DEBUG_PRINT("Sending direct P2P to %i\n", p->txdest);
     // p2pPrintPacket(p, false);
     return p2pSendPacket(p);
   }
   // If not, initiate a relay chain and send the first relay packet
   else {
-    if(p->size >= P2P_MAX_DATA_SIZE)
-      return false;
     transformP2PTxToRelayTx(p, selectFurthestDestination(p->txdest));
     // DEBUG_PRINT("Sending relay P2P to %i\n", p->txdest);
     // p2pPrintPacket(p, false);
@@ -196,6 +192,9 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
 
 // Send a packet to all drones between us and the destination
 bool tunnelTraceP2PPacket(P2PPacket *p, TraceMode mode) {
+  if(p->size >= P2P_MAX_DATA_SIZE)
+    return false;
+
   // Fill the correct destination
   switch(mode) {
     case TRACE_MODE_FORWARD:
@@ -205,8 +204,10 @@ bool tunnelTraceP2PPacket(P2PPacket *p, TraceMode mode) {
       p->txdest = getNDrones() - 1;
       break;
     case TRACE_MODE_ALL:
-      return tunnelTraceP2PPacket(p, TRACE_MODE_BACKWARD) & 
-             tunnelTraceP2PPacket(p, TRACE_MODE_FORWARD); //TODO p will be changed with previous call
+      P2PPacket p_copy;
+      memcpy(&p_copy, p, 2 + p->size); // clean?
+      return tunnelTraceP2PPacket(p,       TRACE_MODE_BACKWARD) & 
+             tunnelTraceP2PPacket(&p_copy, TRACE_MODE_FORWARD);
   }
 
   if(p->txdest == getDroneId() || p->size >= P2P_MAX_DATA_SIZE)
@@ -224,6 +225,9 @@ bool tunnelTraceP2PPacket(P2PPacket *p, TraceMode mode) {
 }
 
 bool tunnelSendCRTPPacketToBase(CRTPTunnelPacket *p) {
+  if(p->size >= CRTP_MAX_DATA_SIZE)
+    return false;
+
   if(tunnelIsBaseConnected() || getBaseDroneID() == getDroneId())
     return crtpSendPacket(p);
   else { // If we're not connected, send it to the connected drone
@@ -239,6 +243,9 @@ bool tunnelSendCRTPPacketToBase(CRTPTunnelPacket *p) {
 }
 
 bool tunnelSendCRTPPacketToDrone(CRTPTunnelPacket *p) {
+  if(p->size >= CRTP_MAX_DATA_SIZE)
+    return false;
+
   if(p->destination != getDroneId()) {
     P2PPacket p_p2p;
     p_p2p.port = P2P_PORT_CRTP;
