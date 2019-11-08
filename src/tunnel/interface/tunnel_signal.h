@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
+// Used to keep track of the last time we have seen a drone
 typedef struct {
   uint32_t timestamp;
   float rssi;

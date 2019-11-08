@@ -7,10 +7,6 @@
 
 #include "crtp.h"
 
-// Send a ping through the chain
-// TODO more function params to choose the destination drone
-void sendPing(bool propagate);
-
 // Update function that needs to be called regularly
 void tunnelPingUpdate();
 

@@ -152,7 +152,7 @@ void tunnelCommanderUpdate() {
   }
 }
 
-void tunnelCommanderProcessPacket(uint8_t* data) {
+static void tunnelCommanderProcessPacket(uint8_t* data) {
   switch(data[0]) {
     // Directly move the drone: rxdata = [TUNNEL_COMMANDER_XXXX][int8_t vx][int8_t vy]
     case TUNNEL_COMMANDER_MOVE:

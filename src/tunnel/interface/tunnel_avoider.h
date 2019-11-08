@@ -7,14 +7,14 @@
 
 #include "tunnel_commander.h"
 
-// Check if the deck is working, if not warn it through an LED and skip
-bool tunnelAvoiderCheckDeck();
-
 // Initialize scan behavior
 void tunnelBehaviorScanEnable();
 
 // Update scan behavior
 void tunnelBehaviorScanUpdate(TunnelHover *vel, bool *enableCollisions);
+
+// Check if the multiranger deck is working, if not warn it through an LED and skip avoiding
+bool tunnelAvoiderCheckDeck();
 
 // Update function that needs to be called regularly
 void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions);

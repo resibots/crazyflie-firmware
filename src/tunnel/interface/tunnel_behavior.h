@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "tunnel_helpers.h"
+#include "tunnel_commander.h"
 
 // List of available behaviors
 typedef enum {
@@ -31,7 +31,7 @@ TunnelBehavior tunnelGetCurrentBehavior();
 void tunnelSetBehavior(TunnelBehavior behavior);
 
 // Go back to the previous active behavior
-// WARNING works only one time, will do nothing if repeated without manually changing the current behavior
+// [WARNING] works only one time, will do nothing if repeated without manually changing the current behavior
 void tunnelSetPreviousBehavior();
 
 // Initialize the behavior submodule

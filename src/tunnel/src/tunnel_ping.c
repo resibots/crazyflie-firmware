@@ -130,9 +130,7 @@ static void p2pPingHandler(P2PPacket *p) {
   }
 }
 
-// Public functions
-
-void sendPing(bool propagate) {
+static void sendPing(bool propagate) {
   // DEBUG_PRINT("Sending ping...\n");
   P2PPacket p2p_p;
 
@@ -148,6 +146,8 @@ void sendPing(bool propagate) {
   p2p_p.size = 1 + appendStatusMessage(&p2p_p.txdata[1]);
   p2pSendPacket(&p2p_p);
 }
+
+// Public functions
 
 void tunnelPingUpdate() {
   // Drone-by-drone ping that adds the RSSI values

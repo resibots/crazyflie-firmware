@@ -7,27 +7,27 @@
 
 #include "crtp.h"
 
+// Definition of the short status summary send between the drones
 typedef struct {
   union {
     uint8_t status[2];
 
     struct {
-      uint8_t isBaseConnected     : 1;
-      uint8_t isFollowerConnected : 1;
-      uint8_t isLeaderConnected   : 1;
-      uint8_t isHead              : 1;
+      uint8_t isBaseConnected     : 1; // True if we received a CRTP packet in the last second
+      uint8_t isFollowerConnected : 1; // True if we received a P2P packet from our follower in the last 500ms
+      uint8_t isLeaderConnected   : 1; // True if we received a P2P packet from our follower in the last 500ms
+      uint8_t isHead              : 1; // True if we currently are the head drone
 
-      uint8_t batteryVoltage      : 4;
+      uint8_t batteryVoltage      : 4; // Current battery voltage from 0x00 to 0x0F (like a percentage)
 
-      uint8_t currentBehavior     : 4;
+      uint8_t currentBehavior     : 4; // Currently applied behavior enum id
 
-      uint8_t droneState          : 4;
+      uint8_t droneState          : 4; // Current state enum id
     };
   };
 } TunnelStatus;
 
-// Add the drone's status information in an array (usually a packet)
-// Returns the number of bytes used
+// Add the drone's status information in an array (usually a packet). Returns the number of bytes used
 uint8_t appendStatusMessage(uint8_t *pkData);
 
 // Update function that needs to be called regularly

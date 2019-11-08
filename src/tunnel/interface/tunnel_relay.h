@@ -8,6 +8,7 @@
 #include "p2p.h"
 #include "crtp.h"
 
+// Shortcuts for common tracing methods. Use the direct mode to trace to any specific drone.
 typedef enum {
     TRACE_MODE_DIRECT,   // Send the packet to all drones between us and the destination
     TRACE_MODE_FORWARD,  // Send the packet to all drones between us and the head drone
@@ -15,11 +16,11 @@ typedef enum {
     TRACE_MODE_ALL       // Send the packet to all other drones
 } TraceMode;
 
-// Send a regular P2P packet. It will go through the least amount of drones possible
-bool tunnelSendP2PPacket(P2PPacket *p);
-
 // Send a packet to all drones between us and the destination
 bool tunnelTraceP2PPacket(P2PPacket *p, TraceMode mode);
+
+// Send a regular P2P packet. It will go through the least amount of drones possible
+bool tunnelSendP2PPacket(P2PPacket *p);
 
 // Send a CRTP packet to the base (using the relay layer)
 bool tunnelSendCRTPPacketToBase(CRTPTunnelPacket *p);
