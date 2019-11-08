@@ -29,6 +29,7 @@
 
 static bool isInit = false;
 static unsigned long statusPrevTime = 0;
+static TunnelStatus currentStatus;
 
 typedef enum {
   CRTP_TUNNEL_CHANNEL_PING      = 0x00,
@@ -51,22 +52,27 @@ typedef enum {
   CRTP_TUNNEL_COMMAND_CHAIN_PING     = 0x09, // Ping the chain and return the status of each drone
 } CRTPTunnelCommand;
 
-// Returns the size used and fills general information about the drone
-uint8_t appendStatusMessage(uint8_t *pkData) {
+void refreshDroneStatus() {
   // Calculate battery level
   uint8_t batteryVt = BATTERY_RES * (pmGetBatteryVoltage() - BATTERY_MIN) / (BATTERY_MAX - BATTERY_MIN);
   if(!pmIsDischarging() || batteryVt > 0x0F) batteryVt = 0x0F;
+  currentStatus.batteryVoltage = batteryVt;
 
-  // Join drone role and connections to leader/follower/base in one byte
-  uint8_t statusBits = ((tunnelGetDroneRole() == DRONE_ROLE_HEAD ? 1 : 0) << 3) | // Set if the drone is the chain's head
-                       (tunnelIsDroneConnected(getLeaderID())             << 2) | // Set if there's a good connection with the leader
-                       (tunnelIsDroneConnected(getFollowerID())           << 1) | // Set if there's a good connection with the follower
-                       tunnelIsBaseConnected();           // Set if the drone is connected to the base via CRTP
+  // Update status bits
+  currentStatus.isHead = tunnelGetDroneRole() == DRONE_ROLE_HEAD ? 1 : 0;
+  currentStatus.isLeaderConnected   = tunnelIsDroneConnected(getLeaderID());
+  currentStatus.isFollowerConnected = tunnelIsDroneConnected(getFollowerID());
+  currentStatus.isBaseConnected     = tunnelIsBaseConnected();
 
+  currentStatus.droneState = tunnelGetDroneState();
+  currentStatus.currentBehavior = tunnelGetCurrentBehavior();
+}
+
+// Returns the size used and fills general information about the drone
+uint8_t appendStatusMessage(uint8_t *pkData) {
   // Send battery level, Drone role, Drone state, Current behavior
-  pkData[0] = ((batteryVt             << 4) & 0xF0) | (statusBits                 & 0x0F);
-  pkData[1] = ((tunnelGetDroneState() << 4) & 0xF0) | (tunnelGetCurrentBehavior() & 0x0F);
-  return 2;
+  memcpy(pkData, &currentStatus, sizeof(TunnelStatus));
+  return sizeof(TunnelStatus);
 }
 
 static void broadcastStatus() {
@@ -90,6 +96,7 @@ void tunnelCommUpdate() {
   tunnelPingUpdate();
 
   // Broadcast our own status regularly (don't pollute the air traffic with inactive drones)
+  refreshDroneStatus();
   if(tunnelGetDroneState() != DRONE_STATE_INACTIVE && timerElapsed(&statusPrevTime, 200))
     broadcastStatus();
 
