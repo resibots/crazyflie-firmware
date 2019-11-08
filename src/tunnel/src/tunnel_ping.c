@@ -7,7 +7,7 @@
  *
  * tunnel_ping.c - Sends, processes and propagates ping requests
  * accross the drones chain. Used for reporting the chain status
- * to the operator.
+ * to the operator and informing all drones of each other's status.
  */
 
 #include "tunnel_ping.h"

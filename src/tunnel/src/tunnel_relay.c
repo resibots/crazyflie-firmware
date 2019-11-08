@@ -5,14 +5,14 @@
  * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
  * maintainer: LARSEN, INRIA Nancy Grand-Est, France
  *
- * tunnel_relay.c - Submodule for relaying packets through the chain. 
+ * tunnel_relay.c - Submodule for sending & relaying packets through the chain. 
  * 
  * CRTP and P2P Tunnel packets should be sent through this submodule (and not directly
- * in p2p.c), it will send the packet to the furthest available drone to make the 
- * smallest amount of jumps possible before reaching the final destination.
+ * in p2p.c or crtp.c), it will send the packet to the furthest available drone in order 
+ * to make the smallest amount of jumps possible before reaching the final destination.
  * 
  * When a relay packet has reached its final destination, the packet is transformed
- * back to a regular packet and sent to the main P2P/CRTP queues.
+ * back to a regular packet and sent to the drone's main P2P/CRTP queues.
  */
 
 #include "tunnel_relay.h"

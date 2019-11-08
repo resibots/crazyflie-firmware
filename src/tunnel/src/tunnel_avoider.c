@@ -5,7 +5,7 @@
  * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
  * maintainer: LARSEN, INRIA Nancy Grand-Est, France
  *
- * tunnel_avoider.c - gets the multiranger + zranger distance values
+ * tunnel_avoider.c - Gets the multiranger + zranger distance values
  *                    and computes a repulsion force for avoiding obstacles.
  * 
  * Is part of the navigation stack (commander, avoider & behavior).

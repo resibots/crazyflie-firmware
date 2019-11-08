@@ -5,9 +5,10 @@
  * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
  * maintainer: LARSEN, INRIA Nancy Grand-Est, France
  *
- * tunnel_commander.c - calculates and sends the drone's movement based on:
- *  - Obstacles with the multiranger deck
- *  - RSSI values between the nearby drones
+ * tunnel_commander.c - Calculates and applies the drone's desired 
+ *                      movement based on:
+ *                        - Obstacles with the multiranger deck
+ *                        - RSSI values between the nearby drones
  * 
  * Is part of the navigation stack (commander, avoider & behavior).
  */

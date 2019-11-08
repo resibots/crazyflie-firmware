@@ -5,7 +5,7 @@
  * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
  * maintainer: LARSEN, INRIA Nancy Grand-Est, France
  *
- * tunnel_param.c - Submodule for setting and sending tunnel epxloration
+ * tunnel_param.c - Submodule for setting tunnel exploration
  *                  related parameters (e.g. number of drones in the chain)
  */
 
@@ -25,7 +25,7 @@ static void tunnelProcessParamPacket(uint8_t *data, bool broadcast) {
     case TUNNEL_PARAM_NDRONES:
       setNDrones(data[1]);
 
-      if(broadcast) {
+      if(broadcast) { //TODO better
         // Broadcast the new number of drones to the other drones
         P2PPacket p2p_p;
         p2p_p.txdest = 0x0F; // broadcast

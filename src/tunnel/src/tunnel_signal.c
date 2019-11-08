@@ -6,7 +6,8 @@
  * maintainer: LARSEN, INRIA Nancy Grand-Est, France
  *
  * tunnel_signal.c - Submodule for keeping track of RSSI values with 
- *                   other agents, applies a kalman filter on each agent
+ *                   other agents, applies a kalman filter on the most
+ *                   important agents (leader, follower and base)
  */
 
 #include "tunnel_signal.h"

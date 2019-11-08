@@ -42,6 +42,7 @@ void tunnelSetDroneState(DroneState newState) {
     case DRONE_STATE_IDLE:
     case DRONE_STATE_CRASHED:
       setTunnelCanFly(false);
+      tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
       break;
     case DRONE_STATE_FLYING:
       setTunnelCanFly(true);
@@ -56,6 +57,7 @@ static DroneRole droneRole;
 DroneRole tunnelGetDroneRole() { return droneRole; }
 void tunnelSetDroneRole(DroneRole newRole) { droneRole = newRole; }
 
+// Main tunnel task
 static void tunnelTask(void *param) {
   systemWaitStart();
   vTaskDelay(2000);
@@ -68,11 +70,12 @@ static void tunnelTask(void *param) {
   ledseqStop(SYS_LED, seq_calibrated);
   ledSet(SYS_LED, false);
 
-  // Print some information
+  // Print general startup information
   DEBUG_PRINT("Drone ID: %i\n", getDroneId());
 
   TickType_t lastWakeTime = xTaskGetTickCount();
 
+  // Main tunnel loop
   while (1) {
     vTaskDelayUntil(&lastWakeTime, M2T(1000 / TUNNEL_TASK_RATE_HZ));
 
@@ -89,10 +92,10 @@ void tunnelInit() {
 
   // State definitions
   tunnelSetDroneRole((getDroneId() == 0) ? DRONE_ROLE_HEAD : DRONE_ROLE_RELAY);
+  tunnelAutoSetIdleInactive();
 
   // Set follower and leader
   tunnelAutoSetFollowerLeader();
-  tunnelAutoSetIdleInactive();
 
   // Init submodules  
   tunnelCommanderInit();

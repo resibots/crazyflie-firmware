@@ -5,7 +5,10 @@
  * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
  * maintainer: LARSEN, INRIA Nancy Grand-Est, France
  *
- * tunnel_config.c - Manages general chain parameters
+ * tunnel_config.c - Common interface for all source files for setting
+ *                   and getting general parameters about the drone and chain.
+ *
+ * The header file also contains all compile-time settings and configuration.
  */
 
 #include "tunnel.h"

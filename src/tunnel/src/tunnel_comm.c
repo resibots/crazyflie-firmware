@@ -5,7 +5,8 @@
  * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
  * maintainer: LARSEN, INRIA Nancy Grand-Est, France
  *
- * tunnel_comm.c - Handles the drone's communication routines
+ * tunnel_comm.c - Handles the drone's communication routines and 
+ *                 New CRTP requests coming from the base.
  */
 
 #include "tunnel_comm.h"
