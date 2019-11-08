@@ -32,9 +32,9 @@
 // a 3D position setpoint
 void positionControllerInit();
 void positionControllerResetAllPID();
-void positionController(float* thrust, attitude_t *attitude, setpoint_t *setpoint,
+void positionController(float* fx, float* fy, float* fz, attitude_t *attitude, setpoint_t *setpoint,
                                                              const state_t *state);
-void velocityController(float* thrust, attitude_t *attitude, setpoint_t *setpoint,
+void velocityController(float* fx, float* fy, float* fz, attitude_t *attitude, setpoint_t *setpoint,
                                                              const state_t *state);
 
 #endif /* POSITION_CONTROLLER_H_ */
