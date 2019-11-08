@@ -65,7 +65,7 @@
 
 #ifdef ENABLE_ONESHOT125
 /**
- * *VARNING* Make sure the brushless driver is configured correctly as on the Crazyflie with normal
+ * *WARNING* Make sure the brushless driver is configured correctly as on the Crazyflie with normal
  * brushed motors connected they can turn on at full speed when it is powered on!
  *
  * Generates a PWM wave (50 - 400 Hz update rate with 1-2 ms high pulse) using the timer. That way we can use the same
@@ -81,7 +81,7 @@
   #define MOTORS_BL_POLARITY           TIM_OCPolarity_Low
 #else
 /**
- * *VARNING* Make sure the brushless driver is configured correctly as on the Crazyflie with normal
+ * *WARNING* Make sure the brushless driver is configured correctly as on the Crazyflie with normal
  * brushed motors connected they can turn on at full speed when it is powered on!
  *
  * Generates a PWM wave (50 - 400 Hz update rate with 1-2 ms high pulse) using the timer. That way we can use the same
@@ -97,12 +97,14 @@
   #define MOTORS_BL_POLARITY           TIM_OCPolarity_Low
 #endif
 
-#define NBR_OF_MOTORS 4
+#define NBR_OF_MOTORS 6
 // Motors IDs define
 #define MOTOR_M1  0
 #define MOTOR_M2  1
 #define MOTOR_M3  2
 #define MOTOR_M4  3
+#define MOTOR_M5  4
+#define MOTOR_M6  5
 
 // Test defines
 #define MOTORS_TEST_RATIO         (uint16_t)(0.2*(1<<16))
