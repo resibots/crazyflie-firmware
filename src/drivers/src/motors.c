@@ -45,7 +45,7 @@ static uint16_t motorsBLConv16ToBits(uint16_t bits);
 static uint16_t motorsConvBitsTo16(uint16_t bits);
 static uint16_t motorsConv16ToBits(uint16_t bits);
 
-uint32_t motor_ratios[] = {0, 0, 0, 0};
+uint32_t motor_ratios[] = {0, 0, 0, 0, 0, 0};
 
 void motorsPlayTone(uint16_t frequency, uint16_t duration_msec);
 void motorsPlayMelody(uint16_t *notes);
@@ -55,9 +55,9 @@ void motorsBeep(int id, bool enable, uint16_t frequency, uint16_t ratio);
 
 const MotorPerifDef** motorMap;  /* Current map configuration */
 
-const uint32_t MOTORS[] = { MOTOR_M1, MOTOR_M2, MOTOR_M3, MOTOR_M4 };
+const uint32_t MOTORS[] = { MOTOR_M1, MOTOR_M2, MOTOR_M3, MOTOR_M4, MOTOR_M5, MOTOR_M6 };
 
-const uint16_t testsound[NBR_OF_MOTORS] = {A4, A5, F5, D5 };
+const uint16_t testsound[NBR_OF_MOTORS] = {A4, A5, F5, D5, C4, F4 };
 
 static bool isInit = false;
 
@@ -280,11 +280,15 @@ void motorsPlayTone(uint16_t frequency, uint16_t duration_msec)
   motorsBeep(MOTOR_M2, true, frequency, (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / frequency)/ 20);
   motorsBeep(MOTOR_M3, true, frequency, (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / frequency)/ 20);
   motorsBeep(MOTOR_M4, true, frequency, (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / frequency)/ 20);
+  motorsBeep(MOTOR_M5, true, frequency, (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / frequency)/ 20);
+  motorsBeep(MOTOR_M6, true, frequency, (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / frequency)/ 20);
   vTaskDelay(M2T(duration_msec));
   motorsBeep(MOTOR_M1, false, frequency, 0);
   motorsBeep(MOTOR_M2, false, frequency, 0);
   motorsBeep(MOTOR_M3, false, frequency, 0);
   motorsBeep(MOTOR_M4, false, frequency, 0);
+  motorsBeep(MOTOR_M5, false, frequency, 0);
+  motorsBeep(MOTOR_M6, false, frequency, 0);
 }
 
 // Plays a melody from a note array
@@ -306,4 +310,6 @@ LOG_ADD(LOG_UINT32, m1_pwm, &motor_ratios[0])
 LOG_ADD(LOG_UINT32, m2_pwm, &motor_ratios[1])
 LOG_ADD(LOG_UINT32, m3_pwm, &motor_ratios[2])
 LOG_ADD(LOG_UINT32, m4_pwm, &motor_ratios[3])
+LOG_ADD(LOG_UINT32, m5_pwm, &motor_ratios[2])
+LOG_ADD(LOG_UINT32, m6_pwm, &motor_ratios[3])
 LOG_GROUP_STOP(pwm)

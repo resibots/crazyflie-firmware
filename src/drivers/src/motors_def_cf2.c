@@ -113,6 +113,50 @@ static const MotorPerifDef CONN_M4 =
     .preloadConfig = TIM_OC4PreloadConfig,
 };
 
+//Connector IO1, PB8, TIM4_CH3
+static const MotorPerifDef  CONN_M5=
+{
+    .drvType       = BRUSHED,
+    .gpioPerif     = RCC_AHB1Periph_GPIOB,
+    .gpioPort      = GPIOB,
+    .gpioPin       = GPIO_Pin_8,
+    .gpioPinSource = GPIO_PinSource8,
+    .gpioOType     = GPIO_OType_PP,
+    .gpioAF        = GPIO_AF_TIM4,
+    .timPerif      = RCC_APB1Periph_TIM4,
+    .tim           = TIM4,
+    .timPolarity   = TIM_OCPolarity_High,
+    .timDbgStop    = DBGMCU_TIM4_STOP,
+    .timPeriod     = MOTORS_PWM_PERIOD,
+    .timPrescaler  = MOTORS_PWM_PRESCALE,
+    .setCompare    = TIM_SetCompare3,
+    .getCompare    = TIM_GetCapture3,
+    .ocInit        = TIM_OC3Init,
+    .preloadConfig = TIM_OC3PreloadConfig,
+};
+
+//Connector IO2, PB5, TIM3_CH2
+static const MotorPerifDef CONN_M6 =
+{
+    .drvType       = BRUSHED,
+    .gpioPerif     = RCC_AHB1Periph_GPIOB,
+    .gpioPort      = GPIOB,
+    .gpioPin       = GPIO_Pin_5,
+    .gpioPinSource = GPIO_PinSource5,
+    .gpioOType     = GPIO_OType_PP,
+    .gpioAF        = GPIO_AF_TIM3,
+    .timPerif      = RCC_APB1Periph_TIM3,
+    .tim           = TIM3,
+    .timPolarity   = TIM_OCPolarity_High,
+    .timDbgStop    = DBGMCU_TIM3_STOP,
+    .timPeriod     = MOTORS_PWM_PERIOD,
+    .timPrescaler  = MOTORS_PWM_PRESCALE,
+    .setCompare    = TIM_SetCompare2,
+    .getCompare    = TIM_GetCapture2,
+    .ocInit        = TIM_OC2Init,
+    .preloadConfig = TIM_OC2PreloadConfig,
+};
+
 // Connector M1, PA1, TIM2_CH2, Brushless config, inversed
 static const MotorPerifDef CONN_M1_BL_INV =
 {
@@ -510,14 +554,16 @@ static const MotorPerifDef DECK_MOSI =
 };
 
 /**
- * Default brushed mapping to M1-M4 connectors.
+ * Default brushed mapping to M1-M6 connectors.
  */
 const MotorPerifDef* motorMapDefaultBrushed[NBR_OF_MOTORS] =
 {
   &CONN_M1,
   &CONN_M2,
   &CONN_M3,
-  &CONN_M4
+  &CONN_M4,
+  &CONN_M5,
+  &CONN_M6
 };
 
 /**
