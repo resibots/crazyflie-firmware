@@ -22,6 +22,10 @@ SignalLog *tunnelGetBaseSignal();
 SignalLog *tunnelGetUnfilteredSignal(uint8_t id);
 SignalLog *tunnelGetSignal(uint8_t id);
 
+// Status getters
+TunnelStatus *tunnelGetLeaderStatus();
+TunnelStatus *tunnelGetFollowerStatus();
+
 // Initialize the param submodule
 void tunnelSignalInit();
 

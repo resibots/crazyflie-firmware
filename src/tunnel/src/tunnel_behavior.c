@@ -16,6 +16,7 @@
 #include "tunnel_commander.h"
 #include "tunnel_signal.h"
 #include "tunnel_avoider.h"
+#include "tunnel.h"
 
 #include "debug.h"
 #define DEBUG_MODULE "BEH"
@@ -168,13 +169,16 @@ TunnelBehavior tunnelGetCurrentBehavior() {
 static void setBehavior(TunnelBehavior newBehavior) {
   if(newBehavior != currentBehavior) {
     DEBUG_PRINT("Setting behavior %i->%i\n", currentBehavior, newBehavior);
-    if(newBehavior == TUNNEL_BEHAVIOR_TAKE_OFF) {
+    if(newBehavior == TUNNEL_BEHAVIOR_TAKE_OFF) { //TODO switch
       zTarget = 0.1f;
       prevTime = 0;
       estimatorKalmanInit();
     }
     else if(newBehavior == TUNNEL_BEHAVIOR_SCAN) {
       tunnelBehaviorScanEnable();
+    }
+    else if(newBehavior == TUNNEL_BEHAVIOR_IDLE) {
+      tunnelSetDroneState(DRONE_STATE_IDLE);
     }
     currentBehavior = newBehavior;
   }

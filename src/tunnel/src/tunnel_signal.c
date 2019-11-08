@@ -14,15 +14,16 @@
 
 #include "tunnel_config.h"
 #include "tunnel_commander.h"
-#include "p2p.h"
+#include "tunnel_comm.h"
 #include "radiolink.h"
+#include "p2p.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 
 #include "log.h"
 
-//TODO keep track of all the drones' statuses coming from pings ?
+//TODO keep track of all drones' statuses coming from pings ?
 
 // Number of unfiltered signals (index corresponds to the agent id)
 #define N_AGENTS 16
@@ -44,6 +45,10 @@ static SignalLogFiltered followerSignal;
 static SignalLogFiltered leaderSignal;
 static SignalLogFiltered baseSignal;
 static SignalLog unfilteredSignals[N_AGENTS];
+
+// Tracked statuses
+static TunnelStatus followerStatus;
+static TunnelStatus leaderStatus;
 
 // Private functions, used for filtering
 
@@ -81,6 +86,13 @@ static void tunnelCRTPRssiHandler(uint8_t rssi) {
   kalmanUpdate(&baseSignal, rssi, tunnelGetCurrentMovement()->vx);
 }
 
+static void p2pStatusHandler(P2PPacket *p) {
+  if(p->origin == getLeaderID())
+    memcpy(&followerStatus.status, p->rxdata, sizeof(TunnelStatus));
+  else if(p->origin == getFollowerID())
+    memcpy(&leaderStatus.status, p->rxdata, sizeof(TunnelStatus));
+}
+
 static void signalInit(SignalLog *signal) {
   signal->timestamp = 0;
   signal->rssi = 0;
@@ -113,6 +125,9 @@ SignalLog *tunnelGetSignal(uint8_t id) {
   else return tunnelGetUnfilteredSignal(id);
 }
 
+TunnelStatus *tunnelGetLeaderStatus() { return &leaderStatus; }
+TunnelStatus *tunnelGetFollowerStatus() { return &followerStatus; }
+
 void tunnelSignalInit() {
   // Initialize the structures with default values
   signalInit(&followerSignal.signalLog);
@@ -121,6 +136,9 @@ void tunnelSignalInit() {
 
   for(int i = 0; i < N_AGENTS; i++)
     signalInit(&unfilteredSignals[i]);
+
+  // Subscribe to new statuses from leader & follower
+  p2pRegisterPortCB(P2P_PORT_STATUS, p2pStatusHandler);
 
   // Subscribe to new RSSI values
   p2pRegisterRssiCB(tunnelP2PRssiHandler);
