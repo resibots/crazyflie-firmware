@@ -74,10 +74,14 @@ static void kalmanUpdate(SignalLogFiltered *signal, float newRssi, float speed) 
 }
 
 static void tunnelP2PRssiHandler(P2PPacket* p) {
-  if(p->origin == getFollowerID())
-    kalmanUpdate(&followerSignal, p->rssi, tunnelGetCurrentMovement()->vx);
-  if(p->origin == getLeaderID())
+  if(p->origin == getLeaderID()) {
     kalmanUpdate(&leaderSignal, p->rssi, tunnelGetCurrentMovement()->vx);
+    // DEBUG_PRINT("Sig leader %i %.2f %.2f\n", p->rssi, tunnelGetLeaderSignal()->rssi, tunnelGetCurrentMovement()->vx);
+  }
+  else if(p->origin == getFollowerID()) {
+    kalmanUpdate(&followerSignal, p->rssi, tunnelGetCurrentMovement()->vx);
+    // DEBUG_PRINT("Sig follow %i %.2f %.2f\n", p->rssi, tunnelGetFollowerSignal()->rssi, tunnelGetCurrentMovement()->vx);
+  }
   else {
     unfilteredSignals[p->origin].timestamp = xTaskGetTickCount();
     unfilteredSignals[p->origin].rssi = p->rssi;

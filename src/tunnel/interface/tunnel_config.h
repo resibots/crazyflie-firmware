@@ -96,7 +96,7 @@ OBSTACLE AVOIDING
 #define TUNNEL_RSSI_DANGER  70 // Threshold before considering the connection will soon be lost
 
 // Process noise in the RSSI kalman filtering
-#define TUNNEL_SIGNAL_KALMAN_R 0.01f
+#define TUNNEL_SIGNAL_KALMAN_R 0.5f
 
 // Measurement noise in the RSSI kalman filtering
 #define TUNNEL_SIGNAL_KALMAN_Q 5.f

@@ -18,8 +18,8 @@
 #include "tunnel_avoider.h"
 #include "tunnel.h"
 
-#include "debug.h"
 #define DEBUG_MODULE "BEH"
+#include "debug.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -90,12 +90,12 @@ static void tunnelBehaviorGotoUpdate(TunnelHover *vel, bool *enableCollisions) {
   else tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
 }
 
-// Take off Behavior
+// Take off & Land Behaviors
 
 static float zTarget = 0.1f;
 static uint32_t prevTime = 0;
 
-static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions) {
+static void verticalMotionUpdate(TunnelHover *vel, bool *enableCollisions, float direction) {
   // Don't move on other axis
   vel->vx = 0;
   vel->vy = 0;
@@ -109,15 +109,30 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions
   *enableCollisions = false;
 
   // Slowly increase the height
-  zTarget += TAKE_OFF_VELOCITY * (float)(xTaskGetTickCount() - prevTime) / 1000.f;
+  zTarget += direction * TAKE_OFF_VELOCITY * (float)(xTaskGetTickCount() - prevTime) / 1000.f;
   prevTime = xTaskGetTickCount();
   vel->zDistance = zTarget;
+}
+
+static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions) {
+  verticalMotionUpdate(vel, enableCollisions, 1.0);
 
   // End the behavior when the default height is reached
   if(zTarget >= TUNNEL_DEFAULT_HEIGHT) {
     vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
     tunnelSetDistance(0); // Reset distance estimation
     tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
+  }
+}
+
+static void tunnelBehaviorLandUpdate(TunnelHover *vel, bool *enableCollisions) {
+  verticalMotionUpdate(vel, enableCollisions, -1.0);
+
+  // End the behavior when the ground is reached
+  if(zTarget <= 0.05) {
+    zTarget = 0;
+    setTunnelCanFly(false);
+    tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
   }
 }
 
@@ -154,8 +169,7 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
       tunnelBehaviorPositioningUpdate(vel, enableCollisions);
       break;
     case TUNNEL_BEHAVIOR_LAND:
-      setTunnelCanFly(false);
-      tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
+      tunnelBehaviorLandUpdate(vel, enableCollisions);
       break;
   }
 }
@@ -169,25 +183,37 @@ TunnelBehavior tunnelGetCurrentBehavior() {
 static void setBehavior(TunnelBehavior newBehavior) {
   if(newBehavior != currentBehavior) {
     DEBUG_PRINT("Setting behavior %i->%i\n", currentBehavior, newBehavior);
-    if(newBehavior == TUNNEL_BEHAVIOR_TAKE_OFF) { //TODO switch
-      zTarget = 0.1f;
-      prevTime = 0;
-      estimatorKalmanInit();
-    }
-    else if(newBehavior == TUNNEL_BEHAVIOR_SCAN) {
-      tunnelBehaviorScanEnable();
-    }
-    else if(newBehavior == TUNNEL_BEHAVIOR_IDLE) {
-      tunnelSetDroneState(DRONE_STATE_IDLE);
-    }
+
     currentBehavior = newBehavior;
+
+    switch (newBehavior) {
+      case TUNNEL_BEHAVIOR_IDLE: {
+        tunnelSetDroneState(DRONE_STATE_IDLE);
+        break;
+      } 
+      case TUNNEL_BEHAVIOR_TAKE_OFF: {
+        zTarget = 0.1f;
+        prevTime = 0;
+        estimatorKalmanInit();
+        break;
+      }
+      case TUNNEL_BEHAVIOR_SCAN: {
+        tunnelBehaviorScanEnable();
+        break;
+      }
+      case TUNNEL_BEHAVIOR_LAND: {
+        zTarget = TUNNEL_DEFAULT_HEIGHT;
+        prevTime = 0;
+        break;
+      }
+    }
   }
 }
 
 void tunnelSetBehavior(TunnelBehavior newBehavior) {
   if(newBehavior != currentBehavior) {
     previousBehavior = currentBehavior;
-    setBehavior(newBehavior);  
+    setBehavior(newBehavior);
   }
 }
 
