@@ -59,8 +59,8 @@ struct this_s {
   struct pidAxis_s pidY;
   struct pidAxis_s pidZ;
 
-  uint16_t thrustBase; // approximate throttle needed when in perfect hover. More weight/older battery can use a higher value
-  uint16_t thrustMin;  // Minimum thrust value to output
+  uint16_t fzBase; // approximate throttle needed when in perfect hover. More weight/older battery can use a higher value
+  uint16_t fzMin;  // Minimum thrust value to output
 };
 
 // Maximum roll/pitch angle permited
@@ -70,7 +70,9 @@ static float rpLimitOverhead = 1.10f;
 static float xyVelMax = 1.0f;
 static float zVelMax  = 1.0f;
 static float velMaxOverhead = 1.10f;
-static const float thrustScale = 1000.0f;
+static const float fzScale = 1000.0f;
+static const float fyScale = 1000.0f;
+static const float fxScale = 1000.0f;
 
 #define DT (float)(1.0f/POSITION_RATE)
 #define POSITION_LPF_CUTOFF_FREQ 20.0f
@@ -132,8 +134,8 @@ static struct this_s this = {
     .pid.dt = DT,
   },
 
-  .thrustBase = 36000,
-  .thrustMin  = 20000,
+  .fzBase = 36000,
+  .fzMin  = 20000,
 };
 #endif
 
@@ -161,7 +163,7 @@ static float runPid(float input, struct pidAxis_s *axis, float setpoint, float d
   return pidUpdate(&axis->pid, input, true);
 }
 
-void positionController(float* thrust, attitude_t *attitude, setpoint_t *setpoint,
+void positionController(float* fz, float* fy, float* fx, attitude_t *attitude, setpoint_t *setpoint,
                                                              const state_t *state)
 {
   this.pidX.pid.outputLimit = xyVelMax * velMaxOverhead;
@@ -190,10 +192,10 @@ void positionController(float* thrust, attitude_t *attitude, setpoint_t *setpoin
     setpoint->velocity.z = runPid(state->position.z, &this.pidZ, setpoint->position.z, DT);
   }
 
-  velocityController(thrust, attitude, setpoint, state);
+  velocityController(fz, fy, fx, attitude, setpoint, state);
 }
 
-void velocityController(float* thrust, attitude_t *attitude, setpoint_t *setpoint,
+void velocityController(float* fz, float* fy, float* fx, attitude_t *attitude, setpoint_t *setpoint,
                                                              const state_t *state)
 {
   this.pidVX.pid.outputLimit = rpLimit * rpLimitOverhead;
@@ -214,13 +216,17 @@ void velocityController(float* thrust, attitude_t *attitude, setpoint_t *setpoin
   attitude->pitch = constrain(attitude->pitch, -rpLimit, rpLimit);
 
   // Thrust
-  float thrustRaw = runPid(state->velocity.z, &this.pidVZ, setpoint->velocity.z, DT);
+  float fzRaw = runPid(state->velocity.z, &this.pidVZ, setpoint->velocity.z, DT);
   // Scale the thrust and add feed forward term
-  *thrust = thrustRaw*thrustScale + this.thrustBase;
+  *fz = fzRaw*fzScale + this.fzBase;
   // Check for minimum thrust
-  if (*thrust < this.thrustMin) {
-    *thrust = this.thrustMin;
+  if (*thrust < this.fzMin) {
+    *fz = this.fzMin;
   }
+  float fyRaw = runPid(state->velocity.y, &this.pidVY, setpoint->velocity.y, DT);
+  *fy = fyRaw
+  float fxRaw = runPid(state->velocity.x, &this.pidVX, setpoint->velocity.x, DT);
+  *fx = fxRaw
 }
 
 void positionControllerResetAllPID()

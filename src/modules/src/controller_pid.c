@@ -16,7 +16,9 @@ static bool tiltCompensationEnabled = false;
 
 static attitude_t attitudeDesired;
 static attitude_t rateDesired;
-static float actuatorThrust;
+static float actuatorX;
+static float actuatorY;
+static float actuatorZ;
 
 void controllerPidInit(void)
 {
@@ -52,13 +54,13 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
   }
 
   if (RATE_DO_EXECUTE(POSITION_RATE, tick)) {
-    positionController(&actuatorThrust, &attitudeDesired, setpoint, state);
+    positionController(&actuatorX, &actuatorY, &actuatorZ, &attitudeDesired, setpoint, state);
   }
 
   if (RATE_DO_EXECUTE(ATTITUDE_RATE, tick)) {
     // Switch between manual and automatic position control
     if (setpoint->mode.z == modeDisable) {
-      actuatorThrust = setpoint->thrust;
+      actuatorZ = setpoint->thrust;
     }
     if (setpoint->mode.x == modeDisable || setpoint->mode.y == modeDisable) {
       attitudeDesired.roll = setpoint->attitude.roll;
@@ -88,25 +90,27 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
     attitudeControllerGetActuatorOutput(&control->roll,
                                         &control->pitch,
                                         &control->yaw);
-
-    control->yaw = -control->yaw;
+    // do not know why yaw is reverse
+    /* control->yaw = -control->yaw; */
   }
 
   if (tiltCompensationEnabled)
   {
-    control->thrust = actuatorThrust / sensfusion6GetInvThrustCompensationForTilt();
+    control->fz = actuatorZ / sensfusion6GetInvThrustCompensationForTilt();
   }
   else
   {
-    control->thrust = actuatorThrust;
+    control->fz = actuatorZ;
   }
 
-  if (control->thrust == 0)
+  if (control->fz == 0)
   {
-    control->thrust = 0;
+    control->fz = 0;
     control->roll = 0;
     control->pitch = 0;
     control->yaw = 0;
+    control->fx = 0 ;
+    control->fy = 0;
 
     attitudeControllerResetAllPID();
     positionControllerResetAllPID();
