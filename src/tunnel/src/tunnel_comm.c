@@ -34,9 +34,9 @@ static TunnelStatus currentStatus;
 
 typedef enum {
   CRTP_TUNNEL_COMMAND_TAKE_OFF       = 0x00, // Start flying and do our thing!
-  CRTP_TUNNEL_COMMAND_SCAN           = 0x01, // Scan the room and send the measurements
-  CRTP_TUNNEL_COMMAND_LAND           = 0x02, // Land no matter where we are (e.g. to manually save battery)
-  CRTP_TUNNEL_COMMAND_RTH            = 0x03, // Return to home automatically
+  CRTP_TUNNEL_COMMAND_SET_BEHAVIOR   = 0x01, // Set a specific behavior while the drone is flying
+  CRTP_TUNNEL_COMMAND_RTH            = 0x02, // Return to home automatically
+  CRTP_TUNNEL_COMMAND_LAND           = 0x03, // Land no matter where we are (e.g. to manually save battery)
   CRTP_TUNNEL_COMMAND_STOP           = 0x04, // Stop the motors and return to Idle state (for emergencies or tests)
 
   //TODO implement all chain commands
@@ -107,8 +107,8 @@ void processIncomingCRTPPacket(CRTPTunnelPacket* p) {
       case CRTP_TUNNEL_COMMAND_TAKE_OFF:
         tunnelSetDroneState(DRONE_STATE_FLYING);
         break;
-      case CRTP_TUNNEL_COMMAND_SCAN:
-        tunnelSetBehavior(TUNNEL_BEHAVIOR_SCAN);
+      case CRTP_TUNNEL_COMMAND_SET_BEHAVIOR:
+        tunnelSetBehavior(p->dronedata[1]);
         break;
       case CRTP_TUNNEL_COMMAND_LAND:
         tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);

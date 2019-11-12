@@ -22,6 +22,7 @@
 #include "debug.h"
 
 // Follower and leader IDs getters and setters
+// Note: the drone has no follower or leader if the value is getDroneID()
 struct {
   uint8_t followerID : 4;
   uint8_t leaderID   : 4;
@@ -34,10 +35,21 @@ uint8_t getLeaderID() { return chainPeers.leaderID; }
 void setLeaderID(uint8_t newID) { chainPeers.leaderID = newID; }
 
 void tunnelAutoSetFollowerLeader() {
+  // Normal follower & leader IDs
   if(getDroneId() > 0)
     setLeaderID(getDroneId() - 1);
   if(getDroneId() < getNDrones() - 1)
     setFollowerID(getDroneId() + 1);
+
+  // Exceptions
+  if(getDroneId() == 0)
+    setLeaderID(getDroneId());
+  if(getDroneId() == getNDrones() - 1)
+    setFollowerID(getDroneId());
+  if(getDroneId() >= getNDrones()) {
+    setLeaderID(getDroneId());
+    setFollowerID(getDroneId());
+  }
 }
 
 void tunnelAutoSetIdleInactive() {
@@ -69,18 +81,19 @@ static bool tunnelCanFly;
 uint8_t getTunnelCanFly() { return tunnelCanFly; }
 
 void setTunnelCanFly(bool canfly) {
+  // canfly = false; //TODO remove
   if(canfly != tunnelCanFly) {
     if(!canfly) {
       if(tunnelGetCurrentBehavior() != TUNNEL_BEHAVIOR_IDLE)
         tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
       else {
         tunnelCanFly = false;
-    sendSetpointStop();
+        sendSetpointStop();
       }
     }
     else tunnelCanFly = true;
   }
-  }
+}
 
 // Keep track of how long we have been flying since the last take off
 uint32_t getTunnelFlightTime() { return xTaskGetTickCount() - tunnelGetTakeOffTime(); }
