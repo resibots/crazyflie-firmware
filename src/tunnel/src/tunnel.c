@@ -43,7 +43,6 @@ void tunnelSetDroneState(DroneState newState) {
     case DRONE_STATE_IDLE:
     case DRONE_STATE_CRASHED:
       setTunnelCanFly(false);
-      tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
 
       // Set LED state
       ledseqStop(LED_GREEN_R, seq_armed);
@@ -100,19 +99,21 @@ static void tunnelTask(void *param) {
     tunnelCommUpdate();
 
     // Manage state changes based on new information sent by other drones
-    switch(tunnelGetDroneState()) {
-      case DRONE_STATE_IDLE:
+    switch(tunnelGetDroneState()) { //TODO finish states
+      case DRONE_STATE_IDLE: {
         // Arm the drone if the leader is flying (meaning it might need us to relay it if it goes too far away)
         if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderStatus()->droneState == DRONE_STATE_FLYING) {
           tunnelSetDroneState(DRONE_STATE_ARMED);
           DEBUG_PRINT("Leader flying, auto arm!\n");
         }
         break;
-      case DRONE_STATE_ARMED:
+      }
+      case DRONE_STATE_ARMED: {
         // Launch the drone if the leader got too far away
-        if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi > TUNNEL_RSSI_ARMED) {
+        if(!tunnelIsDroneConnected(getLeaderID()) || 
+           (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi > TUNNEL_RSSI_ARMED + TUNNEL_RSSI_GROUND_PENALTY)) {
           tunnelSetDroneState(DRONE_STATE_FLYING);
-          DEBUG_PRINT("Leader got too far, auto take off!\n");
+          DEBUG_PRINT("Leader far, auto take off!\n");
         }
 
         // Go back to idle if the leader landed
@@ -121,8 +122,16 @@ static void tunnelTask(void *param) {
           DEBUG_PRINT("Dearming, leader landed.\n");
         }
         break;
-      case DRONE_STATE_FLYING: //TODO finish and continue the previous states
+      }
+      case DRONE_STATE_FLYING: {
+        // Land the drone if the leader comes back
+        if(getTunnelFlightTime() > 2000 && 
+           (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi < TUNNEL_RSSI_ARMED)) { //TODO test, remove
+          tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
+          DEBUG_PRINT("Leader came back, auto land!\n");
+        }
         break;
+      }
       case DRONE_STATE_CRASHED:
         break;
     }

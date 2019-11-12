@@ -30,6 +30,8 @@
 static TunnelBehavior currentBehavior;
 static TunnelBehavior previousBehavior;
 
+static uint32_t takeOffTime = 0;
+
 // Positioning Behavior
 
 #define TUNNEL_SIGNAL_DIFF_TOLERANCE 3
@@ -122,6 +124,7 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions
     vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
     tunnelSetDistance(0); // Reset distance estimation
     tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
+    takeOffTime = xTaskGetTickCount();
   }
 }
 
@@ -192,6 +195,7 @@ static void setBehavior(TunnelBehavior newBehavior) {
         break;
       } 
       case TUNNEL_BEHAVIOR_TAKE_OFF: {
+        tunnelSetDroneState(DRONE_STATE_FLYING);
         zTarget = 0.1f;
         prevTime = 0;
         estimatorKalmanInit();
@@ -220,6 +224,8 @@ void tunnelSetBehavior(TunnelBehavior newBehavior) {
 void tunnelSetPreviousBehavior() {
   setBehavior(previousBehavior);
 }
+
+uint32_t tunnelGetTakeOffTime() { return takeOffTime; }
 
 // Submodule initialization
 

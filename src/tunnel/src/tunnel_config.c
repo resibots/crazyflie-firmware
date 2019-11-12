@@ -18,6 +18,9 @@
 
 #include "configblock.h"
 
+#define DEBUG_MODULE "CFG"
+#include "debug.h"
+
 // Follower and leader IDs getters and setters
 struct {
   uint8_t followerID : 4;
@@ -66,13 +69,21 @@ static bool tunnelCanFly;
 uint8_t getTunnelCanFly() { return tunnelCanFly; }
 
 void setTunnelCanFly(bool canfly) {
-  if(canfly != tunnelCanFly && canfly == false) {
+  if(canfly != tunnelCanFly) {
+    if(!canfly) {
+      if(tunnelGetCurrentBehavior() != TUNNEL_BEHAVIOR_IDLE)
+        tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
+      else {
+        tunnelCanFly = false;
     sendSetpointStop();
-    tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
+      }
+    }
+    else tunnelCanFly = true;
+  }
   }
 
-  tunnelCanFly = canfly;
-}
+// Keep track of how long we have been flying since the last take off
+uint32_t getTunnelFlightTime() { return xTaskGetTickCount() - tunnelGetTakeOffTime(); }
 
 uint8_t getDroneId() {
   return (uint8_t)configblockGetRadioAddress() & 0x0F;

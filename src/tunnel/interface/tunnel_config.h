@@ -95,6 +95,9 @@ OBSTACLE AVOIDING
 #define TUNNEL_RSSI_ARMED   60 // Quality to reach before taking off as a new relay drone
 #define TUNNEL_RSSI_DANGER  70 // Threshold before considering the connection will soon be lost
 
+// RSSI is better in the air than when idle on the ground, compensate here
+#define TUNNEL_RSSI_GROUND_PENALTY 10
+
 // Process noise in the RSSI kalman filtering
 #define TUNNEL_SIGNAL_KALMAN_R 0.5f
 
@@ -105,7 +108,7 @@ OBSTACLE AVOIDING
 #define TUNNEL_SIGNAL_KALMAN_B 3.f
 
 // Maximum age of the last message by the other agent to be considered near
-#define TUNNEL_DISCONNECT_TIMEOUT 500
+#define TUNNEL_DISCONNECT_TIMEOUT 1000
 
 /****************
      RUNTIME
@@ -146,6 +149,9 @@ uint8_t getTunnelCanFly();
 
 // Sets if the Tunnel module can use the motors
 void setTunnelCanFly(bool canfly);
+
+// Get how much time we have been flying since the last take off
+uint32_t getTunnelFlightTime();
 
 // Get the last 4 bits of this drone's address
 uint8_t getDroneId();

@@ -34,6 +34,9 @@ void tunnelSetBehavior(TunnelBehavior behavior);
 // [WARNING] works only one time, will do nothing if repeated without manually changing the current behavior
 void tunnelSetPreviousBehavior();
 
+// Get when we last took off
+uint32_t tunnelGetTakeOffTime();
+
 // Initialize the behavior submodule
 void tunnelBehaviorInit();
 
