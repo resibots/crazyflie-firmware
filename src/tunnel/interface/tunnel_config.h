@@ -114,6 +114,9 @@ OBSTACLE AVOIDING
      RUNTIME
 *****************/
 
+// Says is the drone has a follower or a leader or not
+bool isPeerIDValid(uint8_t id);
+
 // Returns the current follower's ID
 uint8_t getFollowerID();
 

@@ -110,7 +110,7 @@ static void tunnelTask(void *param) {
       }
       case DRONE_STATE_ARMED: {
         // Launch the drone if the leader got too far away
-        if(!tunnelIsDroneConnected(getLeaderID()) || 
+        if((isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID())) || 
            (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi > TUNNEL_RSSI_ARMED + TUNNEL_RSSI_GROUND_PENALTY)) {
           tunnelSetDroneState(DRONE_STATE_FLYING);
           DEBUG_PRINT("Leader far, auto take off!\n");
@@ -119,7 +119,7 @@ static void tunnelTask(void *param) {
         // Go back to idle if the leader landed
         if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderStatus()->droneState < DRONE_STATE_FLYING) {
           tunnelSetDroneState(DRONE_STATE_IDLE);
-          DEBUG_PRINT("Dearming, leader landed.\n");
+          DEBUG_PRINT("Disarming, leader landed.\n");
         }
         break;
       }

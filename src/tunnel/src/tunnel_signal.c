@@ -74,11 +74,11 @@ static void kalmanUpdate(SignalLogFiltered *signal, float newRssi, float speed) 
 }
 
 static void tunnelP2PRssiHandler(P2PPacket* p) {
-  if(p->origin == getLeaderID()) {
+  if(isPeerIDValid(getLeaderID()) && p->origin == getLeaderID()) {
     kalmanUpdate(&leaderSignal, p->rssi, tunnelGetCurrentMovement()->vx);
     // DEBUG_PRINT("Sig leader %i %.2f %.2f\n", p->rssi, tunnelGetLeaderSignal()->rssi, tunnelGetCurrentMovement()->vx);
   }
-  else if(p->origin == getFollowerID()) {
+  else if(isPeerIDValid(getFollowerID()) && p->origin == getFollowerID()) {
     kalmanUpdate(&followerSignal, p->rssi, tunnelGetCurrentMovement()->vx);
     // DEBUG_PRINT("Sig follow %i %.2f %.2f\n", p->rssi, tunnelGetFollowerSignal()->rssi, tunnelGetCurrentMovement()->vx);
   }
@@ -93,9 +93,9 @@ static void tunnelCRTPRssiHandler(uint8_t rssi) {
 }
 
 static void p2pStatusHandler(P2PPacket *p) {
-  if(p->origin == getLeaderID())
+  if(isPeerIDValid(getLeaderID()) && p->origin == getLeaderID())
     memcpy(&leaderStatus, p->rxdata, sizeof(TunnelStatus));
-  else if(p->origin == getFollowerID())
+  else if(isPeerIDValid(getFollowerID()) && p->origin == getFollowerID())
     memcpy(&followerStatus, p->rxdata, sizeof(TunnelStatus));
 }
 
@@ -107,6 +107,10 @@ static void signalInit(SignalLog *signal) {
 // Public functions
 
 bool tunnelIsDroneConnected(uint8_t id) {
+  if(id == getLeaderID() && !isPeerIDValid(getLeaderID()))
+    return false;
+  if(id == getFollowerID() && !isPeerIDValid(getFollowerID()))
+    return false;
   SignalLog *s = tunnelGetSignal(id);
   return s->rssi > 0 && s->rssi < TUNNEL_RSSI_DANGER &&
          (xTaskGetTickCount() - s->timestamp) < TUNNEL_DISCONNECT_TIMEOUT;

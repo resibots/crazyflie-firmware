@@ -28,6 +28,8 @@ struct {
   uint8_t leaderID   : 4;
 } chainPeers;
 
+bool isPeerIDValid(uint8_t id) { return id != getDroneId(); }
+
 uint8_t getFollowerID() { return chainPeers.followerID; }
 void setFollowerID(uint8_t newID) { chainPeers.followerID = newID; }
 

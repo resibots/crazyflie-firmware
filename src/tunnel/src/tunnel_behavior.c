@@ -45,9 +45,9 @@ static void tunnelBehaviorPositioningUpdate(TunnelHover *vel, bool *enableCollis
   SignalLog *followerSignal = (getDroneId() >= getNDrones() - 1) ? tunnelGetFollowerSignal() : tunnelGetBaseSignal();
 
   // If the last RSSI value is too old, consider connection lost
-  if(tunnelIsDroneConnected(getLeaderID()))
+  if(isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID()))
     setTunnelCanFly(false); // TODO wait for reconnect behavior
-  if(tunnelIsDroneConnected(getFollowerID()))
+  if(isPeerIDValid(getFollowerID()) && !tunnelIsDroneConnected(getFollowerID()))
     setTunnelCanFly(false); // TODO rollback behavior
 
   //Don't go too close to another drone
