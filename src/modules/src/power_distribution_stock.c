@@ -38,6 +38,8 @@ static struct {
   uint32_t m2;
   uint32_t m3;
   uint32_t m4;
+  uint32_t m5;
+  uint32_t m6;
 } motorPower;
 
 static struct {
@@ -45,6 +47,8 @@ static struct {
   uint16_t m2;
   uint16_t m3;
   uint16_t m4;
+  uint16_t m5;
+  uint16_t m6;
 } motorPowerSet;
 
 void powerDistributionInit(void)
@@ -69,10 +73,19 @@ void powerStop()
   motorsSetRatio(MOTOR_M2, 0);
   motorsSetRatio(MOTOR_M3, 0);
   motorsSetRatio(MOTOR_M4, 0);
+  motorsSetRatio(MOTOR_M5, 0);
+  motorsSetRatio(MOTOR_M6, 0);
 }
 
 void powerDistribution(const control_t *control)
 {
+  #ifdef HEXA
+     motorPower.m1 = limitThrust(control->m1);
+     motorPower.m2 = limitThrust(control->m2);
+     motorPower.m3 = limitThrust(control->m3);
+     motorPower.m4 = limitThrust(control->m4);
+     motorPower.m5 = limitThrust(control->m5);
+     motorPower.m6 = limitThrust(control->m6);
   #ifdef QUAD_FORMATION_X
     int16_t r = control->roll / 2.0f;
     int16_t p = control->pitch / 2.0f;
@@ -80,7 +93,7 @@ void powerDistribution(const control_t *control)
     motorPower.m2 = limitThrust(control->thrust - r - p - control->yaw);
     motorPower.m3 =  limitThrust(control->thrust + r - p + control->yaw);
     motorPower.m4 =  limitThrust(control->thrust + r + p - control->yaw);
-  #else // QUAD_FORMATION_NORMAL
+#if !defined(HEXA) && !defined(QUAD_FORMATION_X) // QUAD_FORMATION_NORMAL
     motorPower.m1 = limitThrust(control->thrust + control->pitch +
                                control->yaw);
     motorPower.m2 = limitThrust(control->thrust - control->roll -
