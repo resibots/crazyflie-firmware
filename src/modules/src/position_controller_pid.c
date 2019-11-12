@@ -71,8 +71,8 @@ static float xyVelMax = 1.0f;
 static float zVelMax  = 1.0f;
 static float velMaxOverhead = 1.10f;
 static const float fzScale = 1000.0f;
-static const float fyScale = 1000.0f;
-static const float fxScale = 1000.0f;
+/* static const float fyScale = 1000.0f; */
+/* static const float fxScale = 1000.0f; */
 
 #define DT (float)(1.0f/POSITION_RATE)
 #define POSITION_LPF_CUTOFF_FREQ 20.0f
@@ -201,7 +201,7 @@ void velocityController(float* fz, float* fy, float* fx, attitude_t *attitude, s
   this.pidVX.pid.outputLimit = rpLimit * rpLimitOverhead;
   this.pidVY.pid.outputLimit = rpLimit * rpLimitOverhead;
   // Set the output limit to the maximum thrust range
-  this.pidVZ.pid.outputLimit = (UINT16_MAX / 2 / thrustScale);
+  this.pidVZ.pid.outputLimit = (UINT16_MAX / 2 / fzScale);
   //this.pidVZ.pid.outputLimit = (this.thrustBase - this.thrustMin) / thrustScale;
 
   // Roll and Pitch
@@ -220,13 +220,13 @@ void velocityController(float* fz, float* fy, float* fx, attitude_t *attitude, s
   // Scale the thrust and add feed forward term
   *fz = fzRaw*fzScale + this.fzBase;
   // Check for minimum thrust
-  if (*thrust < this.fzMin) {
+  if (*fz < this.fzMin) {
     *fz = this.fzMin;
   }
   float fyRaw = runPid(state->velocity.y, &this.pidVY, setpoint->velocity.y, DT);
-  *fy = fyRaw
+  *fy = fyRaw;
   float fxRaw = runPid(state->velocity.x, &this.pidVX, setpoint->velocity.x, DT);
-  *fx = fxRaw
+  *fx = fxRaw;
 }
 
 void positionControllerResetAllPID()
@@ -301,8 +301,8 @@ PARAM_ADD(PARAM_FLOAT, zKp, &this.pidZ.pid.kp)
 PARAM_ADD(PARAM_FLOAT, zKi, &this.pidZ.pid.ki)
 PARAM_ADD(PARAM_FLOAT, zKd, &this.pidZ.pid.kd)
 
-PARAM_ADD(PARAM_UINT16, thrustBase, &this.thrustBase)
-PARAM_ADD(PARAM_UINT16, thrustMin, &this.thrustMin)
+PARAM_ADD(PARAM_UINT16, fzBase, &this.fzBase)
+PARAM_ADD(PARAM_UINT16, fzMin, &this.fzMin)
 
 PARAM_ADD(PARAM_FLOAT, rpLimit,  &rpLimit)
 PARAM_ADD(PARAM_FLOAT, xyVelMax, &xyVelMax)

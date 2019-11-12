@@ -122,7 +122,7 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
 
 
 LOG_GROUP_START(controller)
-LOG_ADD(LOG_FLOAT, actuatorThrust, &actuatorThrust)
+LOG_ADD(LOG_FLOAT, actuatorZ, &actuatorZ)
 LOG_ADD(LOG_FLOAT, roll,      &attitudeDesired.roll)
 LOG_ADD(LOG_FLOAT, pitch,     &attitudeDesired.pitch)
 LOG_ADD(LOG_FLOAT, yaw,       &attitudeDesired.yaw)

@@ -280,12 +280,12 @@ void controllerMellinger(control_t *control, setpoint_t *setpoint,
 
   // Output
   if (setpoint->mode.z == modeDisable) {
-    control->thrust = setpoint->thrust;
+    control->fz = setpoint->thrust;
   } else {
-    control->thrust = massThrust * current_thrust;
+    control->fz = massThrust * current_thrust;
   }
 
-  if (control->thrust > 0) {
+  if (control->fz > 0) {
     control->roll = clamp(M.x, -32000, 32000);
     control->pitch = clamp(M.y, -32000, 32000);
     control->yaw = clamp(-M.z, -32000, 32000);
