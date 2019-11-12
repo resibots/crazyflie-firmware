@@ -203,11 +203,12 @@ bool tunnelTraceP2PPacket(P2PPacket *p, TraceMode mode) {
     case TRACE_MODE_BACKWARD:
       p->txdest = getNDrones() - 1;
       break;
-    case TRACE_MODE_ALL:
+    case TRACE_MODE_ALL: {
       P2PPacket p_copy;
       memcpy(&p_copy, p, 2 + p->size); // clean?
       return tunnelTraceP2PPacket(p,       TRACE_MODE_BACKWARD) & 
              tunnelTraceP2PPacket(&p_copy, TRACE_MODE_FORWARD);
+    }
   }
 
   if(p->txdest == getDroneId() || p->size >= P2P_MAX_DATA_SIZE)

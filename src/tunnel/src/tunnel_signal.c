@@ -21,6 +21,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#define DEBUG_MODULE "SIG"
+#include "debug.h"
 #include "log.h"
 
 //TODO keep track of all drones' statuses coming from pings ?
@@ -88,9 +90,9 @@ static void tunnelCRTPRssiHandler(uint8_t rssi) {
 
 static void p2pStatusHandler(P2PPacket *p) {
   if(p->origin == getLeaderID())
-    memcpy(&followerStatus.status, p->rxdata, sizeof(TunnelStatus));
+    memcpy(&leaderStatus, p->rxdata, sizeof(TunnelStatus));
   else if(p->origin == getFollowerID())
-    memcpy(&leaderStatus.status, p->rxdata, sizeof(TunnelStatus));
+    memcpy(&followerStatus, p->rxdata, sizeof(TunnelStatus));
 }
 
 static void signalInit(SignalLog *signal) {

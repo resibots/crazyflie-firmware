@@ -22,7 +22,7 @@
 #include "tunnel_commander.h"
 #include "pm.h"
 
-#define DEBUG_MODULE "TCM"
+#define DEBUG_MODULE "COM"
 #include "debug.h"
 #include "led.h"
 #include "ledseq.h"

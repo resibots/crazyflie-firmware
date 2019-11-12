@@ -16,6 +16,7 @@
 #include "tunnel_behavior.h"
 #include "tunnel_comm.h"
 #include "tunnel_relay.h"
+#include "tunnel_signal.h"
 
 #define DEBUG_MODULE "TUN"
 #include "debug.h"
@@ -43,10 +44,23 @@ void tunnelSetDroneState(DroneState newState) {
     case DRONE_STATE_CRASHED:
       setTunnelCanFly(false);
       tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
+
+      // Set LED state
+      ledseqStop(LED_GREEN_R, seq_armed);
+      ledSet(LED_GREEN_R, false);
+      break;
+    case DRONE_STATE_ARMED:
+      // Set LED state
+      ledseqRun(LED_GREEN_R, seq_armed);
+      ledSet(LED_GREEN_R, false);
       break;
     case DRONE_STATE_FLYING:
       setTunnelCanFly(true);
       tunnelSetBehavior(TUNNEL_BEHAVIOR_TAKE_OFF);
+
+      // Set LED state
+      ledseqStop(LED_GREEN_R, seq_armed);
+      ledSet(LED_GREEN_R, true);
       break;
   }
   droneState = newState;
@@ -84,6 +98,34 @@ static void tunnelTask(void *param) {
 
     // Handle communication routines
     tunnelCommUpdate();
+
+    // Manage state changes based on new information sent by other drones
+    switch(tunnelGetDroneState()) {
+      case DRONE_STATE_IDLE:
+        // Arm the drone if the leader is flying (meaning it might need us to relay it if it goes too far away)
+        if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderStatus()->droneState == DRONE_STATE_FLYING) {
+          tunnelSetDroneState(DRONE_STATE_ARMED);
+          DEBUG_PRINT("Leader flying, auto arm!\n");
+        }
+        break;
+      case DRONE_STATE_ARMED:
+        // Launch the drone if the leader got too far away
+        if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi > TUNNEL_RSSI_ARMED) {
+          tunnelSetDroneState(DRONE_STATE_FLYING);
+          DEBUG_PRINT("Leader got too far, auto take off!\n");
+        }
+
+        // Go back to idle if the leader landed
+        if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderStatus()->droneState < DRONE_STATE_FLYING) {
+          tunnelSetDroneState(DRONE_STATE_IDLE);
+          DEBUG_PRINT("Dearming, leader landed.\n");
+        }
+        break;
+      case DRONE_STATE_FLYING: //TODO finish and continue the previous states
+        break;
+      case DRONE_STATE_CRASHED:
+        break;
+    }
   }
 }
 
