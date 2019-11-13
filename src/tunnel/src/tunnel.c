@@ -42,7 +42,7 @@ void tunnelSetDroneState(DroneState newState) {
     case DRONE_STATE_INACTIVE:
     case DRONE_STATE_IDLE:
     case DRONE_STATE_CRASHED:
-      setTunnelCanFly(false);
+      setTunnelCanFlySoft(false);
 
       // Set LED state
       ledseqStop(LED_GREEN_R, seq_armed);

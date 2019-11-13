@@ -247,7 +247,13 @@ bool tunnelSendCRTPPacketToDrone(CRTPTunnelPacket *p) {
   if(p->size >= CRTP_MAX_DATA_SIZE)
     return false;
 
-  if(p->destination != getDroneId()) {
+  // Broadcast to all drones
+  if((p->destination & 0x0F) == TUNNEL_BROADCAST_ID) {
+    //TODO
+  }
+
+  // Send a CRTP Packet to a single drone
+  else if(p->destination != getDroneId()) {
     P2PPacket p_p2p;
     p_p2p.port = P2P_PORT_CRTP;
     p_p2p.txdest = p->destination;

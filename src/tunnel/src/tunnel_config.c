@@ -82,8 +82,7 @@ static bool tunnelCanFly;
 
 uint8_t getTunnelCanFly() { return tunnelCanFly; }
 
-void setTunnelCanFly(bool canfly) {
-  // canfly = false; //TODO remove
+void setTunnelCanFlySoft(bool canfly) {
   if(canfly != tunnelCanFly) {
     if(!canfly) {
       if(tunnelGetCurrentBehavior() != TUNNEL_BEHAVIOR_IDLE)
@@ -96,6 +95,9 @@ void setTunnelCanFly(bool canfly) {
     else tunnelCanFly = true;
   }
 }
+
+// Set canfly without processing
+void setTunnelCanFly(bool canfly) { tunnelCanFly = canfly; }
 
 // Keep track of how long we have been flying since the last take off
 uint32_t getTunnelFlightTime() { return xTaskGetTickCount() - tunnelGetTakeOffTime(); }

@@ -280,7 +280,7 @@ void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions) {
   }
   #ifdef TUNNEL_STOP_ON_WALLS_LOST
     if(lostWallsFlag == 2)
-      setTunnelCanFly(false);
+      setTunnelCanFlySoft(false);
   #endif
 #endif
 }

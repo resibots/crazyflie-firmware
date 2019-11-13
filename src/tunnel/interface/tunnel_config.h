@@ -110,6 +110,9 @@ OBSTACLE AVOIDING
 // Maximum age of the last message by the other agent to be considered near
 #define TUNNEL_DISCONNECT_TIMEOUT 1000
 
+// Which ID corresponds to a broadcast (should not be changed for 16 agents)
+#define TUNNEL_BROADCAST_ID 0x0F
+
 /****************
      RUNTIME
 *****************/
@@ -150,7 +153,10 @@ void setNDrones(uint8_t ndrones);
 // Returns if the operator said the drone can fly
 uint8_t getTunnelCanFly();
 
-// Sets if the Tunnel module can use the motors
+// Sets if the Tunnel module can use the motors, lands if possible
+void setTunnelCanFlySoft(bool canfly);
+
+// Sets if the Tunnel module can use the motors, cuts motors if false
 void setTunnelCanFly(bool canfly);
 
 // Get how much time we have been flying since the last take off

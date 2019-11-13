@@ -5,8 +5,8 @@
 #include "task.h"
 
 // Pre-calculated constants for better performance
-#define M_PI   (3.14159265358979323846f)
-#define M_PI2  (1.57079632679f)
+#define M_PI    (3.14159265358979323846f)
+#define M_PI2   (1.57079632679f)
 #define SQRT2_2 (0.70710678118654752440f) // sqrt(2)/2
 
 // Common mathematical transformations
