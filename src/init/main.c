@@ -46,7 +46,7 @@
 int main() 
 {
   //Initialize the platform.
-  int err = platformInit(); //! Init low level drivers only (interrupts, exceptions...)
+  int err = platformInit();
   if (err != 0) {
     // The firmware is running on the wrong hardware. Halt
     while(1);

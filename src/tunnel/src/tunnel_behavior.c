@@ -32,6 +32,18 @@ static TunnelBehavior previousBehavior;
 
 static uint32_t takeOffTime = 0;
 
+// Wait for reconnect behavior
+
+static void tunnelBehaviorReconnectUpdate(TunnelHover *vel, bool *enableCollisions) {
+  tunnelSetPreviousBehavior(); //TODO implement
+}
+
+// Rollback behavior
+
+static void tunnelBehaviorRollbackUpdate(TunnelHover *vel, bool *enableCollisions) {
+  tunnelSetPreviousBehavior(); //TODO implement
+}
+
 // Positioning Behavior
 
 #define TUNNEL_SIGNAL_DIFF_TOLERANCE 3
@@ -46,11 +58,11 @@ static void tunnelBehaviorPositioningUpdate(TunnelHover *vel, bool *enableCollis
 
   // If the last RSSI value is too old, consider connection lost
   if(isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID()))
-    setTunnelCanFly(false); // TODO wait for reconnect behavior
+    tunnelSetBehavior(TUNNEL_BEHAVIOR_RECONNECT);
   if(isPeerIDValid(getFollowerID()) && !tunnelIsDroneConnected(getFollowerID()))
-    setTunnelCanFly(false); // TODO rollback behavior
+    tunnelSetBehavior(TUNNEL_BEHAVIOR_ROLLBACK);
 
-  //Don't go too close to another drone
+  // Don't go too close to another drone
   if(tunnelGetLeaderSignal()->rssi < TUNNEL_RSSI_BEST)
     vel->vx = -TUNNEL_DEFAULT_SPEED;
   else if(followerSignal->rssi < TUNNEL_RSSI_BEST)
@@ -58,15 +70,15 @@ static void tunnelBehaviorPositioningUpdate(TunnelHover *vel, bool *enableCollis
   else {
     // Move forward or backward to reach the destination
     float signalDiff = tunnelGetLeaderSignal()->rssi - followerSignal->rssi;
-    if(signalDiff > TUNNEL_SIGNAL_DIFF_TOLERANCE / 2)
+    if(signalDiff > TUNNEL_SIGNAL_DIFF_TOLERANCE / 2.f)
       vel->vx = TUNNEL_DEFAULT_SPEED;
-    else if(signalDiff < -TUNNEL_SIGNAL_DIFF_TOLERANCE / 2)
+    else if(signalDiff < -TUNNEL_SIGNAL_DIFF_TOLERANCE / 2.f)
       vel->vx = -TUNNEL_DEFAULT_SPEED;
     else vel->vx = 0;
   }
 
   // Status LED, green if we consider ourselves in the middle
-  ledSet(LED_GREEN_R, vel->vx == 0);
+  // ledSet(LED_GREEN_R, vel->vx == 0);
 }
 
 // Goto Behavior
@@ -123,8 +135,19 @@ static void tunnelBehaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions
   if(zTarget >= TUNNEL_DEFAULT_HEIGHT) {
     vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
     tunnelSetDistance(0); // Reset distance estimation
-    tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
     takeOffTime = xTaskGetTickCount();
+
+    switch(tunnelGetDroneRole()) {
+      case DRONE_ROLE_HEAD:
+        tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
+        break;
+      case DRONE_ROLE_RELAY:
+        tunnelSetBehavior(TUNNEL_BEHAVIOR_POSITIONING);
+        break;
+      case DRONE_ROLE_BASE:
+        tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
+        break;
+    }
   }
 }
 
@@ -170,6 +193,12 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
       break;
     case TUNNEL_BEHAVIOR_POSITIONING:
       tunnelBehaviorPositioningUpdate(vel, enableCollisions);
+      break;
+    case TUNNEL_BEHAVIOR_RECONNECT:
+      tunnelBehaviorReconnectUpdate(vel, enableCollisions);
+      break;
+    case TUNNEL_BEHAVIOR_ROLLBACK:
+      tunnelBehaviorRollbackUpdate(vel, enableCollisions);
       break;
     case TUNNEL_BEHAVIOR_LAND:
       tunnelBehaviorLandUpdate(vel, enableCollisions);

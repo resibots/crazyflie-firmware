@@ -95,12 +95,12 @@ void systemInit(void)
   canStartMutex = xSemaphoreCreateMutex();
   xSemaphoreTake(canStartMutex, portMAX_DELAY);
 
-  usblinkInit(); //! init usb driver, not important
-  sysLoadInit(); //! init 'task manager', never triggers automatically though
+  usblinkInit();
+  sysLoadInit();
 
   /* Initialized here so that DEBUG_PRINT (buffered) can be used early */
-  debugInit();   //! ignore
-  crtpInit();    //! TODO all crtp comunication here
+  debugInit();
+  crtpInit();
   consoleInit(); 
 
   DEBUG_PRINT("----------------------------\n");
@@ -172,7 +172,7 @@ void systemTask(void *arg)
   }
   soundInit();
   memInit();
-  tunnelInit(); //! Tunnel exploration mod
+  tunnelInit(); // Tunnel exploration mod
 
 #ifdef PROXIMITY_ENABLED
   proximityInit();
@@ -188,7 +188,7 @@ void systemTask(void *arg)
   pass &= soundTest();
   pass &= memTest();
   pass &= watchdogNormalStartTest();
-  pass &= tunnelTest(); //! Tunnel exploration test
+  pass &= tunnelTest(); // Tunnel exploration test
 
   //Start the firmware
   if(pass)

@@ -18,6 +18,7 @@ typedef enum {
 typedef enum {
   DRONE_ROLE_HEAD      = 0, // Applies the HeadMode requests by the operator
   DRONE_ROLE_RELAY     = 1, // Autonomous flight for relaying the head<->operator link
+  DRONE_ROLE_BASE      = 2, // Stay on the ground, used for tests to fake the CRTP RSSI
 } DroneRole;
 
 // Get the current drone state

@@ -14,8 +14,10 @@ typedef enum {
   TUNNEL_BEHAVIOR_HOVER       = 2, // Stay still at the current position
   TUNNEL_BEHAVIOR_GOTO        = 3, // Reach a specified tunnelDistance
   TUNNEL_BEHAVIOR_POSITIONING = 4, // Stay between the leader and follower (RSSI based)
-  TUNNEL_BEHAVIOR_SCAN        = 5, // Turn 90 degrees and scan the room, then point to the tunnel
-  TUNNEL_BEHAVIOR_LAND        = 6, // Land slowly with a specified velocity
+  TUNNEL_BEHAVIOR_RECONNECT   = 5, // Notify all drones behind and hover until the leader comes back
+  TUNNEL_BEHAVIOR_ROLLBACK    = 6, // Notify all drones ahead and go back until the tunnel to reconnect
+  TUNNEL_BEHAVIOR_SCAN        = 7, // Turn 90 degrees and scan the room, then point to the tunnel
+  TUNNEL_BEHAVIOR_LAND        = 8, // Land slowly with a specified velocity
 } TunnelBehavior;
 
 // Used for the Goto Behavior only, sets the destination

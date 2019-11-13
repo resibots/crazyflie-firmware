@@ -85,6 +85,7 @@ static void tunnelTask(void *param) {
 
   // Print general startup information
   DEBUG_PRINT("Drone ID: %i\n", getDroneId());
+  DEBUG_PRINT("Drone Role: %i\n", tunnelGetDroneRole());
 
   TickType_t lastWakeTime = xTaskGetTickCount();
 
@@ -142,7 +143,12 @@ void tunnelInit() {
   if(isInit) return;
 
   // State definitions
-  tunnelSetDroneRole((getDroneId() == 0) ? DRONE_ROLE_HEAD : DRONE_ROLE_RELAY);
+  if(getDroneId() == 0)
+    tunnelSetDroneRole(DRONE_ROLE_HEAD);
+  else if(getDroneId() >= getNDrones() - 1)
+    tunnelSetDroneRole(DRONE_ROLE_BASE);
+  else
+    tunnelSetDroneRole(DRONE_ROLE_RELAY);
   tunnelAutoSetIdleInactive();
 
   // Set follower and leader
