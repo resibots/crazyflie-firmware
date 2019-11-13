@@ -257,7 +257,7 @@ void estimatorKalman(state_t *state, sensorData_t *sensors, control_t *control, 
   }
 
   // Average the thrust command from the last time steps, generated externally by the controller
-  thrustAccumulator += control->fz;
+  thrustAccumulator += control->az;
   thrustAccumulatorCount++;
 
   // Run the system dynamics to predict the state forward.

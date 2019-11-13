@@ -96,16 +96,16 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
 
   if (tiltCompensationEnabled)
   {
-    control->fz = actuatorZ / sensfusion6GetInvThrustCompensationForTilt();
+    control->az = actuatorZ / sensfusion6GetInvThrustCompensationForTilt();
   }
   else
   {
-    control->fz = actuatorZ;
+    control->az = actuatorZ;
   }
 
-  if (control->fz == 0)
+  if (control->az == 0)
   {
-    control->fz = 0;
+    control->az = 0;
     control->roll = 0;
     control->pitch = 0;
     control->yaw = 0;

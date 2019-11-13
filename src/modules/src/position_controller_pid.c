@@ -9,7 +9,7 @@
  *
  * Copyright (C) 2016 Bitcraze AB
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modiay
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, in version 3.
  *
@@ -59,8 +59,8 @@ struct this_s {
   struct pidAxis_s pidY;
   struct pidAxis_s pidZ;
 
-  uint16_t fzBase; // approximate throttle needed when in perfect hover. More weight/older battery can use a higher value
-  uint16_t fzMin;  // Minimum thrust value to output
+  uint16_t azBase; // approximate throttle needed when in perfect hover. More weight/older battery can use a higher value
+  uint16_t azMin;  // Minimum thrust value to output
 };
 
 // Maximum roll/pitch angle permited
@@ -70,8 +70,8 @@ static float rpLimitOverhead = 1.10f;
 static float xyVelMax = 1.0f;
 static float zVelMax  = 1.0f;
 static float velMaxOverhead = 1.10f;
-static const float fzScale = 1000.0f;
-/* static const float fyScale = 1000.0f; */
+static const float azScale = 1000.0f;
+/* static const float ayScale = 1000.0f; */
 /* static const float fxScale = 1000.0f; */
 
 #define DT (float)(1.0f/POSITION_RATE)
@@ -134,8 +134,8 @@ static struct this_s this = {
     .pid.dt = DT,
   },
 
-  .fzBase = 36000,
-  .fzMin  = 20000,
+  .azBase = 36000,
+  .azMin  = 20000,
 };
 #endif
 
@@ -163,7 +163,7 @@ static float runPid(float input, struct pidAxis_s *axis, float setpoint, float d
   return pidUpdate(&axis->pid, input, true);
 }
 
-void positionController(float* fz, float* fy, float* fx, attitude_t *attitude, setpoint_t *setpoint,
+void positionController(float* az, float* ay, float* ax, attitude_t *attitude, setpoint_t *setpoint,
                                                              const state_t *state)
 {
   this.pidX.pid.outputLimit = xyVelMax * velMaxOverhead;
@@ -192,16 +192,16 @@ void positionController(float* fz, float* fy, float* fx, attitude_t *attitude, s
     setpoint->velocity.z = runPid(state->position.z, &this.pidZ, setpoint->position.z, DT);
   }
 
-  velocityController(fz, fy, fx, attitude, setpoint, state);
+  velocityController(az, ay, ax, attitude, setpoint, state);
 }
 
-void velocityController(float* fz, float* fy, float* fx, attitude_t *attitude, setpoint_t *setpoint,
+void velocityController(float* az, float* ay, float* ax, attitude_t *attitude, setpoint_t *setpoint,
                                                              const state_t *state)
 {
   this.pidVX.pid.outputLimit = rpLimit * rpLimitOverhead;
   this.pidVY.pid.outputLimit = rpLimit * rpLimitOverhead;
   // Set the output limit to the maximum thrust range
-  this.pidVZ.pid.outputLimit = (UINT16_MAX / 2 / fzScale);
+  this.pidVZ.pid.outputLimit = (UINT16_MAX / 2 / azScale);
   //this.pidVZ.pid.outputLimit = (this.thrustBase - this.thrustMin) / thrustScale;
 
   // Roll and Pitch
@@ -216,17 +216,17 @@ void velocityController(float* fz, float* fy, float* fx, attitude_t *attitude, s
   attitude->pitch = constrain(attitude->pitch, -rpLimit, rpLimit);
 
   // Thrust
-  float fzRaw = runPid(state->velocity.z, &this.pidVZ, setpoint->velocity.z, DT);
+  float azRaw = runPid(state->velocity.z, &this.pidVZ, setpoint->velocity.z, DT);
   // Scale the thrust and add feed forward term
-  *fz = fzRaw*fzScale + this.fzBase;
+  *az = azRaw*azScale + this.azBase;
   // Check for minimum thrust
-  if (*fz < this.fzMin) {
-    *fz = this.fzMin;
+  if (*az < this.azMin) {
+    *az = this.azMin;
   }
-  float fyRaw = runPid(state->velocity.y, &this.pidVY, setpoint->velocity.y, DT);
-  *fy = fyRaw;
-  float fxRaw = runPid(state->velocity.x, &this.pidVX, setpoint->velocity.x, DT);
-  *fx = fxRaw;
+  float ayRaw = runPid(state->velocity.y, &this.pidVY, setpoint->velocity.y, DT);
+  *ay = ayRaw;
+  float axRaw = runPid(state->velocity.x, &this.pidVX, setpoint->velocity.x, DT);
+  *ax = axRaw;
 }
 
 void positionControllerResetAllPID()
@@ -301,8 +301,8 @@ PARAM_ADD(PARAM_FLOAT, zKp, &this.pidZ.pid.kp)
 PARAM_ADD(PARAM_FLOAT, zKi, &this.pidZ.pid.ki)
 PARAM_ADD(PARAM_FLOAT, zKd, &this.pidZ.pid.kd)
 
-PARAM_ADD(PARAM_UINT16, fzBase, &this.fzBase)
-PARAM_ADD(PARAM_UINT16, fzMin, &this.fzMin)
+PARAM_ADD(PARAM_UINT16, azBase, &this.azBase)
+PARAM_ADD(PARAM_UINT16, azMin, &this.azMin)
 
 PARAM_ADD(PARAM_FLOAT, rpLimit,  &rpLimit)
 PARAM_ADD(PARAM_FLOAT, xyVelMax, &xyVelMax)

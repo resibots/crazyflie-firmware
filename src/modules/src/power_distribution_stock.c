@@ -80,29 +80,24 @@ void powerStop()
 void powerDistribution(const control_t *control)
 {
   #ifdef HEXA
-     motorPower.m1 = limitThrust(control->m1);
-     motorPower.m2 = limitThrust(control->m2);
-     motorPower.m3 = limitThrust(control->m3);
-     motorPower.m4 = limitThrust(control->m4);
-     motorPower.m5 = limitThrust(control->m5);
-     motorPower.m6 = limitThrust(control->m6);
+  //TODO change to add inverse matrix converting forces in control to motor speed
   #endif
   #ifdef QUAD_FORMATION_X
     int16_t r = control->roll / 2.0f;
     int16_t p = control->pitch / 2.0f;
-    motorPower.m1 = limitThrust(control->fz - r + p + control->yaw);
-    motorPower.m2 = limitThrust(control->fz - r - p - control->yaw);
-    motorPower.m3 =  limitThrust(control->fz + r - p + control->yaw);
-    motorPower.m4 =  limitThrust(control->fz + r + p - control->yaw);
+    motorPower.m1 = limitThrust(control->az - r + p + control->yaw);
+    motorPower.m2 = limitThrust(control->az - r - p - control->yaw);
+    motorPower.m3 =  limitThrust(control->az + r - p + control->yaw);
+    motorPower.m4 =  limitThrust(control->az + r + p - control->yaw);
   #endif
   #if !defined(HEXA) && !defined(QUAD_FORMATION_X) // QUAD_FORMATION_NORMAL
-    motorPower.m1 = limitThrust(control->fz + control->pitch +
+    motorPower.m1 = limitThrust(control->az + control->pitch +
                                control->yaw);
-    motorPower.m2 = limitThrust(control->fz - control->roll -
+    motorPower.m2 = limitThrust(control->az - control->roll -
                                control->yaw);
-    motorPower.m3 =  limitThrust(control->fz - control->pitch +
+    motorPower.m3 =  limitThrust(control->az - control->pitch +
                                control->yaw);
-    motorPower.m4 =  limitThrust(control->fz + control->roll -
+    motorPower.m4 =  limitThrust(control->az + control->roll -
                                control->yaw);
   #endif
 
