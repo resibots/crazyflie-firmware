@@ -256,6 +256,38 @@ static inline void vstoref(struct vec v, float *f) {
 }
 
 
+// ---------------------------- 6d vectors ------------------------------
+struct vec6 {
+	float x; float y; float z; float t; float u; float w;
+};
+
+// construct a vector from 6 floats.
+static inline struct vec6 mkvec6(float x, float y, float z, float t, float u, float w) {
+	struct vec6 v;
+	v.x = x; v.y = y; v.z = z; v.t = t; v.u = u; v.w =w;
+	return v;
+}
+
+// store a vector into a float array.
+static inline void v6storef(struct vec6 v, float *f) {
+	f[0] = v.x; f[1] = v.y; f[2] = v.z; f[3] = v.t; f[4] = v.u; f[5] = v.w;
+}
+// multiplies a vector by a scalar.
+static inline struct vec6 v6scl(struct vec6 v, float s) {
+	return mkvec6(s * v.x , s * v.y, s * v.z, s * v.t, s * v.u, s * v.w);
+}
+// add two vectors.
+static inline struct vec6 v6add(struct vec6 a, struct vec6 b) {
+	return mkvec6(a.x + b.x, a.y + b.y, a.z + b.z, a.t + b.t, a.u + b.u, a.w + b.w);
+}
+//adds a vector to a scalar, elementwise.
+static inline struct vec6 v6addscl(struct vec6 v, float s) {
+	return mkvec6(s + v.x , s + v.y, s + v.z, s + v.t, s + v.u, s + v.w);
+}
+//scalar clamp of a vector
+static inline struct vec6 v6sclamp(struct vec6 v, float lower, float upper) {
+	return mkvec6(fminf(fmaxf(v.x, lower), upper), fminf(fmaxf(v.y, lower), upper),fminf(fmaxf(v.z, lower), upper),fminf(fmaxf(v.t, lower), upper),fminf(fmaxf(v.u, lower), upper),fminf(fmaxf(v.w, lower), upper));
+}
 // ---------------------------- 3x3 matrices ------------------------------
 
 struct mat33 {
@@ -447,6 +479,34 @@ static inline void set_block33_rowmaj(float *block, int stride, struct mat33 con
 
 // Matrix TODO: inv, solve, eig, 9 floats ctor, axis-aligned rotations
 
+// ---------------------------- 6x6 matrices ------------------------------
+
+struct mat66 {
+  float m[6][6];
+};
+
+// multiply a matrix by a vector.
+static inline struct vec6 mvmul6(struct mat66 a, struct vec6 v) {
+	float x = a.m[0][0] * v.x + a.m[0][1] * v.y + a.m[0][2] * v.z + a.m[0][3] * v.t + a.m[0][4] * v.u + a.m[0][5] * v.w;
+	float y = a.m[1][0] * v.x + a.m[1][1] * v.y + a.m[1][2] * v.z + a.m[1][3] * v.t + a.m[1][4] * v.u + a.m[1][5] * v.w;
+	float z = a.m[2][0] * v.x + a.m[2][1] * v.y + a.m[2][2] * v.z + a.m[2][3] * v.t + a.m[2][4] * v.u + a.m[2][5] * v.w;
+	float t = a.m[3][0] * v.x + a.m[3][1] * v.y + a.m[3][2] * v.z + a.m[3][3] * v.t + a.m[3][4] * v.u + a.m[3][5] * v.w;
+	float u = a.m[4][0] * v.x + a.m[4][1] * v.y + a.m[4][2] * v.z + a.m[4][3] * v.t + a.m[4][4] * v.u + a.m[4][5] * v.w;
+	float w = a.m[5][0] * v.x + a.m[5][1] * v.y + a.m[5][2] * v.z + a.m[5][3] * v.t + a.m[5][4] * v.u + a.m[5][5] * v.w;
+	return mkvec6(x, y, z, t, u, w);
+}
+// construct a matrix from 6 column vectors.
+static inline struct mat66 m6rows(struct vec6 a, struct vec6 b, struct vec6 c, struct vec6 d, struct vec6 e, struct vec6 f)
+{
+	struct mat66 m;
+	v6storef(a, m.m[0]);
+	v6storef(b, m.m[1]);
+	v6storef(c, m.m[2]);
+	v6storef(d, m.m[3]);
+	v6storef(e, m.m[4]);
+	v6storef(f, m.m[5]);
+	return m;
+}
 
 // ---------------------------- quaternions ------------------------------
 
