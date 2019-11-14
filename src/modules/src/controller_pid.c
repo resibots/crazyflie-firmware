@@ -109,8 +109,8 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
     control->roll = 0;
     control->pitch = 0;
     control->yaw = 0;
-    control->fx = 0 ;
-    control->fy = 0;
+    control->ax = 0 ;
+    control->ay = 0;
 
     attitudeControllerResetAllPID();
     positionControllerResetAllPID();
