@@ -1,3 +1,4 @@
+
 /**
  *    ||          ____  _ __
  * +------+      / __ )(_) /_______________ _____  ___
@@ -21,13 +22,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
- * power_distribution_stock.c - Crazyflie stock power distribution code
+ * power_distribution_hexa.c - Crazyflie stock power distribution code
  */
 #include "power_distribution.h"
 
 #include "log.h"
 #include "param.h"
 #include "num.h"
+#include "math3d.h"
 #include "motors.h"
 
 static bool motorSetEnable = false;
@@ -37,6 +39,8 @@ static struct {
   uint32_t m2;
   uint32_t m3;
   uint32_t m4;
+  uint32_t m5;
+  uint32_t m6;
 } motorPower;
 
 static struct {
@@ -44,7 +48,19 @@ static struct {
   uint16_t m2;
   uint16_t m3;
   uint16_t m4;
+  uint16_t m5;
+  uint16_t m6;
 } motorPowerSet;
+static struct mat66 hexa_inverse_matrix = {{
+{-7.902E+1, -3.030E+7, 8.748E+6, -4.823E+2, -7.364E+8, -1.177E+8},
+{-2.624E+7, +1.515E+7, 8.748E+6, +6.378E+8, -3.682E+8, +1.177E+8},
+{+2.624E+7, +1.515E+7, 8.748E+6, +6.378E+8, +3.682E+8, -1.177E+8},
+{-4.913E+1, -3.030E+7, 8.748E+6, +2.422E+3, +7.364E+8, +1.177E+8},
+{-2.624E+7, +1.515E+7, 8.748E+6, -6.378E+8, +3.682E+8, -1.177E+8},
+{+2.624E+7, +1.515E+7, 8.748E+6, -6.378E+8, -3.682E+8, +1.177E+8}
+}};
+static float max_hexa_rotor_speed = 3000;
+static float min_hexa_rotor_speed = 0;
 
 void powerDistributionInit(void)
 {
@@ -68,34 +84,35 @@ void powerStop()
   motorsSetRatio(MOTOR_M2, 0);
   motorsSetRatio(MOTOR_M3, 0);
   motorsSetRatio(MOTOR_M4, 0);
+  motorsSetRatio(MOTOR_M5, 0);
+  motorsSetRatio(MOTOR_M6, 0);
 }
 
 void powerDistribution(const control_t *control)
 {
-  #ifdef QUAD_FORMATION_X
-    int16_t r = control->roll / 2.0f;
-    int16_t p = control->pitch / 2.0f;
-    motorPower.m1 = limitThrust(control->az - r + p + control->yaw);
-    motorPower.m2 = limitThrust(control->az - r - p - control->yaw);
-    motorPower.m3 =  limitThrust(control->az + r - p + control->yaw);
-    motorPower.m4 =  limitThrust(control->az + r + p - control->yaw);
-  #else  // QUAD_FORMATION_NORMAL
-    motorPower.m1 = limitThrust(control->az + control->pitch +
-                               control->yaw);
-    motorPower.m2 = limitThrust(control->az - control->roll -
-                               control->yaw);
-    motorPower.m3 =  limitThrust(control->az - control->pitch +
-                               control->yaw);
-    motorPower.m4 =  limitThrust(control->az + control->roll -
-                               control->yaw);
-  #endif
-
+  //converting the desired forces given by the controller into a vec6
+  struct vec6 at = mkvec6(control->ax, control->ay, control->az, control->roll, control->pitch, control->yaw);
+  //computing the desired control from desired forces into desired squarred rotor speed
+  struct vec6 u = mvmul6(hexa_inverse_matrix, at);
+  // converting u into pwm
+  u = v6addscl(u, -min_hexa_rotor_speed * min_hexa_rotor_speed);
+  u = v6scl(u, 1/max_hexa_rotor_speed*max_hexa_rotor_speed - min_hexa_rotor_speed * min_hexa_rotor_speed);
+  u = v6sclamp(u, 0, 1);
+  u = v6scl(u, 65536);
+  motorPower.m1 = limitThrust(u.x);
+  motorPower.m2 = limitThrust(u.y);
+  motorPower.m3 = limitThrust(u.z);
+  motorPower.m4 = limitThrust(u.t);
+  motorPower.m5 = limitThrust(u.u);
+  motorPower.m6 = limitThrust(u.w);
   if (motorSetEnable)
   {
     motorsSetRatio(MOTOR_M1, motorPowerSet.m1);
     motorsSetRatio(MOTOR_M2, motorPowerSet.m2);
     motorsSetRatio(MOTOR_M3, motorPowerSet.m3);
     motorsSetRatio(MOTOR_M4, motorPowerSet.m4);
+    motorsSetRatio(MOTOR_M5, motorPowerSet.m5);
+    motorsSetRatio(MOTOR_M6, motorPowerSet.m6);
   }
   else
   {
@@ -103,6 +120,8 @@ void powerDistribution(const control_t *control)
     motorsSetRatio(MOTOR_M2, motorPower.m2);
     motorsSetRatio(MOTOR_M3, motorPower.m3);
     motorsSetRatio(MOTOR_M4, motorPower.m4);
+    motorsSetRatio(MOTOR_M5, motorPower.m5);
+    motorsSetRatio(MOTOR_M6, motorPower.m6);
   }
 }
 
@@ -112,6 +131,8 @@ PARAM_ADD(PARAM_UINT16, m1, &motorPowerSet.m1)
 PARAM_ADD(PARAM_UINT16, m2, &motorPowerSet.m2)
 PARAM_ADD(PARAM_UINT16, m3, &motorPowerSet.m3)
 PARAM_ADD(PARAM_UINT16, m4, &motorPowerSet.m4)
+PARAM_ADD(PARAM_UINT16, m5, &motorPowerSet.m5)
+PARAM_ADD(PARAM_UINT16, m6, &motorPowerSet.m6)
 PARAM_GROUP_STOP(ring)
 
 LOG_GROUP_START(motor)
@@ -119,4 +140,6 @@ LOG_ADD(LOG_INT32, m4, &motorPower.m4)
 LOG_ADD(LOG_INT32, m1, &motorPower.m1)
 LOG_ADD(LOG_INT32, m2, &motorPower.m2)
 LOG_ADD(LOG_INT32, m3, &motorPower.m3)
+LOG_ADD(LOG_INT32, m5, &motorPower.m5)
+LOG_ADD(LOG_INT32, m6, &motorPower.m6)
 LOG_GROUP_STOP(motor)

@@ -1,3 +1,4 @@
+#include <stdio.h> 
 #include "pid.h"
 #include "stabilizer.h"
 #include "stabilizer_types.h"
@@ -8,7 +9,7 @@
 #include "log.h"
 #include "param.h"
 #include "math3d.h"
-// #include "quaternions.h"
+#include "debug.h"
 
 #define UPDATE_DT (float)(1.0f/RATE_MAIN_LOOP)
 
@@ -62,7 +63,7 @@ static float wy;
 static float wz;
 
 static bool isInit;
-void controllerPidInit(void)
+void controllerPidHexaInit(void)
 {
   if(isInit)
   {
@@ -82,19 +83,19 @@ void controllerPidInit(void)
   pidSetIntegralLimit(&pidX,  Hexa_PID_QX_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidY, Hexa_PID_QY_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidZ,   Hexa_PID_QZ_INTEGRATION_LIMIT);
-
   isInit = true;
+  DEBUG_PRINT("Innitializing PID Hexa \n");
 
 }
 
-bool controllerPidTest(void)
+bool controllerPidHexaTest(void)
 {
-  bool pass = true;
+  bool pass = isInit;
 
   return pass;
 }
 // Updates control to desired in drone frame accelerations that power distribution will need to apply
-void controllerPid(control_t *control, setpoint_t *setpoint,
+void controllerPidHexa(control_t *control, setpoint_t *setpoint,
                                          const sensorData_t *sensors,
                                          const state_t *state,
                                          const uint32_t tick)
@@ -120,6 +121,7 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
   wx = pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx);
   wy = pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy);
   wz = pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz);
+
   control->ax = ax;
   control->ay = ay;
   control->az = az;
