@@ -65,10 +65,67 @@ void tunnelSetDroneState(DroneState newState) {
   droneState = newState;
 }
 
+// Manage drone mode transitions
+static DroneMode droneMode;
+DroneMode tunnelGetDroneMode() { return droneMode; }
+void tunnelSetDroneMode(DroneMode newMode) {
+  if(tunnelGetDroneMode() != newMode) {
+    droneMode = newMode;
+
+    if(newMode == DRONE_MODE_MANUAL && tunnelGetDroneState() == DRONE_STATE_FLYING)
+      tunnelSetDroneState(DRONE_STATE_IDLE);
+  }
+}
+
 // Manage drone role transitions
 static DroneRole droneRole;
 DroneRole tunnelGetDroneRole() { return droneRole; }
 void tunnelSetDroneRole(DroneRole newRole) { droneRole = newRole; }
+
+static void handleAutoStates() {
+  switch(tunnelGetDroneState()) {
+    case DRONE_STATE_IDLE: {
+      // Launch the head drone automatically
+      if(getDroneId() == 0) {
+        DEBUG_PRINT("Launch head!\n");
+        tunnelSetDroneState(DRONE_STATE_FLYING);
+      }
+
+      // Arm the drone if the leader is flying (meaning it might need us to relay it if it goes too far away)
+      if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderStatus()->droneState == DRONE_STATE_FLYING) {
+        DEBUG_PRINT("Leader flying, auto arm!\n");
+        tunnelSetDroneState(DRONE_STATE_ARMED);
+      }
+      break;
+    }
+    case DRONE_STATE_ARMED: {
+      // Launch the drone if the leader got too far away
+      if((isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID())) || 
+        (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi > TUNNEL_RSSI_ARMED + TUNNEL_RSSI_GROUND_PENALTY)) {
+        DEBUG_PRINT("Leader far, auto take off!\n");
+        tunnelSetDroneState(DRONE_STATE_FLYING);
+      }
+
+      // Go back to idle if the leader landed
+      if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderStatus()->droneState < DRONE_STATE_FLYING) {
+        DEBUG_PRINT("Disarming, leader landed.\n");
+        tunnelSetDroneState(DRONE_STATE_IDLE);
+      }
+      break;
+    }
+    case DRONE_STATE_FLYING: {
+      // Land the drone if the leader comes back
+      if(getTunnelFlightTime() > 2000 && 
+        (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi < TUNNEL_RSSI_ARMED)) { //TODO test, remove
+        tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
+        DEBUG_PRINT("Leader came back, auto land!\n");
+      }
+      break;
+    }
+    case DRONE_STATE_CRASHED:
+      break;
+  }
+}
 
 // Main tunnel task
 static void tunnelTask(void *param) {
@@ -93,49 +150,15 @@ static void tunnelTask(void *param) {
   while (1) {
     vTaskDelayUntil(&lastWakeTime, M2T(1000 / TUNNEL_TASK_RATE_HZ));
 
+    // Manage state changes based on new information sent by other drones
+    if(tunnelGetDroneMode() == DRONE_MODE_AUTO)
+      handleAutoStates();
+
     // Calculate the new drone movement and send it to the stabilizer
     tunnelCommanderUpdate();
 
     // Handle communication routines
     tunnelCommUpdate();
-
-    // Manage state changes based on new information sent by other drones
-    switch(tunnelGetDroneState()) { //TODO finish states
-      case DRONE_STATE_IDLE: {
-        // Arm the drone if the leader is flying (meaning it might need us to relay it if it goes too far away)
-        if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderStatus()->droneState == DRONE_STATE_FLYING) {
-          tunnelSetDroneState(DRONE_STATE_ARMED);
-          DEBUG_PRINT("Leader flying, auto arm!\n");
-        }
-        break;
-      }
-      case DRONE_STATE_ARMED: {
-        // Launch the drone if the leader got too far away
-        if((isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID())) || 
-           (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi > TUNNEL_RSSI_ARMED + TUNNEL_RSSI_GROUND_PENALTY)) {
-          tunnelSetDroneState(DRONE_STATE_FLYING);
-          DEBUG_PRINT("Leader far, auto take off!\n");
-        }
-
-        // Go back to idle if the leader landed
-        if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderStatus()->droneState < DRONE_STATE_FLYING) {
-          tunnelSetDroneState(DRONE_STATE_IDLE);
-          DEBUG_PRINT("Disarming, leader landed.\n");
-        }
-        break;
-      }
-      case DRONE_STATE_FLYING: {
-        // Land the drone if the leader comes back
-        if(getTunnelFlightTime() > 2000 && 
-           (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi < TUNNEL_RSSI_ARMED)) { //TODO test, remove
-          tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
-          DEBUG_PRINT("Leader came back, auto land!\n");
-        }
-        break;
-      }
-      case DRONE_STATE_CRASHED:
-        break;
-    }
   }
 }
 
@@ -149,7 +172,9 @@ void tunnelInit() {
     tunnelSetDroneRole(DRONE_ROLE_BASE);
   else
     tunnelSetDroneRole(DRONE_ROLE_RELAY);
+
   tunnelAutoSetIdleInactive();
+  tunnelSetDroneMode(DRONE_MODE_MANUAL);
 
   // Set follower and leader
   tunnelAutoSetFollowerLeader();

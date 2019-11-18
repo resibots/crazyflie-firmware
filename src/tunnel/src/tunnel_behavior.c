@@ -214,7 +214,7 @@ TunnelBehavior tunnelGetCurrentBehavior() {
 
 static void setBehavior(TunnelBehavior newBehavior) {
   if(newBehavior != currentBehavior) {
-    DEBUG_PRINT("Setting behavior %i->%i\n", currentBehavior, newBehavior);
+    DEBUG_PRINT("%i->%i\n", currentBehavior, newBehavior);
 
     currentBehavior = newBehavior;
 

@@ -21,6 +21,12 @@ typedef enum {
   DRONE_ROLE_BASE      = 2, // Stay on the ground, used for tests to fake the CRTP RSSI
 } DroneRole;
 
+// lets the user disable the autonomous mode if needed for tests
+typedef enum {
+  DRONE_MODE_MANUAL    = 0, // All states and behaviors are changed manually (for manual control or tests)
+  DRONE_MODE_AUTO      = 1, // Automatically switch between drone states & auto positioning in the tunnel
+} DroneMode;
+
 // Get the current drone state
 DroneState tunnelGetDroneState(); 
 
@@ -32,6 +38,12 @@ DroneRole tunnelGetDroneRole();
 
 // Set the global drone role
 void tunnelSetDroneRole(DroneRole newRole);
+
+// Get the current drone mode
+DroneMode tunnelGetDroneMode(); 
+
+// Set the global drone mode
+void tunnelSetDroneMode(DroneMode newMode);
 
 // Initialize the tunnel submodule
 void tunnelInit(void);

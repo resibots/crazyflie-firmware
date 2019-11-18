@@ -35,14 +35,10 @@ static TunnelStatus currentStatus;
 typedef enum {
   CRTP_TUNNEL_COMMAND_TAKE_OFF       = 0x00, // Start flying and do our thing!
   CRTP_TUNNEL_COMMAND_SET_BEHAVIOR   = 0x01, // Set a specific behavior while the drone is flying
-  CRTP_TUNNEL_COMMAND_RTH            = 0x02, // Return to home automatically
-  CRTP_TUNNEL_COMMAND_LAND           = 0x03, // Land no matter where we are (e.g. to manually save battery)
-  CRTP_TUNNEL_COMMAND_STOP           = 0x04, // Stop the motors and return to Idle state (for emergencies or tests)
-
-  CRTP_TUNNEL_COMMAND_CHAIN_START    = 0x06, // Start flying (head takes off, second drone armed, others idle or inactive)
-  CRTP_TUNNEL_COMMAND_CHAIN_RTH      = 0x07, // Return to home (no more head, all automatic)
-  CRTP_TUNNEL_COMMAND_CHAIN_SHUTDOWN = 0x08, // Emergency only: all drones cut motors off immediately
-  CRTP_TUNNEL_COMMAND_CHAIN_PING     = 0x09, // Ping the chain and return the status of each drone
+  CRTP_TUNNEL_COMMAND_SET_MODE       = 0x02, // Set this drone's mode (will not propagate to other drones)
+  CRTP_TUNNEL_COMMAND_RTH            = 0x03, // Return to home automatically
+  CRTP_TUNNEL_COMMAND_LAND           = 0x04, // Land no matter where we are (e.g. to manually save battery)
+  CRTP_TUNNEL_COMMAND_CUT_MOTORS     = 0x05, // Cut the motors and return to Idle state (for emergencies or tests)
 } CRTPTunnelCommand;
 
 void refreshDroneStatus() {
@@ -94,6 +90,7 @@ void tunnelCommUpdate() {
     broadcastStatus();
 }
 
+// Drone randomly crashes if we use a switch, no idea why...
 void processIncomingCRTPPacket(CRTPTunnelPacket* p) {
   if(p->channel == CRTP_TUNNEL_CHANNEL_PING)
     crtpTunnelPingHandler(p);
@@ -102,23 +99,20 @@ void processIncomingCRTPPacket(CRTPTunnelPacket* p) {
   else if(p->channel == CRTP_TUNNEL_CHANNEL_COMMANDER)
     crtpTunnelCommanderHandler(p);
   else if(p->channel == CRTP_TUNNEL_CHANNEL_COMMAND) {
-    switch(p->dronedata[0]) {
-      case CRTP_TUNNEL_COMMAND_TAKE_OFF:
-        tunnelSetDroneState(DRONE_STATE_FLYING);
-        break;
-      case CRTP_TUNNEL_COMMAND_SET_BEHAVIOR:
-        tunnelSetBehavior(p->dronedata[1]);
-        break;
-      case CRTP_TUNNEL_COMMAND_LAND:
+    uint8_t command = p->dronedata[0];
+    if(command == CRTP_TUNNEL_COMMAND_TAKE_OFF)
+      tunnelSetDroneState(DRONE_STATE_FLYING);
+    else if(command == CRTP_TUNNEL_COMMAND_SET_BEHAVIOR)
+      tunnelSetBehavior(p->dronedata[1]);
+    else if(command == CRTP_TUNNEL_COMMAND_SET_MODE)
+      tunnelSetDroneMode((p->dronedata[1] == DRONE_MODE_AUTO) ? DRONE_MODE_AUTO : DRONE_MODE_MANUAL);
+    else if(command == CRTP_TUNNEL_COMMAND_LAND)
+      if(tunnelGetCurrentBehavior() != TUNNEL_BEHAVIOR_IDLE)
         tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
-        break;
-      case CRTP_TUNNEL_COMMAND_RTH:
-        //TODO implement RTH
-        break;
-      case CRTP_TUNNEL_COMMAND_STOP:
-        tunnelSetDroneState(DRONE_STATE_IDLE);
-        break;
-    }
+    else if(command == CRTP_TUNNEL_COMMAND_RTH)
+      ;//TODO implement RTH
+    else if(command == CRTP_TUNNEL_COMMAND_CUT_MOTORS)
+      tunnelSetDroneState(DRONE_STATE_IDLE);
   }
 }
 
