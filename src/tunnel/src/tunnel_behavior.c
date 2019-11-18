@@ -157,7 +157,6 @@ static void tunnelBehaviorLandUpdate(TunnelHover *vel, bool *enableCollisions) {
   // End the behavior when the ground is reached
   if(zTarget <= 0.05) {
     zTarget = 0;
-    setTunnelCanFly(false);
     tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
   }
 }

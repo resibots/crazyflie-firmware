@@ -17,6 +17,7 @@
 #include "tunnel_behavior.h"
 #include "tunnel_relay.h"
 #include "tunnel_comm.h"
+#include "tunnel.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -280,7 +281,7 @@ void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions) {
   }
   #ifdef TUNNEL_STOP_ON_WALLS_LOST
     if(lostWallsFlag == 2)
-      setTunnelCanFlySoft(false);
+      tunnelSetDroneState(DRONE_STATE_CRASHED);
   #endif
 #endif
 }

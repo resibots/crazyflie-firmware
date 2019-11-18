@@ -18,7 +18,6 @@
 
 typedef enum {
   TUNNEL_PARAM_NDRONES = 0x00,
-  TUNNEL_PARAM_CANFLY  = 0x01
 } TunnelParameter;
 
 static void tunnelProcessParamPacket(uint8_t *data, bool broadcast) {
@@ -32,20 +31,6 @@ static void tunnelProcessParamPacket(uint8_t *data, bool broadcast) {
         p2p_p.port   = P2P_PORT_PARAM;
         p2p_p.txdata[0] = TUNNEL_PARAM_NDRONES;
         p2p_p.txdata[1] = getNDrones();
-        p2p_p.size = 2;
-        tunnelTraceP2PPacket(&p2p_p, TRACE_MODE_ALL);
-        tunnelTraceP2PPacket(&p2p_p, TRACE_MODE_ALL);
-      }
-      break;
-    case TUNNEL_PARAM_CANFLY:
-      setTunnelCanFly(data[1]);
-
-      if(broadcast) {
-        // Broadcast the new state to the other drones
-        P2PPacket p2p_p;
-        p2p_p.port   = P2P_PORT_PARAM;
-        p2p_p.txdata[0] = TUNNEL_PARAM_CANFLY;
-        p2p_p.txdata[1] = (uint8_t)getTunnelCanFly();
         p2p_p.size = 2;
         tunnelTraceP2PPacket(&p2p_p, TRACE_MODE_ALL);
         tunnelTraceP2PPacket(&p2p_p, TRACE_MODE_ALL);

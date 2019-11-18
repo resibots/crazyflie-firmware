@@ -27,7 +27,7 @@
       DEBUG
 *****************/
 
-// Set tunnelCanFly to false (disable the motors) when putting a hand over the drone
+// Disable the motors when putting a hand over the drone
 #define TUNNEL_RED_SWITCH
 
 // Default height used by all the movement behaviors
@@ -149,15 +149,6 @@ uint8_t getNDrones();
 
 // Sets the number of drones in the chain
 void setNDrones(uint8_t ndrones);
-
-// Returns if the operator said the drone can fly
-uint8_t getTunnelCanFly();
-
-// Sets if the Tunnel module can use the motors, lands if possible
-void setTunnelCanFlySoft(bool canfly);
-
-// Sets if the Tunnel module can use the motors, cuts motors if false
-void setTunnelCanFly(bool canfly);
 
 // Get how much time we have been flying since the last take off
 uint32_t getTunnelFlightTime();

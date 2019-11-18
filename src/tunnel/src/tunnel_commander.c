@@ -18,6 +18,7 @@
 #include "tunnel_helpers.h"
 #include "tunnel_avoider.h"
 #include "tunnel_behavior.h"
+#include "tunnel.h"
 
 #define DEBUG_MODULE "TUN_CMD"
 #include "debug.h"
@@ -114,7 +115,7 @@ void tunnelCommanderUpdate() {
 #ifdef TUNNEL_RED_SWITCH
   if(rangeGet(rangeUp) > 0 && rangeGet(rangeUp) < 100) {
     sendSetpointStop();
-    setTunnelCanFly(false);
+    tunnelSetDroneState(DRONE_STATE_CRASHED);
     ledseqRun(SYS_LED, seq_testPassed);
   }
 #endif
@@ -143,8 +144,8 @@ void tunnelCommanderUpdate() {
     tunnelDistance += currentMovement.vx * (xTaskGetTickCount() - prevUpdate) / 1000.f;
 
   // Send the movement command (only when this module is allowed to send setpoints)
-  if(getTunnelCanFly()) {
-    if(currentMovement.zDistance > 0)
+  if(tunnelGetDroneState() == DRONE_STATE_FLYING) {
+    if(tunnelGetCurrentBehavior() != TUNNEL_BEHAVIOR_IDLE)
       sendSetpointHover(&currentMovement);
     else sendSetpointStop();
 

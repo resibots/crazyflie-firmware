@@ -77,28 +77,6 @@ void setNDrones(uint8_t ndrones) {
   tunnelAutoSetIdleInactive();
 }
 
-// Set by the operator. The Tunnel module uses the motors only if this is set to true.
-static bool tunnelCanFly;
-
-uint8_t getTunnelCanFly() { return tunnelCanFly; }
-
-void setTunnelCanFlySoft(bool canfly) {
-  if(canfly != tunnelCanFly) {
-    if(!canfly) {
-      if(tunnelGetCurrentBehavior() != TUNNEL_BEHAVIOR_IDLE)
-        tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
-      else {
-        tunnelCanFly = false;
-        sendSetpointStop();
-      }
-    }
-    else tunnelCanFly = true;
-  }
-}
-
-// Set canfly without processing
-void setTunnelCanFly(bool canfly) { tunnelCanFly = canfly; }
-
 // Keep track of how long we have been flying since the last take off
 uint32_t getTunnelFlightTime() { return xTaskGetTickCount() - tunnelGetTakeOffTime(); }
 
