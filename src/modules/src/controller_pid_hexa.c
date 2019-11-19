@@ -10,6 +10,8 @@
 #include "param.h"
 #include "math3d.h"
 #include "debug.h"
+#include "led.h"
+#include "ledseq.h"
 
 #define UPDATE_DT (float)(1.0f/RATE_MAIN_LOOP)
 
@@ -61,6 +63,15 @@ static float az;
 static float wx;
 static float wy;
 static float wz;
+// setpoint control
+static float sx;
+static float sy;
+static float sz;
+
+//current position 
+static float cx;
+static float cy;
+static float cz;
 
 static bool isInit;
 void controllerPidHexaInit(void)
@@ -84,7 +95,7 @@ void controllerPidHexaInit(void)
   pidSetIntegralLimit(&pidY, Hexa_PID_QY_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidZ,   Hexa_PID_QZ_INTEGRATION_LIMIT);
   isInit = true;
-  DEBUG_PRINT("Innitializing PID Hexa \n");
+  DEBUG_PRINT("Initializing PID Hexa \n");
 
 }
 
@@ -100,6 +111,13 @@ void controllerPidHexa(control_t *control, setpoint_t *setpoint,
                                          const state_t *state,
                                          const uint32_t tick)
 {
+  ledseqRun(LED_GREEN_R, seq_linkup);
+  sx = setpoint->position.x;
+  sy = setpoint->position.y;
+  sz = setpoint->position.z;
+  sx = state->position.x;
+  sy = state->position.y;
+  sz = state->position.z;
   pidSetDesired(&pidX, setpoint->position.x);
   pidSetDesired(&pidY, setpoint->position.y);
   pidSetDesired(&pidZ, setpoint->position.z);
@@ -138,4 +156,10 @@ LOG_ADD(LOG_FLOAT, az, &az)
 LOG_ADD(LOG_FLOAT, wx, &wx)
 LOG_ADD(LOG_FLOAT, wy, &wy)
 LOG_ADD(LOG_FLOAT, wz, &wz)
+LOG_ADD(LOG_FLOAT, sx, &sx)
+LOG_ADD(LOG_FLOAT, sy, &sy)
+LOG_ADD(LOG_FLOAT, sz, &sz)
+LOG_ADD(LOG_FLOAT, cx, &cx)
+LOG_ADD(LOG_FLOAT, cy, &cy)
+LOG_ADD(LOG_FLOAT, cz, &cz)
 LOG_GROUP_STOP(controller)
