@@ -35,9 +35,9 @@ CFLAGS += -DCRAZYFLIE_FW
 
 ######### Stabilizer configuration ##########
 ## These are set by the platform (see tools/make/platforms/*.mk), can be overwritten here
-ESTIMATOR          ?= any
-CONTROLLER         ?= any # one of Any, PID, Mellinger
-POWER_DISTRIBUTION ?= stock
+ESTIMATOR          ?=any
+CONTROLLER         =PIDHexa # one of Any, PID, Mellinger
+POWER_DISTRIBUTION=hexa 
 
 #OpenOCD conf
 RTOS_DEBUG        ?= 0
@@ -157,7 +157,8 @@ PROJ_OBJ += attitude_pid_controller.o sensfusion6.o stabilizer.o
 PROJ_OBJ += position_estimator_altitude.o position_controller_pid.o
 PROJ_OBJ += estimator.o estimator_complementary.o
 PROJ_OBJ += controller.o controller_mellinger.o controller_pid_hexa.o controller_pid.o
-PROJ_OBJ += power_distribution_$(POWER_DISTRIBUTION).o
+# PROJ_OBJ += power_distribution_$(POWER_DISTRIBUTION).o
+PROJ_OBJ += power_distribution_hexa.o
 PROJ_OBJ += estimator_kalman.o kalman_core.o kalman_supervisor.o
 
 # High-Level Commander
@@ -192,6 +193,7 @@ PROJ_OBJ += oa.o
 PROJ_OBJ += multiranger.o
 PROJ_OBJ += lighthouse.o
 PROJ_OBJ += activeMarkerDeck.o
+PROJ_OBJ += hexacopter.o
 
 ifeq ($(LPS_TDOA_ENABLE), 1)
 CFLAGS += -DLPS_TDOA_ENABLE

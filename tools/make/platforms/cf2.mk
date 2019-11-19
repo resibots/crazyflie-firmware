@@ -14,5 +14,5 @@ PROJ_OBJ += sensors_mpu9250_lps25h.o
 
 ######### Stabilizer configuration ##########
 ESTIMATOR          ?= any
-CONTROLLER         ?= Any # one of Any, PID, Mellinger
-POWER_DISTRIBUTION ?= stock
+CONTROLLER         =PIDHexa # one of Any, PID, Mellinger
+POWER_DISTRIBUTION ?= stock 
