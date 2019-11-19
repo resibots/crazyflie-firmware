@@ -91,7 +91,7 @@ void powerStop()
 void powerDistribution(const control_t *control)
 {
   //converting the desired forces given by the controller into a vec6
-  struct vec6 at = mkvec6(control->ax, control->ay, control->az, control->roll, control->pitch, control->yaw);
+  struct vec6 at = mkvec6(control->ax, control->ay, control->az + 9.81, control->roll, control->pitch, control->yaw);
   //computing the desired control from desired forces into desired squarred rotor speed
   struct vec6 u = mvmul6(hexa_inverse_matrix, at);
   // converting u into pwm
