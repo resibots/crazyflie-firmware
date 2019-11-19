@@ -34,6 +34,28 @@
 
 static bool isInit = false;
 
+static void setDroneStateLED(DroneState state) {
+  switch(tunnelGetDroneState()) {
+    case DRONE_STATE_INACTIVE:
+    case DRONE_STATE_IDLE:
+      ledseqStop(LED_GREEN_R, seq_armed);
+      ledSet(LED_GREEN_R, false);
+      break;
+    case DRONE_STATE_ARMED:
+      ledSet(LED_GREEN_R, false);
+      ledseqRun(LED_GREEN_R, seq_armed);
+      break;
+    case DRONE_STATE_FLYING:
+      ledseqStop(LED_GREEN_R, seq_armed);
+      ledSet(LED_GREEN_R, true);
+      break;
+    case DRONE_STATE_CRASHED:
+      ledseqStop(LED_GREEN_R, seq_armed);
+      ledSet(LED_GREEN_R, false);
+      break;
+  }
+}
+
 // Manage drone state transitions
 static DroneState droneState;
 DroneState tunnelGetDroneState() { return droneState; }
@@ -41,48 +63,36 @@ void tunnelSetDroneState(DroneState newState) {
   switch(newState) {
     case DRONE_STATE_INACTIVE:
     case DRONE_STATE_IDLE:
-      if(tunnelGetCurrentBehavior() == TUNNEL_BEHAVIOR_IDLE) {
-        // Set LED state
-        ledseqStop(LED_GREEN_R, seq_armed);
-        ledSet(LED_GREEN_R, false);
-      }
-      else { // If we are flying, land before cutting motors
+      if(tunnelGetCurrentBehavior() != TUNNEL_BEHAVIOR_IDLE) {
         tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
-        droneState = DRONE_STATE_FLYING;
         return;
       }
       break;
-    case DRONE_STATE_ARMED:
-      // Set LED state
-      ledseqRun(LED_GREEN_R, seq_armed);
-      ledSet(LED_GREEN_R, false);
-      break;
     case DRONE_STATE_FLYING:
-      if(tunnelGetCurrentBehavior() != TUNNEL_BEHAVIOR_IDLE)
-        tunnelSetBehavior(TUNNEL_BEHAVIOR_TAKE_OFF);
-
-      // Set LED state
-      ledseqStop(LED_GREEN_R, seq_armed);
-      ledSet(LED_GREEN_R, true);
+      tunnelSetBehavior(TUNNEL_BEHAVIOR_TAKE_OFF);
       break;
     case DRONE_STATE_CRASHED:
       // Cut motors immediately
       tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
-
-      // Set LED state
-      ledseqStop(LED_GREEN_R, seq_armed);
-      ledSet(LED_GREEN_R, false);
       break;
   }
   droneState = newState;
+  setDroneStateLED(tunnelGetDroneState());
 }
 
 // Manage drone mode transitions
 static DroneMode droneMode;
 DroneMode tunnelGetDroneMode() { return droneMode; }
 void tunnelSetDroneMode(DroneMode newMode) {
+  ledSet(LED_BLUE_L, newMode == DRONE_MODE_AUTO);
+
   if(tunnelGetDroneMode() != newMode) {
     droneMode = newMode;
+
+    if(newMode == DRONE_MODE_MANUAL)
+      DEBUG_PRINT("Setting manual\n");
+    else 
+      DEBUG_PRINT("Setting auto\n");
 
     if(newMode == DRONE_MODE_MANUAL && tunnelGetDroneState() == DRONE_STATE_FLYING)
       tunnelSetDroneState(DRONE_STATE_IDLE);
@@ -135,6 +145,7 @@ static void handleAutoStates() {
       break;
     }
     case DRONE_STATE_CRASHED:
+      tunnelSetDroneState(DRONE_STATE_IDLE); //TODO tests only, remove
       break;
   }
 }
@@ -147,9 +158,10 @@ static void tunnelTask(void *param) {
   // Set the max radio TX Power
   radiolinkSetPowerDbm(4);
 
-  // Stop red LED (it gets annoying ^^)
-  ledseqStop(SYS_LED, seq_alive);
+  // Initialize LEDs for our use case
   ledseqStop(SYS_LED, seq_calibrated);
+  ledseqStop(SYS_LED, seq_alive);
+  ledSet(LED_BLUE_L, false);
   ledSet(SYS_LED, false);
 
   // Print general startup information
@@ -165,6 +177,10 @@ static void tunnelTask(void *param) {
     // Manage state changes based on new information sent by other drones
     if(tunnelGetDroneMode() == DRONE_MODE_AUTO)
       handleAutoStates();
+    else if(tunnelGetDroneMode() == DRONE_MODE_MANUAL) {
+      if(tunnelGetDroneState() == DRONE_STATE_ARMED)
+        tunnelSetDroneState(DRONE_STATE_IDLE);
+    }
 
     // Calculate the new drone movement and send it to the stabilizer
     tunnelCommanderUpdate();

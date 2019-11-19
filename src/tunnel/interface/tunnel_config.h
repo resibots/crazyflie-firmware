@@ -27,6 +27,9 @@
       DEBUG
 *****************/
 
+// Uncomment this line to run the normal tunnel code without ever turning the motors on (for tests)
+// #define TUNNEL_MOTORS_DISABLE
+
 // Disable the motors when putting a hand over the drone
 #define TUNNEL_RED_SWITCH
 

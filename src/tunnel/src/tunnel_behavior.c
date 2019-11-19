@@ -56,11 +56,11 @@ static void tunnelBehaviorPositioningUpdate(TunnelHover *vel, bool *enableCollis
 
   SignalLog *followerSignal = (getDroneId() >= getNDrones() - 1) ? tunnelGetFollowerSignal() : tunnelGetBaseSignal();
 
-  // If the last RSSI value is too old, consider connection lost
-  if(isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID()))
-    tunnelSetBehavior(TUNNEL_BEHAVIOR_RECONNECT);
-  if(isPeerIDValid(getFollowerID()) && !tunnelIsDroneConnected(getFollowerID()))
-    tunnelSetBehavior(TUNNEL_BEHAVIOR_ROLLBACK);
+  //TODO If the last RSSI value is too old, consider connection lost
+  // if(isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID()))
+  //   tunnelSetBehavior(TUNNEL_BEHAVIOR_RECONNECT);
+  // if(isPeerIDValid(getFollowerID()) && !tunnelIsDroneConnected(getFollowerID()))
+  //   tunnelSetBehavior(TUNNEL_BEHAVIOR_ROLLBACK);
 
   // Don't go too close to another drone
   if(tunnelGetLeaderSignal()->rssi < TUNNEL_RSSI_BEST)
@@ -157,6 +157,7 @@ static void tunnelBehaviorLandUpdate(TunnelHover *vel, bool *enableCollisions) {
   // End the behavior when the ground is reached
   if(zTarget <= 0.05) {
     zTarget = 0;
+    sendSetpointStop();
     tunnelSetBehavior(TUNNEL_BEHAVIOR_IDLE);
   }
 }

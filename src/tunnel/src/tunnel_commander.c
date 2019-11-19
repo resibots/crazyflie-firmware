@@ -145,9 +145,11 @@ void tunnelCommanderUpdate() {
 
   // Send the movement command (only when this module is allowed to send setpoints)
   if(tunnelGetDroneState() == DRONE_STATE_FLYING) {
+#ifndef TUNNEL_MOTORS_DISABLE
     if(tunnelGetCurrentBehavior() != TUNNEL_BEHAVIOR_IDLE)
       sendSetpointHover(&currentMovement);
     else sendSetpointStop();
+#endif
 
     prevUpdate = xTaskGetTickCount();
   }

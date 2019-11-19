@@ -196,7 +196,7 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
     
     if(((P2PPacket*)(&slp->length))->rxdest == getDroneId())
       ledseqRun(LINK_LED, seq_linkup);
-    else ledseqRun(LED_BLUE_L, seq_linkup);
+    // else ledseqRun(LED_BLUE_L, seq_linkup);
 
     xQueueSend(p2pPacketDelivery, &slp->length, 0);
     
@@ -207,7 +207,7 @@ void radiolinkSyslinkDispatch(SyslinkPacket *slp)
 
     if(((P2PPacket*)(&slp->length))->rxdest == getDroneId())
       ledseqRun(LINK_LED, seq_linkup);
-    else ledseqRun(LED_BLUE_L, seq_linkup);
+    // else ledseqRun(LED_BLUE_L, seq_linkup);
 
     xQueueSend(p2pPacketDelivery, &slp->length, 0);
     // no ack for broadcasts
