@@ -54,7 +54,8 @@ static void tunnelBehaviorPositioningUpdate(TunnelHover *vel, bool *enableCollis
   vel->yawrate = 0;
   vel->zDistance = TUNNEL_DEFAULT_HEIGHT;
 
-  SignalLog *followerSignal = (getDroneId() >= getNDrones() - 1) ? tunnelGetFollowerSignal() : tunnelGetBaseSignal();
+  SignalLog *followerSignal = (getDroneId() < getNDrones() - 1) ? tunnelGetFollowerSignal() : tunnelGetBaseSignal();
+  SignalLog *leaderSignal   = tunnelGetLeaderSignal();
 
   //TODO If the last RSSI value is too old, consider connection lost
   // if(isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID()))
@@ -63,22 +64,19 @@ static void tunnelBehaviorPositioningUpdate(TunnelHover *vel, bool *enableCollis
   //   tunnelSetBehavior(TUNNEL_BEHAVIOR_ROLLBACK);
 
   // Don't go too close to another drone
-  if(tunnelGetLeaderSignal()->rssi < TUNNEL_RSSI_BEST)
+  if(leaderSignal->rssi < TUNNEL_RSSI_BEST)
     vel->vx = -TUNNEL_DEFAULT_SPEED;
   else if(followerSignal->rssi < TUNNEL_RSSI_BEST)
     vel->vx = TUNNEL_DEFAULT_SPEED;
   else {
     // Move forward or backward to reach the destination
-    float signalDiff = tunnelGetLeaderSignal()->rssi - followerSignal->rssi;
+    float signalDiff = leaderSignal->rssi - followerSignal->rssi;
     if(signalDiff > TUNNEL_SIGNAL_DIFF_TOLERANCE / 2.f)
       vel->vx = TUNNEL_DEFAULT_SPEED;
     else if(signalDiff < -TUNNEL_SIGNAL_DIFF_TOLERANCE / 2.f)
       vel->vx = -TUNNEL_DEFAULT_SPEED;
     else vel->vx = 0;
   }
-
-  // Status LED, green if we consider ourselves in the middle
-  // ledSet(LED_GREEN_R, vel->vx == 0);
 }
 
 // Goto Behavior

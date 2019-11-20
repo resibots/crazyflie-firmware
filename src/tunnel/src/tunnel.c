@@ -121,10 +121,16 @@ static void handleAutoStates() {
       break;
     }
     case DRONE_STATE_ARMED: {
-      // Launch the drone if the leader got too far away
+      // Launch the relay drone if the leader got too far away
       if((isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID())) || 
         (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi > TUNNEL_RSSI_ARMED + TUNNEL_RSSI_GROUND_PENALTY)) {
         DEBUG_PRINT("Leader far, auto take off!\n");
+        tunnelSetDroneState(DRONE_STATE_FLYING);
+      }
+
+      // Launch the base drone when the last drone is flying
+      if(tunnelGetDroneRole() == DRONE_ROLE_BASE) {
+        DEBUG_PRINT("Launch base!\n");
         tunnelSetDroneState(DRONE_STATE_FLYING);
       }
 
@@ -137,11 +143,11 @@ static void handleAutoStates() {
     }
     case DRONE_STATE_FLYING: {
       // Land the drone if the leader comes back
-      if(getTunnelFlightTime() > 2000 && 
-        (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi < TUNNEL_RSSI_ARMED)) { //TODO test, remove
-        tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
-        DEBUG_PRINT("Leader came back, auto land!\n");
-      }
+      // if(getTunnelFlightTime() > 2000 && 
+      //   (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi < TUNNEL_RSSI_ARMED)) { //TODO test, remove
+      //   tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
+      //   DEBUG_PRINT("Leader came back, auto land!\n");
+      // }
       break;
     }
     case DRONE_STATE_CRASHED:

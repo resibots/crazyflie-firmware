@@ -74,7 +74,7 @@ static void broadcastStatus() {
 
   // Report status to PC while at it
 #ifdef PRINT_TUNNEL_STATUS
-  DEBUG_PRINT("STATUS %02x%02x\n", p_status.txdata[0], p_status.txdata[1]);
+  DEBUG_PRINT("STATUS %02x%02x dist=%.2f\n", p_status.txdata[0], p_status.txdata[1], tunnelGetDistance());
 #endif
 
   p2pSendPacket(&p_status);

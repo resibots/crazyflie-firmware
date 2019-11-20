@@ -17,7 +17,7 @@
 #include "p2p.h"
 #include "led.h"
 
-#define BROADCAST_N_TRIES 3
+#define BROADCAST_N_TRIES 5
 
 typedef enum {
   TUNNEL_PARAM_NDRONES = 0x00,

@@ -115,6 +115,7 @@ void tunnelCommanderUpdate() {
 #ifdef TUNNEL_RED_SWITCH
   if(rangeGet(rangeUp) > 0 && rangeGet(rangeUp) < 100) {
     sendSetpointStop();
+    tunnelSetDroneMode(DRONE_MODE_MANUAL);
     tunnelSetDroneState(DRONE_STATE_CRASHED);
     ledseqRun(SYS_LED, seq_testPassed);
   }

@@ -13,7 +13,7 @@
 #define DEFAULT_N_DRONES 3
 
 // Main tunnel loop frequency rate
-#define TUNNEL_TASK_RATE_HZ 20
+#define TUNNEL_TASK_RATE_HZ 10
 
 // Battery voltage range
 #define BATTERY_MIN 3.2f
@@ -55,7 +55,7 @@
 #define TUNNEL_MAX_SPEED 0.6f
 
 // Default drone speed in m/s used in behaviors 
-#define TUNNEL_DEFAULT_SPEED 0.2f
+#define TUNNEL_DEFAULT_SPEED 0.3f
 
 // Max drone yaw speed in deg/s
 #define TUNNEL_MAX_TURN_SPEED 30.f
@@ -95,7 +95,7 @@ OBSTACLE AVOIDING
 
 // RSSI Thresholds used in movement behaviors and state decisions
 #define TUNNEL_RSSI_BEST    40 // Best quality considered (used to avoid collisions with another drone)
-#define TUNNEL_RSSI_ARMED   60 // Quality to reach before taking off as a new relay drone
+#define TUNNEL_RSSI_ARMED   50 // Quality to reach before taking off as a new relay drone
 #define TUNNEL_RSSI_DANGER  70 // Threshold before considering the connection will soon be lost
 
 // RSSI is better in the air than when idle on the ground, compensate here
