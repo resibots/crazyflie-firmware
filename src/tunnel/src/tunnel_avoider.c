@@ -29,8 +29,6 @@
 #include "led.h" 
 #include "ledseq.h"
 
-#include <stdlib.h>
-
 HorizontalRanges currentRanges;
 
 HorizontalRanges *tunnelGetRanges() { return &currentRanges; }

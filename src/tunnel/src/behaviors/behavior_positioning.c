@@ -4,10 +4,13 @@
 #include "tunnel_config.h"
 #include "tunnel_signal.h"
 
+#define DEBUG_MODULE "BEH_POS"
+#include "debug.h"
+
 #define TUNNEL_SIGNAL_DIFF_TOLERANCE 3
 
 void behaviorPositioningInit() {
-
+  DEBUG_PRINT("Starting positioning\n");
 }
 
 void behaviorPositioningUpdate(TunnelHover *vel, bool *enableCollisions) {

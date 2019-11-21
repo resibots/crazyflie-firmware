@@ -3,11 +3,14 @@
 
 #include "tunnel_config.h"
 
+#define DEBUG_MODULE "BEH_GOTO"
+#include "debug.h"
+
 static float gotoGoal = 0;
 void setBehaviorGotoGoal(float goal) { gotoGoal = goal; }
 
 void behaviorGotoInit() {
-
+  DEBUG_PRINT("Going to d=%.2f\n", gotoGoal);
 }
 
 void behaviorGotoUpdate(TunnelHover *vel, bool *enableCollisions) {
@@ -22,7 +25,10 @@ void behaviorGotoUpdate(TunnelHover *vel, bool *enableCollisions) {
       vel->vx = TUNNEL_DEFAULT_SPEED;
   else if(gotoGoal - tunnelDistance < -0.05f)
       vel->vx = -TUNNEL_DEFAULT_SPEED;
-  else tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
+  else {
+    DEBUG_PRINT("Reached goal\n");
+    tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
+  }
 
   // Collisions
   *enableCollisions = true;

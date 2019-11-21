@@ -5,10 +5,13 @@
 #include "tunnel_config.h"
 #include "estimator_kalman.h"
 
-static float zTarget = 0.1f;
+#define DEBUG_MODULE "BEH_VERT"
+#include "debug.h"
+
+static float zTarget = 0;
 static uint32_t prevTime = 0;
 
-static void verticalMotionUpdate(TunnelHover *vel, bool *enableCollisions, float direction) {
+static void verticalMotionUpdate(TunnelHover *vel, bool *enableCollisions, float velocity) {
   // Inactive axis
   vel->vx = 0;
   vel->vy = 0;
@@ -22,7 +25,7 @@ static void verticalMotionUpdate(TunnelHover *vel, bool *enableCollisions, float
   *enableCollisions = false;
 
   // Active axis: slowly increase the height
-  zTarget += direction * TAKE_OFF_VELOCITY * (float)(xTaskGetTickCount() - prevTime) / 1000.f;
+  zTarget += velocity * (float)(xTaskGetTickCount() - prevTime) / 1000.f;
   prevTime = xTaskGetTickCount();
   vel->zDistance = zTarget;
 }
@@ -30,6 +33,7 @@ static void verticalMotionUpdate(TunnelHover *vel, bool *enableCollisions, float
 // Take off
 
 void behaviorTakeOffInit() {
+  DEBUG_PRINT("Taking off!\n");
   tunnelSetDroneState(DRONE_STATE_FLYING);
   zTarget = 0.1f;
   prevTime = 0;
@@ -37,7 +41,7 @@ void behaviorTakeOffInit() {
 }
 
 void behaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions) {
-  verticalMotionUpdate(vel, enableCollisions, 1.0);
+  verticalMotionUpdate(vel, enableCollisions, TAKE_OFF_VELOCITY);
 
   // Transitions: end the behavior when the default height is reached
   if(zTarget >= TUNNEL_DEFAULT_HEIGHT) {
@@ -62,12 +66,13 @@ void behaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions) {
 // Land
 
 void behaviorLandInit() {
+  DEBUG_PRINT("Landing...\n");
   zTarget = TUNNEL_DEFAULT_HEIGHT;
   prevTime = 0;
 }
 
 void behaviorLandUpdate(TunnelHover *vel, bool *enableCollisions) {
-  verticalMotionUpdate(vel, enableCollisions, -1.0);
+  verticalMotionUpdate(vel, enableCollisions, -1.0 * TAKE_OFF_VELOCITY);
 
   // Transitions: end the behavior when the ground is reached
   if(zTarget <= 0.02f) {

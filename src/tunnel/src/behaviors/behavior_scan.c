@@ -5,7 +5,12 @@
 #include "tunnel_avoider.h"
 #include "tunnel_comm.h"
 
-#define DEBUG_MODULE "SCAN"
+#include "FreeRTOS.h"
+#include "task.h"
+
+#include <stdlib.h>
+
+#define DEBUG_MODULE "BEH_SCAN"
 #include "debug.h"
 
 #define INACTIVE_TIME  500 // time for centering in the tunnel before starting the scan
@@ -39,17 +44,17 @@ static void saveRangesToBuffer(float frontAngle) {
     return;
 
   uint16_t frontIndex = (int)frontAngle / SCAN_RESOLUTION;
-  measuresBuffer[frontIndex]                              = tunnelGetRanges()->front;
+  measuresBuffer[frontIndex]                              = tunnelGetRanges()->front; //TODO take the mean of all values in the same index
   measuresBuffer[frontIndex +     (90 / SCAN_RESOLUTION)] = tunnelGetRanges()->right;
   measuresBuffer[frontIndex + 2 * (90 / SCAN_RESOLUTION)] = tunnelGetRanges()->back;
   if(frontIndex + 3 * (90 / SCAN_RESOLUTION) < N_MEASURES)
     measuresBuffer[frontIndex + 3 * (90 / SCAN_RESOLUTION)] = tunnelGetRanges()->left;
 
-  DEBUG_PRINT("Logging i=%i a=%i\n", (int)frontAngle / SCAN_RESOLUTION, (int)frontAngle);
+  // DEBUG_PRINT("Logging i=%i a=%i\n", (int)frontAngle / SCAN_RESOLUTION, (int)frontAngle);
 }
 
 void behaviorScanInit() {
-  DEBUG_PRINT("Starting scan, %i points...\n", N_MEASURES);
+  DEBUG_PRINT("Scanning %i points\n", N_MEASURES);
   scanBehaviorState = BEHAVIOR_SCAN_STATE_INACTIVE;
   prevAngle = currentAngle = goalAngle = 0;
   prevUpdateTime = xTaskGetTickCount(); // used for staying inactive for a while
@@ -88,24 +93,10 @@ void behaviorScanUpdate(TunnelHover *vel, bool *enableCollisions) { //TODO trans
       if(currentAngle > 90) {
         vel->yawrate = 0;
 
-        // Choose best angle
-        // uint8_t best_i = 0, best = 2 * TUNNEL_RANGER_TRIGGER_DIST;
-        // for(int i = 0; i < N_MEASURES / 2; i++) {
-        //   if(measuresBuffer[i]                              > 0 && measuresBuffer[i]                              < TUNNEL_RANGER_TRIGGER_DIST &&
-        //      measuresBuffer[i + 2 * (90 / SCAN_RESOLUTION)] > 0 && measuresBuffer[i + 2 * (90 / SCAN_RESOLUTION)] < TUNNEL_RANGER_TRIGGER_DIST) {
-        //     uint8_t dist = measuresBuffer[i] + measuresBuffer[i + 2 * (90 / SCAN_RESOLUTION)];
-        //     if(dist < best) {
-        //       best_i = i;
-        //       best = dist;
-        //       DEBUG_PRINT("New best i=%i d=%i\n", best_i, best);
-        //     }
-        //   }
-        // }
-        // goalAngle = best_i * SCAN_RESOLUTION; //wrong
         goalAngle = 0;
 
         scanBehaviorState = BEHAVIOR_SCAN_STATE_GOTO;
-        DEBUG_PRINT("Going to chosen a=%i...\n", (int)goalAngle);
+        DEBUG_PRINT("Going to a=%i...\n", (int)goalAngle);
         sendScan();
       }
       break;

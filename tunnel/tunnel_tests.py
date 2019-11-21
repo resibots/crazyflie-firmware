@@ -176,7 +176,7 @@ class TunnelCommunicator(CRTPSender):
     def scan(self, verbose=True):
         if verbose:
             color_print(bcolors.OKGREEN, "Starting single scan")
-        self.set_behavior(TUNNEL_BEHAVIOR_SCAN)
+        self.set_behavior(TUNNEL_BEHAVIOR_SCAN, verbose=False)
 
     def land(self, verbose=True):
         if verbose:
@@ -240,11 +240,14 @@ def log_msg(pk, data_int=False, color=bcolors.NONE):
     color_print(bcolors.BOLD, "[{} {}:{}] ".format(port_name[pk.port], str(pk.port), str(pk.channel)), newline=False)
 
     text = ''.join([(str(c) + " " if data_int is True else chr(c)) for c in pk.data])
-    # text = pk.data.hex()
+    
+    if data_int:
+        text += '\n'
 
-    color = bcolors.NONE
-    if "STATUS" in text:
-        color = bcolors.OKBLUE
+    if color is bcolors.NONE:
+        if "STATUS" in text:
+            color = bcolors.OKBLUE
+
 
     color_print(color, text, newline=False)
 
@@ -279,8 +282,8 @@ def on_tunnel_msg(pk):
     if pk.channel == 0:
         on_ping(pk)
     elif pk.channel == 1:
-        print("New scan arrived:")
-        log_msg(pk, data_int=True)
+        color_print(bcolors.HEADER, "New scan arrived:")
+        log_msg(pk, data_int=True, color=bcolors.HEADER)
         scans.append([int(v) for v in pk.data])
     else:
         log_msg(pk, data_int=True)
@@ -310,10 +313,10 @@ def test_quick_hover(tunnel, wait=5):
 
 def test_scan(tunnel, wait=5):
     tunnel.takeoff()
-    time.sleep(3)
+    time.sleep(2)
 
     tunnel.scan()
-    time.sleep(13)
+    time.sleep(12)
 
     tunnel.land()
     time.sleep(5)
@@ -333,7 +336,7 @@ def test_goto_steps(tunnel):
     tunnel.land()
     time.sleep(5)
 
-def test_goto(tunnel, dist=3.5):
+def test_goto(tunnel, dist=0.5):
     tunnel.takeoff()
     time.sleep(3)
     
@@ -387,7 +390,7 @@ def test_move(tunnel):
     tunnel.land()
     time.sleep(5)
 
-def tool_manual(tunnel):
+def tool_set_manual(tunnel):
     tunnel.set_mode(DRONE_MODE_MANUAL, broadcast=True)
     time.sleep(2)
 
@@ -435,7 +438,7 @@ tests = [
     ("test_goto_middlescan", test_goto_middlescan),
 
     # Tools and helpers
-    ("tool_manual"         , tool_manual         ),
+    ("tool_set_manual"     , tool_set_manual     ),
 
     # Real exploration algorithms
     ("final_exploration"   , final_exploration   ),
@@ -470,9 +473,10 @@ def show_scans():
 Main args & function
 '''
 if __name__ == '__main__':
-    color_print(bcolors.BOLD, "Choose which test to run:")
+    color_print(bcolors.BOLD, "Choose which plan to run:")
     for (i, t) in enumerate(tests):
         color = bcolors.HEADER if "final" in tests[i][0] else bcolors.OKBLUE
+        color = bcolors.HEADER if "tool"  in tests[i][0] else color
         color_print(color, "    - {}. {}".format(i, tests[i][0]))
     chosen_test = int(input("Index chosen:"))
     color_print(bcolors.OKGREEN, "Launching module '{}'!\n\n".format(tests[chosen_test][0]))

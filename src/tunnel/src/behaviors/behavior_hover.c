@@ -3,8 +3,11 @@
 
 #include "tunnel_config.h"
 
-void behaviorHoverInit() {
+#define DEBUG_MODULE "BEH_HVR"
+#include "debug.h"
 
+void behaviorHoverInit() {
+  DEBUG_PRINT("Hovering\n");
 }
 
 void behaviorHoverUpdate(TunnelHover *vel, bool *enableCollisions) {

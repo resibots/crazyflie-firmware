@@ -3,7 +3,11 @@
 
 #include "tunnel.h"
 
+#define DEBUG_MODULE "BEH_IDLE"
+#include "debug.h"
+
 void behaviorIdleInit() {
+  DEBUG_PRINT("Motors off.\n");
   tunnelSetDroneState(DRONE_STATE_IDLE);
 }
 
