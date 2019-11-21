@@ -142,12 +142,6 @@ static void handleAutoStates() {
       break;
     }
     case DRONE_STATE_FLYING: {
-      // Land the drone if the leader comes back
-      // if(getTunnelFlightTime() > 2000 && 
-      //   (tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderSignal()->rssi < TUNNEL_RSSI_ARMED)) { //TODO test, remove
-      //   tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND);
-      //   DEBUG_PRINT("Leader came back, auto land!\n");
-      // }
       break;
     }
     case DRONE_STATE_CRASHED:

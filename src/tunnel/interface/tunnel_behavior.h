@@ -20,8 +20,12 @@ typedef enum {
   TUNNEL_BEHAVIOR_LAND        = 8, // Land slowly with a specified velocity
 } TunnelBehavior;
 
-// Used for the Goto Behavior only, sets the destination
-void setBehaviorGotoGoal(float goal);
+// Common structure for declaring a behavior
+typedef const struct {
+  uint8_t id;
+  void (*init)();
+  void (*update)(TunnelHover *vel, bool *enableCollisions);
+} BehaviorType;
 
 // Update function that needs to be called regularly
 void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions);
@@ -29,7 +33,7 @@ void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions);
 // Get the current active behavior
 TunnelBehavior tunnelGetCurrentBehavior();
 
-// Set the new drone behavior. TODO no init for now
+// Set the new drone behavior.
 void tunnelSetBehavior(TunnelBehavior behavior);
 
 // Go back to the previous active behavior
@@ -38,6 +42,9 @@ void tunnelSetPreviousBehavior();
 
 // Get when we last took off
 uint32_t tunnelGetTakeOffTime();
+
+// Call this function when taking off
+void tunnelMarkTakeOffTime();
 
 // Initialize the behavior submodule
 void tunnelBehaviorInit();

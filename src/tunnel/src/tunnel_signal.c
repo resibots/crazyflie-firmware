@@ -25,8 +25,6 @@
 #include "debug.h"
 #include "log.h"
 
-//TODO keep track of all drones' statuses coming from pings ?
-
 // Number of unfiltered signals (index corresponds to the agent id)
 #define N_AGENTS 16
 

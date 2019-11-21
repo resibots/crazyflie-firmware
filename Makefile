@@ -111,7 +111,7 @@ endif
 VPATH += src/init src/hal/src src/modules/src src/utils/src src/drivers/bosch/src src/drivers/src src/platform
 
 # Tunnel sources
-VPATH += src/tunnel/src
+VPATH += src/tunnel/src src/tunnel/src/behaviors
 
 
 ############### Source files configuration ################
@@ -200,6 +200,8 @@ PROJ_OBJ += activeMarkerDeck.o
 PROJ_OBJ += tunnel.o tunnel_config.o tunnel_ping.o tunnel_parameters.o 
 PROJ_OBJ += tunnel_avoider.o tunnel_behavior.o tunnel_commander.o
 PROJ_OBJ += tunnel_signal.o tunnel_relay.o tunnel_comm.o
+PROJ_OBJ += behavior_idle.o behavior_vertical.o behavior_hover.o behavior_goto.o 
+PROJ_OBJ += behavior_positioning.o behavior_reconnect.o behavior_rollback.o behavior_scan.o
 
 ifeq ($(LPS_TDOA_ENABLE), 1)
 CFLAGS += -DLPS_TDOA_ENABLE
@@ -264,7 +266,7 @@ INCLUDES += -Isrc/utils/interface -Isrc/drivers/interface -Isrc/platform
 INCLUDES += -Ivendor/CMSIS/CMSIS/Include -Isrc/drivers/bosch/interface
 
 # Tunnel include
-INCLUDES += -Isrc/tunnel/interface
+INCLUDES += -Isrc/tunnel/interface -Isrc/tunnel/interface/behaviors
 
 INCLUDES += -I$(LIB)/STM32F4xx_StdPeriph_Driver/inc
 INCLUDES += -I$(LIB)/CMSIS/STM32F4xx/Include

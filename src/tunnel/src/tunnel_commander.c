@@ -39,6 +39,7 @@
 #include "commander.h"
 #include "crtp_commander.h"
 #include "estimator_kalman.h"
+#include "behavior_goto.h"
 
 typedef enum {
   TUNNEL_COMMANDER_MOVE = 0x00,

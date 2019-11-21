@@ -7,6 +7,17 @@
 
 #include "tunnel_commander.h"
 
+// Structure for storing all distance ranges in 4 bytes
+typedef struct {
+uint8_t front;
+uint8_t back;
+uint8_t left;
+uint8_t right;
+} HorizontalRanges; // centimeters
+
+// Get the last multiranger distances measurement (centimeters)
+HorizontalRanges *tunnelGetRanges();
+
 // Initialize scan behavior
 void tunnelBehaviorScanEnable();
 
