@@ -13,7 +13,7 @@ void behaviorGotoInit() {
   DEBUG_PRINT("Going to d=%.2f\n", gotoGoal);
 }
 
-void behaviorGotoUpdate(TunnelHover *vel, bool *enableCollisions) {
+void behaviorGotoUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
   // Inactive axis
   vel->vy = 0;
   vel->yawrate = 0;

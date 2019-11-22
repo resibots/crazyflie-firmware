@@ -10,7 +10,7 @@ void behaviorHoverInit() {
   DEBUG_PRINT("Hovering\n");
 }
 
-void behaviorHoverUpdate(TunnelHover *vel, bool *enableCollisions) {
+void behaviorHoverUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
   // Inactive axis
   vel->vx = 0;
   vel->vy = 0;

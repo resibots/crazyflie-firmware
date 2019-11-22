@@ -8,6 +8,6 @@ void behaviorReconnectInit() {
   DEBUG_PRINT("Reconnecting...\n");
 }
 
-void behaviorReconnectUpdate(TunnelHover *vel, bool *enableCollisions) {
+void behaviorReconnectUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
   tunnelSetPreviousBehavior(); //TODO implement
 }

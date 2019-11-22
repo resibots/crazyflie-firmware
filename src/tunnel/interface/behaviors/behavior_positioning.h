@@ -12,6 +12,6 @@
 void behaviorPositioningInit();
 
 // Function called at each tunnel loop when this behavior is active
-void behaviorPositioningUpdate(TunnelHover *vel, bool *enableCollisions);
+void behaviorPositioningUpdate(TunnelSetpoint *vel, bool *enableCollisions);
 
 #endif

@@ -12,6 +12,6 @@
 void behaviorScanInit();
 
 // Function called at each tunnel loop when this behavior is active
-void behaviorScanUpdate(TunnelHover *vel, bool *enableCollisions);
+void behaviorScanUpdate(TunnelSetpoint *vel, bool *enableCollisions);
 
 #endif

@@ -12,6 +12,6 @@
 void behaviorIdleInit();
 
 // Function called at each tunnel loop when this behavior is active
-void behaviorIdleUpdate(TunnelHover *vel, bool *enableCollisions);
+void behaviorIdleUpdate(TunnelSetpoint *vel, bool *enableCollisions);
 
 #endif

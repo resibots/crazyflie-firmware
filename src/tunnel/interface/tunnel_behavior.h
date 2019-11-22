@@ -24,11 +24,11 @@ typedef enum {
 typedef const struct {
   uint8_t id;
   void (*init)();
-  void (*update)(TunnelHover *vel, bool *enableCollisions);
+  void (*update)(TunnelSetpoint *vel, bool *enableCollisions);
 } BehaviorType;
 
 // Update function that needs to be called regularly
-void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions);
+void tunnelBehaviorUpdate(TunnelSetpoint *vel, bool *enableCollisions);
 
 // Get the current active behavior
 TunnelBehavior tunnelGetCurrentBehavior();

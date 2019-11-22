@@ -60,7 +60,7 @@ void behaviorScanInit() {
   prevUpdateTime = xTaskGetTickCount(); // used for staying inactive for a while
 }
 
-void behaviorScanUpdate(TunnelHover *vel, bool *enableCollisions) { //TODO transfer
+void behaviorScanUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
   // Inactive axis
   vel->vx = 0;
   vel->vy = 0;

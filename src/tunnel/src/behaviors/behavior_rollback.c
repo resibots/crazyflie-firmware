@@ -8,6 +8,6 @@ void behaviorRollbackInit() {
   DEBUG_PRINT("Rollback...\n");
 }
 
-void behaviorRollbackUpdate(TunnelHover *vel, bool *enableCollisions) {
+void behaviorRollbackUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
   tunnelSetPreviousBehavior(); //TODO implement
 }

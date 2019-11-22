@@ -11,7 +11,7 @@ void behaviorIdleInit() {
   tunnelSetDroneState(DRONE_STATE_IDLE);
 }
 
-void behaviorIdleUpdate(TunnelHover *vel, bool *enableCollisions) {
+void behaviorIdleUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
   // Inactive axis
   vel->vx = 0;
   vel->vy = 0;

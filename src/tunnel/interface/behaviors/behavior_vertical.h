@@ -12,13 +12,13 @@
 void behaviorTakeOffInit();
 
 // Function called at each tunnel loop when this behavior is active
-void behaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions);
+void behaviorTakeOffUpdate(TunnelSetpoint *vel, bool *enableCollisions);
 
 
 // Function called when this behavior starts
 void behaviorLandInit();
 
 // Function called at each tunnel loop when this behavior is active
-void behaviorLandUpdate(TunnelHover *vel, bool *enableCollisions);
+void behaviorLandUpdate(TunnelSetpoint *vel, bool *enableCollisions);
 
 #endif

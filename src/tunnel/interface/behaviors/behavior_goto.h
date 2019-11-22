@@ -15,6 +15,6 @@ void setBehaviorGotoGoal(float goal);
 void behaviorGotoInit();
 
 // Function called at each tunnel loop when this behavior is active
-void behaviorGotoUpdate(TunnelHover *vel, bool *enableCollisions);
+void behaviorGotoUpdate(TunnelSetpoint *vel, bool *enableCollisions);
 
 #endif

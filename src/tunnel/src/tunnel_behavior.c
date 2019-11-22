@@ -25,9 +25,6 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
-#include "led.h"
-
-#include "estimator_kalman.h"
 
 static TunnelBehavior currentBehavior;
 static TunnelBehavior previousBehavior;
@@ -47,7 +44,7 @@ static BehaviorType *behaviors[] = {
 static uint32_t takeOffTime = 0;
 
 // Main update function
-void tunnelBehaviorUpdate(TunnelHover *vel, bool *enableCollisions) {
+void tunnelBehaviorUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
   behaviors[currentBehavior]->update(vel, enableCollisions);
 }
 

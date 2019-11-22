@@ -11,7 +11,7 @@
 static float zTarget = 0;
 static uint32_t prevTime = 0;
 
-static void verticalMotionUpdate(TunnelHover *vel, bool *enableCollisions, float velocity) {
+static void verticalMotionUpdate(TunnelSetpoint *vel, bool *enableCollisions, float velocity) {
   // Inactive axis
   vel->vx = 0;
   vel->vy = 0;
@@ -40,7 +40,7 @@ void behaviorTakeOffInit() {
   estimatorKalmanInit();
 }
 
-void behaviorTakeOffUpdate(TunnelHover *vel, bool *enableCollisions) {
+void behaviorTakeOffUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
   verticalMotionUpdate(vel, enableCollisions, TAKE_OFF_VELOCITY);
 
   // Transitions: end the behavior when the default height is reached
@@ -71,7 +71,7 @@ void behaviorLandInit() {
   prevTime = 0;
 }
 
-void behaviorLandUpdate(TunnelHover *vel, bool *enableCollisions) {
+void behaviorLandUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
   verticalMotionUpdate(vel, enableCollisions, -1.0 * TAKE_OFF_VELOCITY);
 
   // Transitions: end the behavior when the ground is reached

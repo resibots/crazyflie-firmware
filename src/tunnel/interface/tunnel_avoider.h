@@ -22,13 +22,13 @@ HorizontalRanges *tunnelGetRanges();
 void tunnelBehaviorScanEnable();
 
 // Update scan behavior
-void tunnelBehaviorScanUpdate(TunnelHover *vel, bool *enableCollisions);
+void tunnelBehaviorScanUpdate(TunnelSetpoint *vel, bool *enableCollisions);
 
 // Check if the multiranger deck is working, if not warn it through an LED and skip avoiding
 bool tunnelAvoiderCheckDeck();
 
 // Update function that needs to be called regularly
-void tunnelAvoiderUpdate(TunnelHover *vel, bool enableCollisions);
+void tunnelAvoiderUpdate(TunnelSetpoint *vel, bool enableCollisions);
 
 // Initialize the avoider submodule
 void tunnelAvoiderInit(void);

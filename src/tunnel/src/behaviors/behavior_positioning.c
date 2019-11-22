@@ -13,7 +13,7 @@ void behaviorPositioningInit() {
   DEBUG_PRINT("Starting positioning\n");
 }
 
-void behaviorPositioningUpdate(TunnelHover *vel, bool *enableCollisions) {
+void behaviorPositioningUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
   // Inactive axis
   vel->vy = 0;
   vel->yawrate = 0;
@@ -23,11 +23,11 @@ void behaviorPositioningUpdate(TunnelHover *vel, bool *enableCollisions) {
   SignalLog *followerSignal = (getDroneId() < getNDrones() - 1) ? tunnelGetFollowerSignal() : tunnelGetBaseSignal();
   SignalLog *leaderSignal   = tunnelGetLeaderSignal();
 
-  //TODO If the last RSSI value is too old, consider connection lost
-  // if(isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID()))
-  //   tunnelSetBehavior(TUNNEL_BEHAVIOR_RECONNECT);
-  // if(isPeerIDValid(getFollowerID()) && !tunnelIsDroneConnected(getFollowerID()))
-  //   tunnelSetBehavior(TUNNEL_BEHAVIOR_ROLLBACK);
+  // If the last RSSI value is too old, consider connection lost
+  if(isPeerIDValid(getLeaderID()) && !tunnelIsDroneConnected(getLeaderID()))
+    tunnelSetBehavior(TUNNEL_BEHAVIOR_RECONNECT);
+  if(isPeerIDValid(getFollowerID()) && !tunnelIsDroneConnected(getFollowerID()))
+    tunnelSetBehavior(TUNNEL_BEHAVIOR_ROLLBACK);
 
   // Don't go too close to another drone
   if(leaderSignal->rssi < TUNNEL_RSSI_BEST)

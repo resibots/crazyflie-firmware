@@ -12,6 +12,6 @@
 void behaviorRollbackInit();
 
 // Function called at each tunnel loop when this behavior is active
-void behaviorRollbackUpdate(TunnelHover *vel, bool *enableCollisions);
+void behaviorRollbackUpdate(TunnelSetpoint *vel, bool *enableCollisions);
 
 #endif

@@ -14,10 +14,10 @@ typedef struct {
   float vy;           // m/s in the body frame of reference
   float yawrate;      // deg/s
   float zDistance;    // m in the world frame of reference
-} TunnelHover;
+} TunnelSetpoint;
 
 // Send a hover setpoint to the drone's stabilizer
-void sendSetpointHover(TunnelHover *hover);
+void sendSetpointHover(TunnelSetpoint *hover);
 
 // Send a stop setpoint to the drone's stabilizer
 void sendSetpointStop();
@@ -29,7 +29,7 @@ float tunnelGetDistance();
 void tunnelSetDistance(float distance);
 
 // Get the current applied movement on the drone
-TunnelHover *tunnelGetCurrentMovement();
+TunnelSetpoint *tunnelGetCurrentMovement();
 
 // Update function that needs to be called regularly
 void tunnelCommanderUpdate();

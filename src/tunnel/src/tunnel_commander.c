@@ -46,8 +46,8 @@ typedef enum {
   TUNNEL_COMMANDER_GOTO = 0x01
 } TunnelCommanderRequest;
 
-static TunnelHover currentMovement;
-static TunnelHover manualMovement;
+static TunnelSetpoint currentMovement;
+static TunnelSetpoint manualMovement;
 static float tunnelDistance = 0;
 static uint32_t prevUpdate = 0;
 
@@ -61,7 +61,7 @@ void getEstimatedPos(point_t *pos) {
 #endif
 }
 
-void sendSetpointHover(TunnelHover *hover) {
+void sendSetpointHover(TunnelSetpoint *hover) {
   uint8_t type = 5; // hoverType, see crtp_commander_generic.c:71
 
 #ifdef TUNNEL_QUAD_SHAPE_PLUS
@@ -107,7 +107,7 @@ void tunnelSetDistance(float distance) {
   tunnelDistance = distance;
 }
 
-TunnelHover *tunnelGetCurrentMovement() {
+TunnelSetpoint *tunnelGetCurrentMovement() {
   return &currentMovement;
 }
 
@@ -124,7 +124,7 @@ void tunnelCommanderUpdate() {
 
   // Get desired movement from behavior
   bool enableCollisions = true;
-  TunnelHover currentMovement;
+  TunnelSetpoint currentMovement;
   tunnelBehaviorUpdate(&currentMovement, &enableCollisions);
 
   // Get repulsion from avoider

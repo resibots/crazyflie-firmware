@@ -12,6 +12,6 @@
 void behaviorReconnectInit();
 
 // Function called at each tunnel loop when this behavior is active
-void behaviorReconnectUpdate(TunnelHover *vel, bool *enableCollisions);
+void behaviorReconnectUpdate(TunnelSetpoint *vel, bool *enableCollisions);
 
 #endif
