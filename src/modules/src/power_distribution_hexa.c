@@ -67,8 +67,8 @@ static struct mat66 hexa_inverse_matrix = {{
 {-2.624E+7, +1.515E+7, 8.748E+6, -6.378E+8, +3.682E+8, -1.177E+8},
 {+2.624E+7, +1.515E+7, 8.748E+6, -6.378E+8, -3.682E+8, +1.177E+8}
 }};
-static float max_hexa_rotor_speed = 3000;
 static float min_hexa_rotor_speed = 0;
+static float inv_delta_bounds_squarred = 1/3000*3000;
 
 void powerDistributionInit(void)
 {
@@ -104,8 +104,8 @@ void powerDistribution(const control_t *control)
   //computing the desired control from desired forces into desired squarred rotor speed
   struct vec6 u = mvmul6(hexa_inverse_matrix, at);
   // converting u into pwm
-  u = v6addscl(u, -min_hexa_rotor_speed * min_hexa_rotor_speed);
-  u = v6scl(u, 1/max_hexa_rotor_speed*max_hexa_rotor_speed - min_hexa_rotor_speed * min_hexa_rotor_speed);
+  u = v6addscl(u, -min_hexa_rotor_speed);
+  u = v6scl(u, inv_delta_bounds_squarred);
   u = v6sclamp(u, 0, 1);
   u = v6scl(u, 65536);
   motorPower.m1 = limitThrust(u.x);
