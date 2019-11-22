@@ -297,12 +297,13 @@ Individual tests
 def test_simple_listen(tunnel, wait=300):
     time.sleep(wait)
 
-def test_mode(tunnel, wait=6):
-    tunnel.set_mode(DRONE_MODE_AUTO, broadcast=True)
+def test_mode(tunnel, wait=3):
+    tunnel.set_drone_id(0)
+    tunnel.set_mode(DRONE_MODE_AUTO, broadcast=False)
     time.sleep(wait)
 
-    tunnel.set_mode(DRONE_MODE_MANUAL, broadcast=True)
-    time.sleep(2)
+    tunnel.set_mode(DRONE_MODE_MANUAL, broadcast=False)
+    time.sleep(3)
 
 
 def test_quick_hover(tunnel, wait=5):
@@ -391,7 +392,11 @@ def test_move(tunnel):
     time.sleep(5)
 
 def tool_set_manual(tunnel):
-    tunnel.set_mode(DRONE_MODE_MANUAL, broadcast=True)
+    tunnel.set_mode(DRONE_MODE_MANUAL, broadcast=False)
+    time.sleep(2)
+
+def tool_set_auto(tunnel):
+    tunnel.set_mode(DRONE_MODE_MANUAL, broadcast=False)
     time.sleep(2)
 
 def final_exploration(tunnel):
@@ -439,6 +444,7 @@ tests = [
 
     # Tools and helpers
     ("tool_set_manual"     , tool_set_manual     ),
+    ("tool_set_auto"       , tool_set_auto       ),
 
     # Real exploration algorithms
     ("final_exploration"   , final_exploration   ),

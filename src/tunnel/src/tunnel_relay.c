@@ -148,11 +148,10 @@ static void tunnelP2PCrtpHandler(P2PPacket *p) {
   // Received a base-to-drone packet
   if(directionFlag) {
     CRTPTunnelPacket p_crtp;
-    p_crtp.header = p->rxdata[0];
-    memcpy(p_crtp.context, &p->rxdata[1], p->size);
+    memcpy(&p_crtp.header, p->rxdata, p->size);
     p_crtp.size = p->size - 2;
     processIncomingCRTPPacket(&p_crtp);
-  } 
+  }
   
   // Received a drone-to-base packet
   else {
@@ -246,6 +245,7 @@ bool tunnelSendCRTPPacketToBase(CRTPTunnelPacket *p) {
 bool tunnelSendCRTPPacketToDrone(CRTPTunnelPacket *p) {
   if(p->size >= CRTP_MAX_DATA_SIZE)
     return false;
+  p->direction = 1;
 
   // Broadcast to all drones
   if((p->destination & 0x0F) == TUNNEL_BROADCAST_ID) {
@@ -253,7 +253,7 @@ bool tunnelSendCRTPPacketToDrone(CRTPTunnelPacket *p) {
   }
 
   // Send a CRTP Packet to a single drone
-  else if(p->destination != getDroneId()) {
+  else if((p->destination & 0x0F) != getDroneId()) {
     P2PPacket p_p2p;
     p_p2p.port = P2P_PORT_CRTP;
     p_p2p.txdest = p->destination;

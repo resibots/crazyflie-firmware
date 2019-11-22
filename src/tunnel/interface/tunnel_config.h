@@ -113,6 +113,9 @@ OBSTACLE AVOIDING
 // Maximum age of the last message by the other agent to be considered near
 #define TUNNEL_DISCONNECT_TIMEOUT 1000
 
+// Frequency at which a global chain ping should be sent
+#define TUNNEL_PING_FREQ 2
+
 // Which ID corresponds to a broadcast (should not be changed for 16 agents)
 #define TUNNEL_BROADCAST_ID 0x0F
 

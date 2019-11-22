@@ -13,10 +13,10 @@ typedef struct {
     uint8_t status[2];
 
     struct {
-      uint8_t isBaseConnected     : 1; // True if we received a CRTP packet in the last second
-      uint8_t isFollowerConnected : 1; // True if we received a P2P packet from our follower in the last 500ms
-      uint8_t isLeaderConnected   : 1; // True if we received a P2P packet from our follower in the last 500ms
-      uint8_t isHead              : 1; // True if we currently are the head drone
+      uint8_t isBaseConnected     : 1; // True if the drone received a CRTP packet in the last second
+      uint8_t isFollowerConnected : 1; // True if the drone received a P2P packet from our follower in the last 500ms
+      uint8_t isLeaderConnected   : 1; // True if the drone received a P2P packet from our follower in the last 500ms
+      uint8_t isAuto              : 1; // True if the drone is currently in auto mode
 
       uint8_t batteryVoltage      : 4; // Current battery voltage from 0x00 to 0x0F (like a percentage)
 

@@ -48,7 +48,7 @@ void refreshDroneStatus() {
   currentStatus.batteryVoltage = batteryVt;
 
   // Update status bits
-  currentStatus.isHead = tunnelGetDroneRole() == DRONE_ROLE_HEAD ? 1 : 0;
+  currentStatus.isAuto = tunnelGetDroneMode() == DRONE_MODE_AUTO ? 1 : 0;
   currentStatus.isLeaderConnected   = tunnelIsDroneConnected(getLeaderID());
   currentStatus.isFollowerConnected = tunnelIsDroneConnected(getFollowerID());
   currentStatus.isBaseConnected     = tunnelIsBaseConnected();
@@ -88,6 +88,10 @@ void tunnelCommUpdate() {
   refreshDroneStatus();
   if(tunnelGetDroneState() != DRONE_STATE_INACTIVE && timerElapsed(&statusPrevTime, 200))
     broadcastStatus();
+
+  // Copy the leader's mode (will stay in the current mode when disconnected intentionally)
+  if(tunnelIsDroneConnected(getLeaderID()))
+    tunnelSetDroneMode(tunnelGetLeaderStatus()->isAuto == 1 ? DRONE_MODE_AUTO : DRONE_MODE_MANUAL);
 }
 
 // Drone randomly crashes if we use a switch, no idea why...
@@ -118,9 +122,9 @@ void processIncomingCRTPPacket(CRTPTunnelPacket* p) {
 
 void crtpTunnelHandler(CRTPTunnelPacket *p) {
   p->direction = 1; // mark the packet as base-to-drone
-  p->size--;
+  p->size--; // decrease the size by 1 to convert th CRTPPacket to a CRTPTunnelPacket
 
-  if(p->destination == getDroneId())
+  if((p->destination & 0x0F) == getDroneId())
     processIncomingCRTPPacket(p);
   else
     tunnelSendCRTPPacketToDrone(p);
