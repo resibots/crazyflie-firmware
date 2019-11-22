@@ -26,7 +26,7 @@
  * This code mainly interfacing the PWM peripheral lib of ST.
  */
 // Connector M1, PA1, TIM2_CH2
-static const MotorPerifDef CONN_M1 =
+static const MotorPerifDef CONN_M2 =
 {
     .drvType       = BRUSHED,
     .gpioPerif     = RCC_AHB1Periph_GPIOA,
@@ -48,7 +48,7 @@ static const MotorPerifDef CONN_M1 =
 };
 
 // Connector M2, PB11, TIM2_CH4
-static const MotorPerifDef CONN_M2 =
+static const MotorPerifDef CONN_M6 =
 {
     .drvType       = BRUSHED,
     .gpioPerif     = RCC_AHB1Periph_GPIOB,
@@ -70,7 +70,7 @@ static const MotorPerifDef CONN_M2 =
 };
 
 // Connector M3, PA15, TIM2_CH1
-static const MotorPerifDef CONN_M3 =
+static const MotorPerifDef CONN_M5 =
 {
     .drvType       = BRUSHED,
     .gpioPerif     = RCC_AHB1Periph_GPIOA,
@@ -92,7 +92,7 @@ static const MotorPerifDef CONN_M3 =
 };
 
 // Connector M4, PB9, TIM4_CH4
-static const MotorPerifDef CONN_M4 =
+static const MotorPerifDef CONN_M3 =
 {
     .drvType       = BRUSHED,
     .gpioPerif     = RCC_AHB1Periph_GPIOB,
@@ -114,7 +114,7 @@ static const MotorPerifDef CONN_M4 =
 };
 
 //Connector IO1, PB8, TIM4_CH3
-static const MotorPerifDef  CONN_M5=
+static const MotorPerifDef  CONN_M4=
 {
     .drvType       = BRUSHED,
     .gpioPerif     = RCC_AHB1Periph_GPIOB,
@@ -136,7 +136,7 @@ static const MotorPerifDef  CONN_M5=
 };
 
 //Connector IO2, PB5, TIM3_CH2
-static const MotorPerifDef CONN_M6 =
+static const MotorPerifDef CONN_M1 =
 {
     .drvType       = BRUSHED,
     .gpioPerif     = RCC_AHB1Periph_GPIOB,

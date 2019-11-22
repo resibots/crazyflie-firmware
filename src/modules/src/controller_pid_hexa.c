@@ -67,11 +67,20 @@ static float wz;
 static float sx;
 static float sy;
 static float sz;
-
 //current position 
 static float cx;
 static float cy;
 static float cz;
+//current attitude 
+static float qw;
+static float qx;
+static float qy;
+static float qz;
+//setpoint attitude 
+static float sqw;
+static float sqx;
+static float sqy;
+static float sqz;
 
 static bool isInit;
 void controllerPidHexaInit(void)
@@ -112,33 +121,52 @@ void controllerPidHexa(control_t *control, setpoint_t *setpoint,
                                          const uint32_t tick)
 {
   ledseqRun(LED_GREEN_R, seq_linkup);
-  sx = setpoint->position.x;
-  sy = setpoint->position.y;
-  sz = setpoint->position.z;
-  sx = state->position.x;
-  sy = state->position.y;
-  sz = state->position.z;
-  pidSetDesired(&pidX, setpoint->position.x);
-  pidSetDesired(&pidY, setpoint->position.y);
-  pidSetDesired(&pidZ, setpoint->position.z);
+  // sx = setpoint->position.x;
+  // sy = setpoint->position.y;
+  // sz = setpoint->position.z;
+  sx = 0;
+  sy = 0;
+  sz = 1;
+  cx = -state->position.y;
+  cy = state->position.x;
+  cz = state->position.z;
+  qw = state->attitudeQuaternion.w;
+  qx = state->attitudeQuaternion.x;
+  qy = state->attitudeQuaternion.y;
+  qz = state->attitudeQuaternion.z;
+  // sqw = setpoint->attitudeQuaternion.w;
+  sqw = 1; 
+  sqx = setpoint->attitudeQuaternion.x;
+  sqy = setpoint->attitudeQuaternion.y;
+  sqz = setpoint->attitudeQuaternion.z;
+  
+  pidSetDesired(&pidX, sx);
+  pidSetDesired(&pidY, sy);
+  pidSetDesired(&pidZ, sz);
   pidSetDesired(&pidQX, 0);
   pidSetDesired(&pidQY, 0);
   pidSetDesired(&pidQZ, 0);
   //Get Quaternion error by multiplication rather than by substraction
-  struct quat current_attitude = mkquat(state->attitudeQuaternion.x, state->attitudeQuaternion.y, state->attitudeQuaternion.z, state->attitudeQuaternion.w);
-  struct quat setpoint_attitude = mkquat(setpoint->attitudeQuaternion.x, setpoint->attitudeQuaternion.y, setpoint->attitudeQuaternion.z, setpoint->attitudeQuaternion.w);
+  struct quat current_attitude = mkquat(qx, qy, qz, qw);
+  struct quat setpoint_attitude = mkquat(sqx, sqy, sqz, sqw);
   struct quat inv_attitude = qinv(current_attitude);
   struct quat q_error = qqmul(setpoint_attitude, inv_attitude);
   // Extracting only the vector part of the quaternion error
-  struct vec p_error = mkvec(pidUpdate(&pidX, state->position.x, true), pidUpdate(&pidY, state->position.y, true),pidUpdate(&pidZ, state->position.z, true));
+  struct vec p_error = mkvec(pidUpdate(&pidX, cx, true), pidUpdate(&pidY, cy, true),pidUpdate(&pidZ, cz, true));
   // Rotating the error into hexarotor frame and converting it into desired forces and torques
   struct vec rotated_error = qvrot(inv_attitude, p_error);
   ax = (float)(Hexa_mass) * rotated_error.x;
   ay = (float)(Hexa_mass) * rotated_error.y;
-  az = (float)(Hexa_mass) * rotated_error.z;
+  az = (float)(Hexa_mass) * (rotated_error.z + 9.81);
   wx = pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx);
   wy = pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy);
   wz = pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz);
+  // ax = 0.0000; 
+  // ay = 0.00;
+  // az = 0.00;
+  // wx = 0.0000;
+  // wy = 0.0000;
+  // wz = 0.0000;
 
   control->ax = ax;
   control->ay = ay;
@@ -162,4 +190,12 @@ LOG_ADD(LOG_FLOAT, sz, &sz)
 LOG_ADD(LOG_FLOAT, cx, &cx)
 LOG_ADD(LOG_FLOAT, cy, &cy)
 LOG_ADD(LOG_FLOAT, cz, &cz)
+LOG_ADD(LOG_FLOAT, qw, &qw)
+LOG_ADD(LOG_FLOAT, qx, &qx)
+LOG_ADD(LOG_FLOAT, qy, &qy)
+LOG_ADD(LOG_FLOAT, qz, &qz)
+LOG_ADD(LOG_FLOAT, sqw, &sqw)
+LOG_ADD(LOG_FLOAT, sqx, &sqx)
+LOG_ADD(LOG_FLOAT, sqy, &sqy)
+LOG_ADD(LOG_FLOAT, sqz, &sqz)
 LOG_GROUP_STOP(controller)

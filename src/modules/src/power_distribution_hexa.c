@@ -51,6 +51,14 @@ static struct {
   uint16_t m5;
   uint16_t m6;
 } motorPowerSet;
+
+static float m1;
+static float m2;
+static float m3;
+static float m4;
+static float m5;
+static float m6;
+
 static struct mat66 hexa_inverse_matrix = {{
 {-7.902E+1, -3.030E+7, 8.748E+6, -4.823E+2, -7.364E+8, -1.177E+8},
 {-2.624E+7, +1.515E+7, 8.748E+6, +6.378E+8, -3.682E+8, +1.177E+8},
@@ -91,7 +99,8 @@ void powerStop()
 void powerDistribution(const control_t *control)
 {
   //converting the desired forces given by the controller into a vec6
-  struct vec6 at = mkvec6(control->ax, control->ay, control->az + 9.81, control->roll, control->pitch, control->yaw);
+  struct vec6 at = mkvec6(control->ax, control->ay, control->az, control->roll, control->pitch, control->yaw);
+  // struct vec6 at = mkvec6(0.0, 0.0, 0.005, 0.0, 0, 0.0);
   //computing the desired control from desired forces into desired squarred rotor speed
   struct vec6 u = mvmul6(hexa_inverse_matrix, at);
   // converting u into pwm
@@ -100,11 +109,17 @@ void powerDistribution(const control_t *control)
   u = v6sclamp(u, 0, 1);
   u = v6scl(u, 65536);
   motorPower.m1 = limitThrust(u.x);
+  m1 = (float)motorPower.m1 / (float)65536;
   motorPower.m2 = limitThrust(u.y);
+  m2 = (float)motorPower.m2 / (float)65536;
   motorPower.m3 = limitThrust(u.z);
+  m3 = (float)motorPower.m3 / (float)65536;
   motorPower.m4 = limitThrust(u.t);
+  m4 = (float)motorPower.m4 / (float)65536;
   motorPower.m5 = limitThrust(u.u);
+  m5 = (float)motorPower.m5 / (float)65536;
   motorPower.m6 = limitThrust(u.w);
+  m6 = (float)motorPower.m6 / (float)65536;
   if (motorSetEnable)
   {
     motorsSetRatio(MOTOR_M1, motorPowerSet.m1);
@@ -136,10 +151,10 @@ PARAM_ADD(PARAM_UINT16, m6, &motorPowerSet.m6)
 PARAM_GROUP_STOP(ring)
 
 LOG_GROUP_START(motor)
-LOG_ADD(LOG_INT32, m4, &motorPower.m4)
-LOG_ADD(LOG_INT32, m1, &motorPower.m1)
-LOG_ADD(LOG_INT32, m2, &motorPower.m2)
-LOG_ADD(LOG_INT32, m3, &motorPower.m3)
-LOG_ADD(LOG_INT32, m5, &motorPower.m5)
-LOG_ADD(LOG_INT32, m6, &motorPower.m6)
+LOG_ADD(LOG_FLOAT, m1, &m1)
+LOG_ADD(LOG_FLOAT, m2, &m2)
+LOG_ADD(LOG_FLOAT, m3, &m3)
+LOG_ADD(LOG_FLOAT, m4, &m4)
+LOG_ADD(LOG_FLOAT, m5, &m5)
+LOG_ADD(LOG_FLOAT, m6, &m6)
 LOG_GROUP_STOP(motor)

@@ -28,3 +28,6 @@ current_platform.mk
 
 
 /docs/.jekyll-metadata
+.o
+power_distribution_hexa
+power_distribution_stock
