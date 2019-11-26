@@ -17,6 +17,7 @@
 #include "tunnel_behavior.h"
 #include "tunnel_helpers.h"
 #include "tunnel_comm.h"
+#include "tunnel_signal.h"
 
 #define DEBUG_MODULE "PING"
 #include "debug.h"
@@ -108,8 +109,8 @@ static void p2pPingHandler(P2PPacket *p) {
         reply.txdest = getDroneId();
         if(getDroneId() == 0) // first drone replies to second
           reply.txdest = 1;
-        else if(getDroneId() == getNDrones() - 1) // last drone replies to n-1
-          reply.txdest = getNDrones() - 2;
+        else if(!tunnelIsDroneConnected(getFollowerID()))
+          reply.txdest = getDroneId() - 1; // Go back through the chain 
         else // middle drone propagates the ping
           reply.txdest += (p->rxdest - p->origin > 0) ? 1 : -1;
       }
@@ -134,16 +135,8 @@ static void p2pPingHandler(P2PPacket *p) {
 }
 
 static void sendPing(TunnelPingMode mode) {
-  // DEBUG_PRINT("Sending ping...\n");
   P2PPacket p2p_p;
-
-  if(getDroneId() == 0)
-    p2p_p.txdest = 1;
-  else if(getDroneId() == getNDrones() - 1)
-    p2p_p.txdest = getNDrones() - 2;
-  else
-    reply.txdest = getDroneId() + 1;
-
+  p2p_p.txdest = (getDroneId() == 0) ? 1 : (getDroneId() + 1); 
   p2p_p.port = P2P_PORT_PING;
   p2p_p.txdata[0] = mode;
   p2p_p.size = 1 + appendStatusMessage(&p2p_p.txdata[1]);

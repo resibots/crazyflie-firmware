@@ -1,19 +1,19 @@
 /**
- * LARSEN Research team - INRIA
- * Multi-agent tunnel exploration module
- * 
- * author: Pierre Laclau <pierre.laclau@etu.utc.fr>
- * maintainer: LARSEN, INRIA Nancy Grand-Est, France
- *
- * tunnel_relay.c - Submodule for sending & relaying packets through the chain. 
- * 
- * CRTP and P2P Tunnel packets should be sent through this submodule (and not directly
- * in p2p.c or crtp.c), it will send the packet to the furthest available drone in order 
- * to make the smallest amount of jumps possible before reaching the final destination.
- * 
- * When a relay packet has reached its final destination, the packet is transformed
- * back to a regular packet and sent to the drone's main P2P/CRTP queues.
- */
+* LARSEN Research team - INRIA
+* Multi-agent tunnel exploration module
+* 
+* author: Pierre Laclau <pierre.laclau@etu.utc.fr>
+* maintainer: LARSEN, INRIA Nancy Grand-Est, France
+*
+* tunnel_relay.c - Submodule for sending & relaying packets through the chain. 
+* 
+* CRTP and P2P Tunnel packets should be sent through this submodule (and not directly
+* in p2p.c or crtp.c), it will send the packet to the furthest available drone in order 
+* to make the smallest amount of jumps possible before reaching the final destination.
+* 
+* When a relay packet has reached its final destination, the packet is transformed
+* back to a regular packet and sent to the drone's main P2P/CRTP queues.
+*/
 
 #include "tunnel_relay.h"
 
@@ -34,14 +34,18 @@
 // or if we received a good rssi from the destination not long ago
 static bool isDestinationNear(uint8_t destination) {
   if(destination == getLeaderID() || destination == getFollowerID())
-    return true;
+    return true; // Leader and follower are always considered close
   if(destination == getDroneId() + 1 || (getDroneId() > 0 && destination == getDroneId() - 1))
-    return true;
+    return true; // ID+1 and ID-1 are always considered close
   return tunnelIsDroneConnected(destination);
 }
 
 // Select the furthest destination possible from us (or the destination itself)
 static uint8_t selectFurthestDestination(uint8_t destination) {
+  // Infinite loop protection
+  if(destination == getDroneId())
+    return getDroneId();
+
   int8_t direction = (destination - getDroneId() > 0) ? 1 : -1;
 
   int8_t stepDest = getDroneId() + direction;
@@ -54,33 +58,6 @@ static uint8_t selectFurthestDestination(uint8_t destination) {
   return best;
 }
 
-// We received a Relay Rx packet and transform to a P2P Tx packet
-// Will be sent to the final destination
-static void transformRelayRxToP2PTx(P2PPacket* p) {
-  p->header = p->rxdata[p->size - 1];
-  p->size--;
-  memcpy(p->txdata, p->rxdata, p->size);
-}
-
-// We want to send a Relay Tx packet and transform from a P2P Tx packet
-static void transformP2PTxToRelayTx(P2PPacket* p, uint8_t relayID) {
-  if(p->size >= P2P_MAX_DATA_SIZE)
-    return;
-  p->txdata[p->size++] = p->header;
-  p->txdest = relayID;
-  p->port = P2P_PORT_RELAY;
-}
-
-// A Relay Rx message is sent to another relay
-static void transformRelayRxToRelayTx(P2PPacket* p) {
-  // Change packet destination to the furthest available drone
-  uint8_t finalDest = p->rxdata[p->size - 1] >> 4 & 0x0F;
-  p->txdest = selectFurthestDestination(finalDest);
-
-  p->port = P2P_PORT_RELAY;
-  memcpy(p->txdata, p->rxdata, p->size);
-}
-
 // Packet callbacks
 
 static void tunnelP2PRelayHandler(P2PPacket *p) {
@@ -89,29 +66,29 @@ static void tunnelP2PRelayHandler(P2PPacket *p) {
     return;
   
   uint8_t finalDest = p->rxdata[p->size - 1] >> 4 & 0x0F;
-  // DEBUG_PRINT("Got relay P2P from %i, final=%i\n", p->origin, finalDest);
-  // p2pPrintPacket(p, true);
+
+  // A relay packet should not reach final destination, must arrive as a regular P2P packet
   if(finalDest == getDroneId()) {
-    // A relay packet should not reach final destination, must arrive as a regular P2P packet
-    DEBUG_PRINT("WARNING Dropping relay, reached dest\n");
+    DEBUG_PRINT("WARNING Dropping relay\n");
     return;
   }
 
   // If the final destination is near, transform it to a regular P2P packet 
   // and send it to the final drone as a regular P2P Packet
   if(isDestinationNear(finalDest)) {
-    transformRelayRxToP2PTx(p);
-    // DEBUG_PRINT("Relaying P2P to final %i\n", p->txdest);
-    // p2pPrintPacket(p, false);
+    p->header = p->rxdata[p->size - 1];
+    p->size--;
+    memcpy(p->txdata, p->rxdata, p->size);
     p2pSendPacket(p);
   }
 
-  // If the packet has not reached its destination yet, find the furthest relay
-  // available and send the packet to it
+  // If the packet has not reached its destination yet, find the furthest relay available and send the packet to it
   else {
-    transformRelayRxToRelayTx(p);
-    // DEBUG_PRINT("Relaying P2P to relay %i\n", p->txdest);
-    // p2pPrintPacket(p, false);
+    // Change packet destination to the furthest available drone
+    uint8_t finalDest = p->rxdata[p->size - 1] >> 4 & 0x0F;
+    p->txdest = selectFurthestDestination(finalDest);
+    p->port = P2P_PORT_RELAY;
+    memcpy(p->txdata, p->rxdata, p->size);
     p2pSendPacket(p);
   }
 }
@@ -122,10 +99,8 @@ static void tunnelP2PTraceHandler(P2PPacket* p) {
     p->header = p->rxdata[p->size - 1];
     p->size--;
 
-    // DEBUG_PRINT("Popping\n");
-    // p2pPrintPacket(p, true);
+    // Send the packet to this drone's regular P2P port
     radiolinkSendP2PPacketToQueue(p);
-
 
     // Send the paquet to the next drone if needed
     int8_t finalDest = p->rxdata[p->size++] >> 4 & 0x0F;
@@ -134,9 +109,6 @@ static void tunnelP2PTraceHandler(P2PPacket* p) {
       p->txdest = getDroneId() + direction;
       p->port = P2P_PORT_TRACE;
       memcpy(p->txdata, p->rxdata, p->size);
-
-      // DEBUG_PRINT("Retracing to %i\n", p->txdest);
-      // p2pPrintPacket(p, false);
       tunnelSendP2PPacket(p);
     }
   }
@@ -174,22 +146,18 @@ bool tunnelSendP2PPacket(P2PPacket *p) {
     return false;
 
   // If the drone is our neighbor or near, send a direct P2P packet
-  if(isDestinationNear(p->txdest)) {    
-    // DEBUG_PRINT("Sending direct P2P to %i\n", p->txdest);
-    // p2pPrintPacket(p, false);
+  if(isDestinationNear(p->txdest))
     return p2pSendPacket(p);
-  }
+
   // If not, initiate a relay chain and send the first relay packet
   else {
-    transformP2PTxToRelayTx(p, selectFurthestDestination(p->txdest));
-    // DEBUG_PRINT("Sending relay P2P to %i\n", p->txdest);
-    // p2pPrintPacket(p, false);
+    p->txdata[p->size++] = p->header;
+    p->txdest = p->txdest;
+    p->port = P2P_PORT_RELAY;
     return p2pSendPacket(p);
   }
-  return true;
 }
 
-// Send a packet to all drones between us and the destination
 bool tunnelTraceP2PPacket(P2PPacket *p, TraceMode mode) {
   if(p->size >= P2P_MAX_DATA_SIZE)
     return false;
@@ -218,9 +186,6 @@ bool tunnelTraceP2PPacket(P2PPacket *p, TraceMode mode) {
   p->txdest = getDroneId() + ((p->txdest - getDroneId() > 0) ? 1 : -1);
   p->port = P2P_PORT_TRACE;
 
-  // DEBUG_PRINT("Tracing packet to %i\n", p->txdest);
-  // p2pPrintPacket(p, false);
-
   return tunnelSendP2PPacket(p);
 }
 
@@ -245,21 +210,14 @@ bool tunnelSendCRTPPacketToBase(CRTPTunnelPacket *p) {
 bool tunnelSendCRTPPacketToDrone(CRTPTunnelPacket *p) {
   if(p->size >= CRTP_MAX_DATA_SIZE)
     return false;
-  p->direction = 1;
-
-  // Broadcast to all drones
-  if((p->destination & 0x0F) == TUNNEL_BROADCAST_ID) {
-    //TODO
-  }
+  p->direction = 1; //Mark packet as base-to-drone
 
   // Send a CRTP Packet to a single drone
-  else if((p->destination & 0x0F) != getDroneId()) {
+  if((p->destination & 0x0F) != getDroneId()) {
     P2PPacket p_p2p;
     p_p2p.port = P2P_PORT_CRTP;
     p_p2p.txdest = p->destination;
-    p_p2p.txdata[0] = p->header;
-    p_p2p.txdata[1] = p->context;
-    memcpy(&p_p2p.txdata[2], p->dronedata, p->size);
+    memcpy(p_p2p.txdata, &p->header, p->size + 2);
     p_p2p.size = 2/*header+context*/ + p->size/*data*/;
     return tunnelSendP2PPacket(&p_p2p);
   }
@@ -273,5 +231,5 @@ void tunnelRelayInit() {
 }
 
 bool tunnelRelayTest() {
-    return true;
+  return true;
 }
