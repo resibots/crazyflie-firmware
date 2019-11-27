@@ -9,5 +9,5 @@ void behaviorRollbackInit() {
 }
 
 void behaviorRollbackUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
-  tunnelSetPreviousBehavior(); //TODO implement
+  tunnelSetBehavior(TUNNEL_BEHAVIOR_LAND); //TODO implement
 }

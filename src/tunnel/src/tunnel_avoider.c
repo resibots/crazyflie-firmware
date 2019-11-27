@@ -75,26 +75,32 @@ static void followTunnel(TunnelSetpoint *vel) {
   #ifdef TUNNEL_QUAD_SHAPE_PLUS
     // Using left-right and front-back repulsion forces
 
-    // #ifdef TUNNEL_AVOID_LEFTRIGHT // Using the mean of the 2 diagonal sensors for left-right avoiding
-    //   if(currentRanges.left < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
-    //     vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (currentRanges.left + currentRanges.front) / 2.f);
-    //   if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.back < TUNNEL_RANGER_TRIGGER_DIST)
-    //     vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (currentRanges.right + currentRanges.back) / 2.f);
-    // #endif
-    #ifdef TUNNEL_AVOID_LEFTRIGHT // Using only the front diagonal sensors for left-right avoiding
-      // Regular left-right avoidance
-      if(currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.front);
-      if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.right);
+    /*
+    // Using the mean of the 2 diagonal sensors for left-right avoiding
+    #ifdef TUNNEL_AVOID_LEFTRIGHT
+      if(currentRanges.left < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
+        vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (currentRanges.left + currentRanges.front) / 2.f);
+      if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.back < TUNNEL_RANGER_TRIGGER_DIST)
+        vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (currentRanges.right + currentRanges.back) / 2.f);
     #endif
+    
     #ifdef TUNNEL_AVOID_FRONTBACK
       if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
         vel->vx -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (currentRanges.right + currentRanges.front) / 2.f);
       if(currentRanges.left < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.back < TUNNEL_RANGER_TRIGGER_DIST)
         vel->vx += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (currentRanges.left + currentRanges.back) / 2.f);
     #endif
+    */
 
+    // Using only the front diagonal sensors for left-right avoiding
+    #ifdef TUNNEL_AVOID_LEFTRIGHT
+      if(currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
+        vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.front);
+      if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST)
+        vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.right);
+    #endif
+
+    // Turn with all 4 sensors (difference between the two sensors for each side)
     #ifdef TUNNEL_TURNING_ENABLE
       if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.back < TUNNEL_RANGER_TRIGGER_DIST)
         vel->yawrate += TUNNEL_RANGER_TURN_FORCE * (currentRanges.right - currentRanges.back);
@@ -134,13 +140,13 @@ static void onWallsLost(TunnelSetpoint *vel) {
     if(currentRanges.front == 0 || currentRanges.front > TUNNEL_RANGER_TRIGGER_DIST) {
       vel->vx = 0;
       vel->vy = 0;
-      vel->yawrate = TUNNEL_MAX_TURN_SPEED / 2;
+      vel->yawrate = -1.0 * TUNNEL_MAX_TURN_SPEED / 2;
       lostWallsFlag++;
     }
     if(currentRanges.right == 0 || currentRanges.right > TUNNEL_RANGER_TRIGGER_DIST) {
       vel->vx = 0;
       vel->vy = 0;
-      vel->yawrate = -TUNNEL_MAX_TURN_SPEED / 2;
+      vel->yawrate = TUNNEL_MAX_TURN_SPEED / 2;
       lostWallsFlag++;
     }
     #ifdef TUNNEL_STOP_ON_WALLS_LOST
@@ -169,11 +175,11 @@ void tunnelAvoiderUpdate(TunnelSetpoint *vel, bool enableCollisions) {
   // Main avoidance algorithm
   followTunnel(vel);
 
-  // Using independant repulsion forces for safety when coming too close of an obstacle
-  avoidCollisions(vel);
-
   // Safety in case a laser looses track of a wall
   onWallsLost(vel);
+
+  // Using independant repulsion forces for safety when coming too close of an obstacle
+  avoidCollisions(vel);
 }
 
 void tunnelAvoiderInit(void) {

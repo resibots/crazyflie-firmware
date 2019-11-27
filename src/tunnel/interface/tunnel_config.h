@@ -78,7 +78,7 @@ OBSTACLE AVOIDING
 #define TUNNEL_RANGER_TRIGGER_DIST 200
 
 // Maximum distance before avoiding at all costs (cm)
-#define TUNNEL_RANGER_DANGER_DIST 20
+#define TUNNEL_RANGER_DANGER_DIST 15
 
 // When avoiding walls, push the drone away with this force (m/sec per ranging m)
 #define TUNNEL_RANGER_AVOID_FORCE .3f
@@ -87,7 +87,7 @@ OBSTACLE AVOIDING
 #define TUNNEL_TURNING_ENABLE // Uses 2 or 4 sensors based on TUNNEL_QUAD_SHAPE
 
 // When avoiding walls, turn the drone based on the left-right distance difference (deg/s per mm)
-#define TUNNEL_RANGER_TURN_FORCE .15f
+#define TUNNEL_RANGER_TURN_FORCE 2.f
 
 /****************
       SIGNAL

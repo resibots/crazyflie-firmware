@@ -49,17 +49,20 @@ void behaviorTakeOffUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
     tunnelSetDistance(0); // Reset distance estimation
     tunnelMarkTakeOffTime();
 
-    switch(tunnelGetDroneRole()) {
-    case DRONE_ROLE_HEAD:
-      tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
-      break;
-    case DRONE_ROLE_RELAY:
-      tunnelSetBehavior(TUNNEL_BEHAVIOR_POSITIONING);
-      break;
-    case DRONE_ROLE_BASE:
-      tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
-      break;
+    if(tunnelGetDroneMode() == DRONE_MODE_AUTO) {
+      switch(tunnelGetDroneRole()) {
+      case DRONE_ROLE_HEAD:
+        tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
+        break;
+      case DRONE_ROLE_RELAY:
+        tunnelSetBehavior(TUNNEL_BEHAVIOR_POSITIONING);
+        break;
+      case DRONE_ROLE_BASE:
+        tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
+        break;
+      }
     }
+    else tunnelSetBehavior(TUNNEL_BEHAVIOR_HOVER);
   }
 }
 

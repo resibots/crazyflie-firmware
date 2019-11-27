@@ -192,7 +192,7 @@ class TunnelCommunicator(CRTPSender):
 
     def cut_motors(self, verbose=True):
         if verbose:
-            color_print(bcolors.FAIL, "Cuttiing motors off!")
+            color_print(bcolors.FAIL, "Cutting motors off!")
         self.sendCRTPTunnelPacket(channel=CRTP_TUNNEL_CHANNEL_COMMAND,
             data=struct.pack('<b', CRTP_TUNNEL_COMMAND_CUT_MOTORS))
 
@@ -380,7 +380,6 @@ def test_move(tunnel):
             # Stop the drone if Q is pressed
             if(keystates["q"] == 1):
                 color_print(bcolors.WARNING, "Stopping drone!")
-                tunnel.setCanFly(False)
                 break
 
             # Set a desired velocity
