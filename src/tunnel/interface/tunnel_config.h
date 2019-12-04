@@ -40,9 +40,6 @@
 #define TUNNEL_MIN_HEIGHT 0.f
 #define TUNNEL_MAX_HEIGHT 0.5f
 
-// Red and green right-sided LEDs show if the drone senses obstacles on the sides
-// #define TUNNEL_MULTIRANGER_LEDS
-
 /****************
  FLIGHT SETTINGS
 *****************/
@@ -52,10 +49,10 @@
 #define TUNNEL_QUAD_SHAPE_PLUS // Used to avoid obstacles with 4 distance sensors, M1 goes forward
 
 // Max drone speed in m/s
-#define TUNNEL_MAX_SPEED 0.6f
+#define TUNNEL_MAX_SPEED 0.4f
 
 // Default drone speed in m/s used in behaviors 
-#define TUNNEL_DEFAULT_SPEED 0.3f
+#define TUNNEL_DEFAULT_SPEED 0.2f
 
 // Max drone yaw speed in deg/s
 #define TUNNEL_MAX_TURN_SPEED 30.f
@@ -65,6 +62,9 @@
 
 // If we loose sight of the two walls, cut the motors (used when testing)
 #define TUNNEL_STOP_ON_WALLS_LOST
+
+// If ratios are close on both sides, take the closest side to a wall
+#define TUNNEL_RANGE_RATIO_MAX_DIFF .4f
 
 /****************
 OBSTACLE AVOIDING
@@ -78,16 +78,16 @@ OBSTACLE AVOIDING
 #define TUNNEL_RANGER_TRIGGER_DIST 200
 
 // Maximum distance before avoiding at all costs (cm)
-#define TUNNEL_RANGER_DANGER_DIST 15
+#define TUNNEL_RANGER_DANGER_DIST 20
+
+// Default distance to a wall when the other side does not exist
+#define TUNNEL_DEFAULT_WALL_DIST 20.f
 
 // When avoiding walls, push the drone away with this force (m/sec per ranging m)
-#define TUNNEL_RANGER_AVOID_FORCE .3f
+#define TUNNEL_RANGER_AVOID_FORCE .2f
 
-// Enable yaw for keeping the head towards the tunnel direction (handle tunnel turns)
-#define TUNNEL_TURNING_ENABLE // Uses 2 or 4 sensors based on TUNNEL_QUAD_SHAPE
-
-// When avoiding walls, turn the drone based on the left-right distance difference (deg/s per mm)
-#define TUNNEL_RANGER_TURN_FORCE 2.f
+// When avoiding walls, turn the drone based on the left-right distance difference (deg/s according to ratio)
+#define TUNNEL_RANGER_TURN_FORCE 30.f
 
 /****************
       SIGNAL

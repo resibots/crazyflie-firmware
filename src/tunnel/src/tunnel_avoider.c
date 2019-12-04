@@ -14,24 +14,42 @@
 #include "tunnel_avoider.h"
 #include "tunnel_config.h"
 #include "tunnel_helpers.h"
-#include "tunnel_behavior.h"
-#include "tunnel_relay.h"
-#include "tunnel_comm.h"
 #include "tunnel.h"
-
-#include "FreeRTOS.h"
-#include "task.h"
-
-#define DEBUG_MODULE "AVO"
-#include "debug.h"
-
 #include "range.h"
-#include "led.h" 
-#include "ledseq.h"
+
+#define DEBUG_MODULE "AVOID"
+#include "debug.h"
+#include <stdlib.h>
+#include <math.h>
+
+//TODO only made for plus shape
+
+#define RANGE_VALID(range) ((range) > 0 && (range) < TUNNEL_RANGER_TRIGGER_DIST)
 
 HorizontalRanges currentRanges;
-
 HorizontalRanges *tunnelGetRanges() { return &currentRanges; }
+
+typedef enum {
+  DIRECTION_FRONT = 0,
+  DIRECTION_RIGHT,
+  DIRECTION_BACK,
+  DIRECTION_LEFT,
+  _DIRECTION_NONE
+} LaserDirection;
+LaserDirection currentWall;
+
+typedef struct {
+  uint8_t *laser1;
+  uint8_t *laser2;
+  float diff;
+  float ratio;
+  float center;
+} LaserCouple;
+LaserCouple sideCouples[_DIRECTION_NONE];
+
+bool tunnelAvoiderCheckDeck() {
+  return (currentRanges.left != 0 && currentRanges.right != 0 && currentRanges.front != 0 && currentRanges.back != 0);
+}
 
 static void updateRanges() {
   // Save distances in centimeters
@@ -39,146 +57,86 @@ static void updateRanges() {
   currentRanges.back  = rangeGet(rangeBack)  / 10;
   currentRanges.left  = rangeGet(rangeLeft)  / 10;
   currentRanges.right = rangeGet(rangeRight) / 10;
+
+  // Update couples ratios
+  for(int i = 0; i < _DIRECTION_NONE; i++) {
+    float dist1 = *sideCouples[i].laser1;
+    float dist2 = *sideCouples[i].laser2;
+    sideCouples[i].diff = dist1 - dist2;
+    sideCouples[i].center = sqrtf(dist1 * dist2 * (1 - (dist1*dist1 + dist2*dist2) / powf(dist1 + dist2, 2.f)));
+    sideCouples[i].ratio = (sideCouples[i].diff) / ((dist1 + dist2) / 2.f);
+    if(sideCouples[i].ratio < 0) sideCouples[i].ratio *= -1.f;
+  }
 }
 
-bool tunnelAvoiderCheckDeck() {
-  if(currentRanges.left == 0 || currentRanges.right == 0 || currentRanges.front == 0 || currentRanges.back == 0) {
-    ledseqRun(LED_RED_R, seq_warn);
-    return false;
-  } else ledseqStop(LED_RED_R, seq_warn);
-  return true;
-}
-
-static void followTunnel(TunnelSetpoint *vel) {
-  #ifdef TUNNEL_QUAD_SHAPE_X
-    // Avoid the obstacles with pushing forces
-    #ifdef TUNNEL_AVOID_LEFTRIGHT
-      if(currentRanges.left < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.left);
-      if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.right);
-    #endif
-    #ifdef TUNNEL_AVOID_FRONTBACK
-      if(currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vx -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.front);
-      if(currentRanges.back < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vx += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.back);
-    #endif
-
-    // Turn based on the ranging distances, used to follow tunnel turns
-    #ifdef TUNNEL_TURNING_ENABLE
-      if(currentRanges.left < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->yawrate = ((vel->vx > 0) ? 1.f : -1.f) * TUNNEL_RANGER_TURN_FORCE * (float)(currentRanges.left - currentRanges.right);
-    #endif
-  #endif
-
-  #ifdef TUNNEL_QUAD_SHAPE_PLUS
-    // Using left-right and front-back repulsion forces
-
-    /*
-    // Using the mean of the 2 diagonal sensors for left-right avoiding
-    #ifdef TUNNEL_AVOID_LEFTRIGHT
-      if(currentRanges.left < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (currentRanges.left + currentRanges.front) / 2.f);
-      if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.back < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (currentRanges.right + currentRanges.back) / 2.f);
-    #endif
-    
-    #ifdef TUNNEL_AVOID_FRONTBACK
-      if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vx -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (currentRanges.right + currentRanges.front) / 2.f);
-      if(currentRanges.left < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.back < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vx += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, (currentRanges.left + currentRanges.back) / 2.f);
-    #endif
-    */
-
-    // Using only the front diagonal sensors for left-right avoiding
-    #ifdef TUNNEL_AVOID_LEFTRIGHT
-      if(currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vy -= LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.front);
-      if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->vy += LINSCALE(0.f, TUNNEL_RANGER_TRIGGER_DIST, TUNNEL_RANGER_AVOID_FORCE, 0.f, currentRanges.right);
-    #endif
-
-    // Turn with all 4 sensors (difference between the two sensors for each side)
-    #ifdef TUNNEL_TURNING_ENABLE
-      if(currentRanges.right < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.back < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->yawrate += TUNNEL_RANGER_TURN_FORCE * (currentRanges.right - currentRanges.back);
-      if(currentRanges.left < TUNNEL_RANGER_TRIGGER_DIST && currentRanges.front < TUNNEL_RANGER_TRIGGER_DIST)
-        vel->yawrate += TUNNEL_RANGER_TURN_FORCE * (currentRanges.left - currentRanges.front);
-    #endif
-  #endif
+static inline bool isCoupleValid(LaserCouple *couple) {
+  return (RANGE_VALID(*(couple->laser1)) && RANGE_VALID(*(couple->laser2)));
 }
 
 static void avoidCollisions(TunnelSetpoint *vel) {
-  #ifdef TUNNEL_QUAD_SHAPE_X
-    // Not implemented
-  #endif
+  float force_lr = 0, force_fb = 0;
+  if(currentRanges.left < TUNNEL_RANGER_DANGER_DIST)
+    force_lr += -TUNNEL_MAX_SPEED / 2.f;
+  if(currentRanges.right < TUNNEL_RANGER_DANGER_DIST)
+    force_lr +=  TUNNEL_MAX_SPEED / 2.f;
+  if(currentRanges.front < TUNNEL_RANGER_DANGER_DIST)
+    force_fb += -TUNNEL_MAX_SPEED / 2.f;
+  if(currentRanges.back < TUNNEL_RANGER_DANGER_DIST)
+    force_fb +=  TUNNEL_MAX_SPEED / 2.f;
 
-  #ifdef TUNNEL_QUAD_SHAPE_PLUS
-    float force_lr = 0, force_fb = 0;
-    if(currentRanges.left < TUNNEL_RANGER_DANGER_DIST)
-      force_lr = -TUNNEL_RANGER_AVOID_FORCE / 2;
-    if(currentRanges.right < TUNNEL_RANGER_DANGER_DIST)
-      force_lr =  TUNNEL_RANGER_AVOID_FORCE / 2;
-    if(currentRanges.front < TUNNEL_RANGER_DANGER_DIST)
-      force_fb = -TUNNEL_RANGER_AVOID_FORCE / 2;
-    if(currentRanges.back < TUNNEL_RANGER_DANGER_DIST)
-      force_fb =  TUNNEL_RANGER_AVOID_FORCE / 2;
-    vel->vx += SQRT2_2 * (force_fb - force_lr);
-    vel->vy += SQRT2_2 * (force_fb + force_lr);
-  #endif
-}
-
-static void onWallsLost(TunnelSetpoint *vel) {
-  #ifdef TUNNEL_QUAD_SHAPE_X
-    // Not implemented
-  #endif
-
-  #ifdef TUNNEL_QUAD_SHAPE_PLUS
-    int lostWallsFlag = 0;
-    if(currentRanges.front == 0 || currentRanges.front > TUNNEL_RANGER_TRIGGER_DIST) {
-      vel->vx = 0;
-      vel->vy = 0;
-      vel->yawrate = -1.0 * TUNNEL_MAX_TURN_SPEED / 2;
-      lostWallsFlag++;
-    }
-    if(currentRanges.right == 0 || currentRanges.right > TUNNEL_RANGER_TRIGGER_DIST) {
-      vel->vx = 0;
-      vel->vy = 0;
-      vel->yawrate = TUNNEL_MAX_TURN_SPEED / 2;
-      lostWallsFlag++;
-    }
-    #ifdef TUNNEL_STOP_ON_WALLS_LOST
-      if(lostWallsFlag == 2)
-        tunnelSetDroneState(DRONE_STATE_CRASHED);
-    #endif
-  #endif
+  if(force_lr != 0 || force_fb != 0) {
+    vel->vx = SQRT2_2 * (force_fb - force_lr);
+    vel->vy = SQRT2_2 * (force_fb + force_lr);
+  }
 }
 
 void tunnelAvoiderUpdate(TunnelSetpoint *vel, bool enableCollisions) {
   // Read the multiranger ranges in our own structure (takes less calculations)
   updateRanges();
 
-  // Quit now if collisions are disabled
-  if(!enableCollisions || !tunnelAvoiderCheckDeck())
+  // Quit now if collisions are disabled by the current behavior
+  if(!enableCollisions)
     return;
 
-  // LEDs for some visual obstacle detection feedback
-#ifdef TUNNEL_MULTIRANGER_LEDS
-  if(left < 300) ledSet(LED_GREEN_R, true);
-  else ledSet(LED_GREEN_R, false);
-  if(right < 300) ledSet(LED_RED_R, true);
-  else ledSet(LED_RED_R, false);
-#endif
+  // Choose the wall side to use
+  if(isCoupleValid(&sideCouples[DIRECTION_LEFT]) && isCoupleValid(&sideCouples[DIRECTION_RIGHT])) {
+    float ratioDiff = sideCouples[DIRECTION_LEFT].ratio - sideCouples[DIRECTION_RIGHT].ratio;
+    if(ratioDiff < 0) ratioDiff *= -1.f;
 
-  // Main avoidance algorithm
-  followTunnel(vel);
+    // Take the closest wall in normal situations, but take the most normal ratio side possible if ratio difference is abnormal
+    if(ratioDiff >= TUNNEL_RANGE_RATIO_MAX_DIFF)
+      currentWall = (sideCouples[DIRECTION_LEFT].ratio <= sideCouples[DIRECTION_RIGHT].ratio) ? DIRECTION_LEFT : DIRECTION_RIGHT;
+    else
+      currentWall = (sideCouples[DIRECTION_LEFT].center <= sideCouples[DIRECTION_RIGHT].center) ? DIRECTION_LEFT : DIRECTION_RIGHT;
+  }
+  else if(!isCoupleValid(&sideCouples[DIRECTION_LEFT]))
+    currentWall = DIRECTION_RIGHT;
+  else if(!isCoupleValid(&sideCouples[DIRECTION_RIGHT]))
+    currentWall = DIRECTION_LEFT;
+  else // Don't follow any wall if no side seems to track any
+    currentWall = _DIRECTION_NONE; 
 
-  // Safety in case a laser looses track of a wall
-  onWallsLost(vel);
+  // Follow the current wall if there's 
+  if(currentWall != _DIRECTION_NONE) {
+    LaserDirection oppositeWall = (currentWall == DIRECTION_LEFT) ? DIRECTION_RIGHT : DIRECTION_LEFT;
 
-  // Using independant repulsion forces for safety when coming too close of an obstacle
+    // Calculate rotation with the current wall
+    float sign = (sideCouples[currentWall].diff >= 0) ? 1.f : -1.f;
+    vel->yawrate += sign * TUNNEL_RANGER_TURN_FORCE * sideCouples[currentWall].ratio;
+
+    // Calculate translation (if there's a wall on the other side center based on
+    // the min value of the sides, else go to a default distance to the current wall)
+    float mainDist = sideCouples[currentWall].center;
+    float oppositeDist = sideCouples[oppositeWall].center;
+    // TODO if(isCoupleValid(&sideCouples[oppositeWall]))
+    //   vel->vy = TUNNEL_RANGER_AVOID_FORCE * (mainDist - oppositeDist);
+    // else
+
+    sign = (currentWall == DIRECTION_RIGHT) ? 1.f : -1.f;
+    vel->vy = sign * (TUNNEL_RANGER_AVOID_FORCE / 10.f) * (TUNNEL_DEFAULT_WALL_DIST - mainDist);
+  }
+
+  // Use independant repulsion forces for safety when coming too close of an obstacle
   avoidCollisions(vel);
 }
 
@@ -187,8 +145,14 @@ void tunnelAvoiderInit(void) {
   currentRanges.back  = 0;
   currentRanges.left  = 0;
   currentRanges.right = 0;
+
+  currentWall = DIRECTION_LEFT;
+  sideCouples[DIRECTION_FRONT].laser1 = sideCouples[DIRECTION_LEFT ].laser2 = &currentRanges.front;
+  sideCouples[DIRECTION_RIGHT].laser1 = sideCouples[DIRECTION_FRONT].laser2 = &currentRanges.right;
+  sideCouples[DIRECTION_BACK ].laser1 = sideCouples[DIRECTION_RIGHT].laser2 = &currentRanges.back;
+  sideCouples[DIRECTION_LEFT ].laser1 = sideCouples[DIRECTION_BACK ].laser2 = &currentRanges.left;
 }
 
 bool tunnelAvoiderTest(void) {
-    return true;
+  return true;
 }
