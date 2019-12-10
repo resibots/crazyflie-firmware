@@ -1,4 +1,3 @@
-
 /**
  *    ||          ____  _ __
  * +------+      / __ )(_) /_______________ _____  ___
@@ -58,6 +57,12 @@ static float m3;
 static float m4;
 static float m5;
 static float m6;
+static float f1;
+static float f2;
+static float f3;
+static float f4;
+static float f5;
+static float f6;
 
 static struct mat66 hexa_inverse_matrix = {{
 {-7.902E+1, -3.030E+7, 8.748E+6, -4.823E+2, -7.364E+8, -1.177E+8},
@@ -67,8 +72,8 @@ static struct mat66 hexa_inverse_matrix = {{
 {-2.624E+7, +1.515E+7, 8.748E+6, -6.378E+8, +3.682E+8, -1.177E+8},
 {+2.624E+7, +1.515E+7, 8.748E+6, -6.378E+8, -3.682E+8, +1.177E+8}
 }};
+static float max_hexa_rotor_speed = 3000;
 static float min_hexa_rotor_speed = 0;
-static float inv_delta_bounds_squarred = 1/3000*3000;
 
 void powerDistributionInit(void)
 {
@@ -100,26 +105,54 @@ void powerDistribution(const control_t *control)
 {
   //converting the desired forces given by the controller into a vec6
   struct vec6 at = mkvec6(control->ax, control->ay, control->az, control->roll, control->pitch, control->yaw);
-  // struct vec6 at = mkvec6(0.0, 0.0, 0.005, 0.0, 0, 0.0);
   //computing the desired control from desired forces into desired squarred rotor speed
   struct vec6 u = mvmul6(hexa_inverse_matrix, at);
   // converting u into pwm
-  u = v6addscl(u, -min_hexa_rotor_speed);
-  u = v6scl(u, inv_delta_bounds_squarred);
+  float min_hexa_rotor_speed_squarred = min_hexa_rotor_speed * min_hexa_rotor_speed;
+  float max_hexa_rotor_speed_squarred = max_hexa_rotor_speed * max_hexa_rotor_speed;
+  float inv_delta_hexa_rotor_speed_squarred = 1/max_hexa_rotor_speed_squarred - min_hexa_rotor_speed_squarred;
+  u = v6addscl(u, -min_hexa_rotor_speed_squarred);
+  u = v6scl(u, inv_delta_hexa_rotor_speed_squarred);
+  // reducing setpoint until it can be achieved. Reducing only component not related to stability
+  while(u.x>1 | u.y>1 |u.z>1 |u.t>1 |u.u>1 |u.w>1)
+  {
+    at.x = at.x * 0.9;
+    at.y = at.x * 0.9;
+    at.w = at.x * 0.9;
+    u = mvmul6(hexa_inverse_matrix, at);
+    u = v6addscl(u, -min_hexa_rotor_speed_squarred);
+    u = v6scl(u, inv_delta_hexa_rotor_speed_squarred);
+  }
   u = v6sclamp(u, 0, 1);
-  u = v6scl(u, 65536);
-  motorPower.m1 = limitThrust(u.x);
-  m1 = (float)motorPower.m1 / (float)65536;
-  motorPower.m2 = limitThrust(u.y);
-  m2 = (float)motorPower.m2 / (float)65536;
-  motorPower.m3 = limitThrust(u.z);
-  m3 = (float)motorPower.m3 / (float)65536;
-  motorPower.m4 = limitThrust(u.t);
-  m4 = (float)motorPower.m4 / (float)65536;
-  motorPower.m5 = limitThrust(u.u);
-  m5 = (float)motorPower.m5 / (float)65536;
-  motorPower.m6 = limitThrust(u.w);
-  m6 = (float)motorPower.m6 / (float)65536;
+  f1 =  u.x;
+  f2 =  u.y;
+  f3 =  u.z;
+  f4 =  u.t;
+  f5 =  u.u;
+  f6 =  u.w;
+  // converting fraction of motor power into fraction of pwm according to https://www.research-collection.ethz.ch/handle/20.500.11850/214143
+  float b = 1.0326e-6;
+  float a = 2.1302e-11;
+  float c = 5.4845e-4;
+  m1 = (-b + sqrt(b*b - 4 * a * (c - u.x)))/(2*a*65535);
+  // m1 = (float)motorPower.m1 / (float)65536;
+  m2 = (-b + sqrt(b*b - 4 * a * (c - u.y)))/(2*a*65535);
+  // m2 = (float)motorPower.m2 / (float)65536;
+  m3 = (-b + sqrt(b*b - 4 * a * (c - u.z)))/(2*a*65535);
+  // m3 = (float)motorPower.m3 / (float)65536;
+  m4 = (-b + sqrt(b*b - 4 * a * (c - u.t)))/(2*a*65535);
+  // m4 = (float)motorPower.m4 / (float)65536;
+  m5 = (-b + sqrt(b*b - 4 * a * (c - u.u)))/(2*a*65535);
+  // m5 = (float)motorPower.m5 / (float)65536;
+  m6 = (-b + sqrt(b*b - 4 * a * (c - u.w)))/(2*a*65535);
+  // m6 = (float)motorPower.m6 / (float)65536;
+  // scaling and setting motor pwm
+  motorPower.m1 = limitThrust(m1*65535);
+  motorPower.m2 = limitThrust(m2*65535);
+  motorPower.m3 = limitThrust(m3*65535);
+  motorPower.m4 = limitThrust(m4*65535);
+  motorPower.m5 = limitThrust(m5*65535);
+  motorPower.m6 = limitThrust(m6*65535);
   if (motorSetEnable)
   {
     motorsSetRatio(MOTOR_M1, motorPowerSet.m1);
@@ -137,6 +170,13 @@ void powerDistribution(const control_t *control)
     motorsSetRatio(MOTOR_M4, motorPower.m4);
     motorsSetRatio(MOTOR_M5, motorPower.m5);
     motorsSetRatio(MOTOR_M6, motorPower.m6);
+    // motorsSetRatio(MOTOR_M1, 65535*6/6);
+    // motorsSetRatio(MOTOR_M2, 65535*6/6);
+    // motorsSetRatio(MOTOR_M3, 65535*6/6);
+    // motorsSetRatio(MOTOR_M4, 65535*6/6);
+    // motorsSetRatio(MOTOR_M5, 65535*6/6);
+    // motorsSetRatio(MOTOR_M6, 65535*6/6);
+
   }
 }
 
@@ -157,4 +197,10 @@ LOG_ADD(LOG_FLOAT, m3, &m3)
 LOG_ADD(LOG_FLOAT, m4, &m4)
 LOG_ADD(LOG_FLOAT, m5, &m5)
 LOG_ADD(LOG_FLOAT, m6, &m6)
+LOG_ADD(LOG_FLOAT, f1, &f1)
+LOG_ADD(LOG_FLOAT, f2, &f2)
+LOG_ADD(LOG_FLOAT, f3, &f3)
+LOG_ADD(LOG_FLOAT, f4, &f4)
+LOG_ADD(LOG_FLOAT, f5, &f5)
+LOG_ADD(LOG_FLOAT, f6, &f6)
 LOG_GROUP_STOP(motor)

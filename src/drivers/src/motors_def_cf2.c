@@ -603,3 +603,12 @@ const MotorPerifDef* motorMapRZRBrushless[NBR_OF_MOTORS] =
   &RZR_M4_BL
 };
 
+// LOG_GROUP_START(motor_low)
+// LOG_ADD(LOG_UINT32, m1_pwm, &motor_ratios[0])
+// LOG_ADD(LOG_UINT32, m2_pwm, &motor_ratios[1])
+// LOG_ADD(LOG_UINT32, m3_pwm, &motor_ratios[2])
+// LOG_ADD(LOG_UINT32, m4_pwm, &motor_ratios[3])
+// LOG_ADD(LOG_UINT32, m5_pwm, &motor_ratios[4])
+// LOG_ADD(LOG_UINT32, m6_pwm, &motor_ratios[5])
+// LOG_GROUP_STOP(motor_low)
+

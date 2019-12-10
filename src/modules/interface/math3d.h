@@ -288,6 +288,10 @@ static inline struct vec6 v6addscl(struct vec6 v, float s) {
 static inline struct vec6 v6sclamp(struct vec6 v, float lower, float upper) {
 	return mkvec6(fminf(fmaxf(v.x, lower), upper), fminf(fmaxf(v.y, lower), upper),fminf(fmaxf(v.z, lower), upper),fminf(fmaxf(v.t, lower), upper),fminf(fmaxf(v.u, lower), upper),fminf(fmaxf(v.w, lower), upper));
 }
+// square root of a vector 
+static inline struct vec6 v6sqrt(struct vec6 v) {
+	return mkvec6(sqrt(v.x) , sqrt(v.y), sqrt(v.z), sqrt(v.t), sqrt(v.u), sqrt(v.w));
+}
 // ---------------------------- 3x3 matrices ------------------------------
 
 struct mat33 {
