@@ -51,7 +51,7 @@ PidObject pidQZ;
 #define Hexa_PID_QZ_KI  0.0
 #define Hexa_PID_QZ_KD  5.0
 #define Hexa_PID_QZ_INTEGRATION_LIMIT     360.0
-#define Hexa_mass 0.037 //37g in kg
+#define Hexa_mass 0.055 //55g in kg
 #define Hexa_Ixx 0.000016
 #define Hexa_Iyy 0.000016
 #define Hexa_Izz 0.000029
@@ -120,17 +120,17 @@ void controllerPidHexa(control_t *control, setpoint_t *setpoint,
                                          const state_t *state,
                                          const uint32_t tick)
 {
-    if (RATE_DO_EXECUTE(RATE_100_HZ, tick)) {
+    if (RATE_DO_EXECUTE(RATE_1000_HZ, tick)) {
         ledseqRun(LED_GREEN_R, seq_linkup);
         // sx = setpoint->position.x;
         // sy = setpoint->position.y;
         // sz = setpoint->position.z;
-        sx = 0;
-        sy = 0;
-        sz = 1;
         cx = -state->position.y;
         cy = state->position.x;
         cz = state->position.z;
+        sx = cx;
+        sy = cy;
+        sz = cz;
         qw = state->attitudeQuaternion.w;
         qx = state->attitudeQuaternion.x;
         qy = state->attitudeQuaternion.y;
@@ -162,12 +162,12 @@ void controllerPidHexa(control_t *control, setpoint_t *setpoint,
         wx = pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx);
         wy = pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy);
         wz = pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz);
-        // ax = 0.0000;
+        // ax = 0.00;
         // ay = 0.00;
-        // az = 0.00;
-        // wx = 0.0000;
-        // wy = 0.0000;
-        // wz = 0.0000;
+        // az = Hexa_mass * 9.81;
+        // wx = 0.00;
+        // wy = 0.00;
+        // wz = 0.00;
 
         control->ax = ax;
         control->ay = ay;
