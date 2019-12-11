@@ -264,7 +264,7 @@ struct vec6 {
 // construct a vector from 6 floats.
 static inline struct vec6 mkvec6(float x, float y, float z, float t, float u, float w) {
 	struct vec6 v;
-	v.x = x; v.y = y; v.z = z; v.t = t; v.u = u; v.w =w;
+	v.x = x; v.y = y; v.z = z; v.t = t; v.u = u; v.w = w;
 	return v;
 }
 
@@ -291,6 +291,10 @@ static inline struct vec6 v6sclamp(struct vec6 v, float lower, float upper) {
 // square root of a vector 
 static inline struct vec6 v6sqrt(struct vec6 v) {
 	return mkvec6(sqrt(v.x) , sqrt(v.y), sqrt(v.z), sqrt(v.t), sqrt(v.u), sqrt(v.w));
+}
+// l2 norm of a vector 
+static inline float norm(struct vec6 v) {
+	return sqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.t*v.t + v.u*v.u + v.w*v.w);
 }
 // ---------------------------- 3x3 matrices ------------------------------
 
