@@ -81,6 +81,7 @@ static float sqw;
 static float sqx;
 static float sqy;
 static float sqz;
+static float t;
 
 static bool isInit;
 void controllerPidHexaInit(void)
@@ -103,6 +104,7 @@ void controllerPidHexaInit(void)
   pidSetIntegralLimit(&pidX,  Hexa_PID_QX_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidY, Hexa_PID_QY_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidZ,   Hexa_PID_QZ_INTEGRATION_LIMIT);
+  t = 0;
   isInit = true;
   DEBUG_PRINT("Initializing PID Hexa \n");
 
@@ -121,16 +123,16 @@ void controllerPidHexa(control_t *control, setpoint_t *setpoint,
                                          const uint32_t tick)
 {
     if (RATE_DO_EXECUTE(RATE_1000_HZ, tick)) {
-        ledseqRun(LED_GREEN_R, seq_linkup);
-        // sx = setpoint->position.x;
-        // sy = setpoint->position.y;
-        // sz = setpoint->position.z;
+        // ledseqRun(LED_GREEN_R, seq_linkup);
         cx = -state->position.y;
         cy = state->position.x;
         cz = state->position.z;
-        sx = cx;
-        sy = cy;
-        sz = cz;
+        sx = setpoint->position.x;
+        sy = setpoint->position.y;
+        sz = setpoint->position.z;
+        // sx = cx;
+        // sy = cy;
+        // sz = cz;
         qw = state->attitudeQuaternion.w;
         qx = state->attitudeQuaternion.x;
         qy = state->attitudeQuaternion.y;
@@ -156,18 +158,19 @@ void controllerPidHexa(control_t *control, setpoint_t *setpoint,
         struct vec p_error = mkvec(pidUpdate(&pidX, cx, true), pidUpdate(&pidY, cy, true), pidUpdate(&pidZ, cz, true) + 9.81);
         // Rotating the error into hexarotor frame and converting it into desired forces and torques
         struct vec rotated_error = qvrot(inv_attitude, p_error);
-        ax = (float)(Hexa_mass) * rotated_error.x;
-        ay = (float)(Hexa_mass) * rotated_error.y;
-        az = (float)(Hexa_mass) * rotated_error.z;
-        wx = pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx);
-        wy = pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy);
-        wz = pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz);
-        // ax = 0.00;
-        // ay = 0.00;
-        // az = Hexa_mass * 9.81;
-        // wx = 0.00;
-        // wy = 0.00;
-        // wz = 0.00;
+        // ax = (float)(Hexa_mass) * rotated_error.x;
+        // ay = (float)(Hexa_mass) * rotated_error.y;
+        // az = (float)(Hexa_mass) * rotated_error.z;
+        // wx = pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx);
+        // wy = pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy);
+        // wz = pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz);
+        t = fmax(fmin(1, (float)tick/10000),t); 
+        ax = t * 0.00;
+        ay = t * 0.00;
+        az = t * Hexa_mass * 9.81 * 0;
+        wx = t * 1.00;
+        wy = t * 0.00;
+        wz = t * 0.00;
 
         control->ax = ax;
         control->ay = ay;
