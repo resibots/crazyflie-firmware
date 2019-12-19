@@ -74,12 +74,14 @@ static float cwx;
 static float cwy;
 static float cwz;
 
-static struct mat66 hexa_inverse_matrix = {{{-7.902E+1, -3.030E+7, 8.748E+6, -4.823E+2, -7.364E+8, -1.177E+8},
-    {-2.624E+7, +1.515E+7, 8.748E+6, +6.378E+8, -3.682E+8, +1.177E+8},
-    {+2.624E+7, +1.515E+7, 8.748E+6, +6.378E+8, +3.682E+8, -1.177E+8},
-    {-4.913E+1, -3.030E+7, 8.748E+6, +2.422E+3, +7.364E+8, +1.177E+8},
-    {-2.624E+7, +1.515E+7, 8.748E+6, -6.378E+8, +3.682E+8, -1.177E+8},
-    {+2.624E+7, +1.515E+7, 8.748E+6, -6.378E+8, -3.682E+8, +1.177E+8}}};
+static struct mat66 hexa_inverse_matrix = {{
+    {-1.006E+2, -3.030E+7, 8.748E+6, -1.818E+2, -2.295E+8, +5.274E+8},
+    {-2.624E+7, +1.515E+7, 8.748E+6, +1.987E+8, -1.147E+8, -5.274E+8},
+    {+2.624E+7, +1.515E+7, 8.748E+6, +1.987E+8, +1.147E+8, +5.274E+8},
+    {-2.569E+1, -3.030E+7, 8.748E+6, +7.414E+2, +2.295E+8, -5.274E+8},
+    {-2.624E+7, +1.515E+7, 8.748E+6, -1.987E+8, +1.147E+8, +5.274E+8},
+    {+2.624E+7, +1.515E+7, 8.748E+6, -1.987E+8, -1.147E+8, -5.274E+8}
+    }};
 static float max_hexa_rotor_speed = 3000;
 static float min_hexa_rotor_speed = 0;
 
@@ -109,7 +111,7 @@ void powerStop()
     motorsSetRatio(MOTOR_M6, 0);
 }
 
-void powerDistribution(const control_t *control)
+void powerDistribution(const control_t* control)
 {
     // ledseqRun(LED_GREEN_R, seq_linkup);
     cax = control->ax;
@@ -129,23 +131,32 @@ void powerDistribution(const control_t *control)
     u = v6addscl(u, -min_hexa_rotor_speed_squarred);
     u = v6scl(u, inv_delta_hexa_rotor_speed_squarred);
     // reducing setpoint until it can be achieved. Reducing only component not related to stability
-    while(u.x>0.99 | u.x<0 | u.y>0.99 | u.y<0 | u.z>0.99 | u.z<0 | u.t>1 | u.t<0 | u.u>0.99 | u.u<0 | u.w>0.99 | u.w<0)
-    {
-      at.x = at.x * 0.9;
-      at.y = at.y * 0.9;
-      at.w = at.w * 0.9;
-      u = mvmul6(hexa_inverse_matrix, at);
-      u = v6addscl(u, -min_hexa_rotor_speed_squarred);
-      u = v6scl(u, inv_delta_hexa_rotor_speed_squarred);
+    for (int i = 0; i < 50; ++i) {
+        if (u.x > 0.99 | u.x<0 | u.y> 0.99 | u.y<0 | u.z> 0.99 | u.z<0 | u.t> 1 | u.t<0 | u.u> 0.99 | u.u<0 | u.w> 0.99 | u.w < 0) {
+            at.x = at.x * 0.9;
+            at.y = at.y * 0.9;
+            at.w = at.w * 0.9;
+            u = mvmul6(hexa_inverse_matrix, at);
+            u = v6addscl(u, -min_hexa_rotor_speed_squarred);
+            u = v6scl(u, inv_delta_hexa_rotor_speed_squarred);
+        }
+        else {
+            i = 50;
+        }
     }
-    while(norm(u) > 5.5)
-    {
-      at.x = at.x * 0.9;
-      at.y = at.y * 0.9;
-      at.w = at.w * 0.9;
-      u = mvmul6(hexa_inverse_matrix, at);
-      u = v6addscl(u, -min_hexa_rotor_speed_squarred);
-      u = v6scl(u, inv_delta_hexa_rotor_speed_squarred);
+
+    for (int i = 0; i < 50; ++i) {
+        if (norm(u) > 5.5) {
+            at.x = at.x * 0.9;
+            at.y = at.y * 0.9;
+            at.w = at.w * 0.9;
+            u = mvmul6(hexa_inverse_matrix, at);
+            u = v6addscl(u, -min_hexa_rotor_speed_squarred);
+            u = v6scl(u, inv_delta_hexa_rotor_speed_squarred);
+        }
+        else {
+            i = 50;
+        }
     }
     u = v6sclamp(u, 0, 1);
     // updating corrected setpoints
@@ -197,18 +208,18 @@ void powerDistribution(const control_t *control)
         motorsSetRatio(MOTOR_M6, motorPowerSet.m6);
     }
     else {
-        motorsSetRatio(MOTOR_M1, motorPower.m1);
-        motorsSetRatio(MOTOR_M2, motorPower.m2);
-        motorsSetRatio(MOTOR_M3, motorPower.m3);
-        motorsSetRatio(MOTOR_M4, motorPower.m4);
-        motorsSetRatio(MOTOR_M5, motorPower.m5);
-        motorsSetRatio(MOTOR_M6, motorPower.m6);
-        // motorsSetRatio(MOTOR_M1, 65535*6/6);
-        // motorsSetRatio(MOTOR_M2, 65535*6/6);
-        // motorsSetRatio(MOTOR_M3, 65535*6/6);
-        // motorsSetRatio(MOTOR_M4, 65535*6/6);
-        // motorsSetRatio(MOTOR_M5, 65535*6/6);
-        // motorsSetRatio(MOTOR_M6, 65535*6/6);
+        // motorsSetRatio(MOTOR_M1, motorPower.m1);
+        // motorsSetRatio(MOTOR_M2, motorPower.m2);
+        // motorsSetRatio(MOTOR_M3, motorPower.m3);
+        // motorsSetRatio(MOTOR_M4, motorPower.m4);
+        // motorsSetRatio(MOTOR_M5, motorPower.m5);
+        // motorsSetRatio(MOTOR_M6, motorPower.m6);
+        // motorsSetRatio(MOTOR_M1, 65535*1/19);
+        // motorsSetRatio(MOTOR_M2, 65535*1/19);
+        // motorsSetRatio(MOTOR_M3, 65535*1/19);
+        // motorsSetRatio(MOTOR_M4, 65535*1/19);
+        // motorsSetRatio(MOTOR_M5, 65535*1/19);
+        // motorsSetRatio(MOTOR_M6, 65535*1/19);
     }
 }
 
