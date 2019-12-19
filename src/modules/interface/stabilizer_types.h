@@ -156,9 +156,12 @@ typedef struct state_s {
 } state_t;
 
 typedef struct control_s {
-  int16_t roll;
-  int16_t pitch;
-  int16_t yaw;
+  // int16_t roll;
+  // int16_t pitch;
+  // int16_t yaw;
+  float roll;
+  float pitch;
+  float yaw;
   float ax;
   float ay;
   float az;
