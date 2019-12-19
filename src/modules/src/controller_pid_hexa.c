@@ -22,18 +22,18 @@ PidObject pidQX;
 PidObject pidQY;
 PidObject pidQZ;
 
-#define Hexa_PID_X_KP  1.0
+#define Hexa_PID_X_KP  10.0
 #define Hexa_PID_X_KI  0.0
 #define Hexa_PID_X_KD  5.0
 #define Hexa_PID_X_INTEGRATION_LIMIT    20.0
 
-#define Hexa_PID_Y_KP  1.0
+#define Hexa_PID_Y_KP  10.0
 #define Hexa_PID_Y_KI  0.0
 #define Hexa_PID_Y_KD  5.0
 #define Hexa_PID_Y_INTEGRATION_LIMIT   20.0
 
 #define Hexa_PID_Z_KP  10.0
-#define Hexa_PID_Z_KI  0.0
+#define Hexa_PID_Z_KI  1.0
 #define Hexa_PID_Z_KD  5.0
 #define Hexa_PID_Z_INTEGRATION_LIMIT   200.0
 
@@ -50,7 +50,7 @@ PidObject pidQZ;
 #define Hexa_PID_QZ_KP  10.0
 #define Hexa_PID_QZ_KI  0.0
 #define Hexa_PID_QZ_KD  5.0
-#define Hexa_PID_QZ_INTEGRATION_LIMIT     360.0
+#define Hexa_PID_QZ_INTEGRATION_LIMIT     20.0
 #define Hexa_mass 0.055 //55g in kg
 #define Hexa_Ixx 0.000016
 #define Hexa_Iyy 0.000016
@@ -107,32 +107,44 @@ void controllerPidHexaInit(void)
   t = 0;
   isInit = true;
   DEBUG_PRINT("Initializing PID Hexa \n");
-
+  ax = 0; 
+  ay = 0; 
+  az = 0; 
+  wx = 0; 
+  wy = 0; 
+  wz = 0; 
 }
 
 bool controllerPidHexaTest(void)
 {
-  bool pass = isInit;
+    bool pass = isInit;
 
-  return pass;
+    return pass;
 }
 // Updates control to desired in drone frame accelerations that power distribution will need to apply
-void controllerPidHexa(control_t *control, setpoint_t *setpoint,
-                                         const sensorData_t *sensors,
-                                         const state_t *state,
-                                         const uint32_t tick)
+void controllerPidHexa(control_t* control, setpoint_t* setpoint,
+    const sensorData_t* sensors,
+    const state_t* state,
+    const uint32_t tick)
 {
-    if (RATE_DO_EXECUTE(RATE_1000_HZ, tick)) {
+    if (RATE_DO_EXECUTE(RATE_500_HZ, tick)) {
+
+        // t = fmax(fmin(1, (float)tick/5000),t);
+        t = (float)tick / 1000; // time in seconds
         // ledseqRun(LED_GREEN_R, seq_linkup);
         cx = -state->position.y;
         cy = state->position.x;
         cz = state->position.z;
-        sx = setpoint->position.x;
-        sy = setpoint->position.y;
-        sz = setpoint->position.z;
+        // sx = setpoint->position.x;
+        // sy = setpoint->position.y;
+        // sz = setpoint->position.z;
         // sx = cx;
         // sy = cy;
         // sz = cz;
+        sx = 0;
+        sy = 0;
+        // sz = 0.2;
+        sz = cz;
         qw = state->attitudeQuaternion.w;
         qx = state->attitudeQuaternion.x;
         qy = state->attitudeQuaternion.y;
@@ -149,6 +161,7 @@ void controllerPidHexa(control_t *control, setpoint_t *setpoint,
         pidSetDesired(&pidQX, 0);
         pidSetDesired(&pidQY, 0);
         pidSetDesired(&pidQZ, 0);
+
         //Get Quaternion error by multiplication rather than by substraction
         struct quat current_attitude = mkquat(qx, qy, qz, qw);
         struct quat setpoint_attitude = mkquat(sqx, sqy, sqz, sqw);
@@ -158,20 +171,30 @@ void controllerPidHexa(control_t *control, setpoint_t *setpoint,
         struct vec p_error = mkvec(pidUpdate(&pidX, cx, true), pidUpdate(&pidY, cy, true), pidUpdate(&pidZ, cz, true) + 9.81);
         // Rotating the error into hexarotor frame and converting it into desired forces and torques
         struct vec rotated_error = qvrot(inv_attitude, p_error);
-        // ax = (float)(Hexa_mass) * rotated_error.x;
-        // ay = (float)(Hexa_mass) * rotated_error.y;
-        // az = (float)(Hexa_mass) * rotated_error.z;
-        // wx = pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx);
-        // wy = pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy);
-        // wz = pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz);
-        t = fmax(fmin(1, (float)tick/10000),t); 
-        ax = t * 0.00;
-        ay = t * 0.00;
-        az = t * Hexa_mass * 9.81 * 0;
-        wx = t * 1.00;
-        wy = t * 0.00;
-        wz = t * 0.00;
-
+        // Stabilization control
+        if (t > 5) {
+            wx = fmin(fmax(pidUpdate(&pidQX, q_error.x, true), -1.5), 1.5) * (float)(Hexa_Ixx);
+            wy = fmin(fmax(pidUpdate(&pidQY, q_error.y, true), -1.5), 1.5) * (float)(Hexa_Iyy);
+            if (t < 10 && cz < 0.1) {
+                az += 0.001 * t;
+                ax = 0;
+                ay = 0;
+                wz = 0;
+            }
+            else {
+                ledseqRun(LED_GREEN_R, seq_linkup);
+                ax = 0 * t * (float)(Hexa_mass)*fmin(fmax(rotated_error.x, -15.0), 15.0);
+                ay = 0 * t * (float)(Hexa_mass)*fmin(fmax(rotated_error.y, -15.0), 15.0);
+                az = 0 * t * (float)(Hexa_mass)*fmin(fmax(rotated_error.z, -15.0), 15.0);
+                wz = 0 * t * fmin(fmax(pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz), -1.5), 1.5);
+                // ax = t * 0.05;
+                // ay = t * 0.00;
+                // az = t * Hexa_mass * 9.81 * 1;
+                // wx = t * 0.00;
+                // wy = t * 0.00;
+                // wz = t * 0.00;
+            }
+        }
         control->ax = ax;
         control->ay = ay;
         control->az = az;
