@@ -114,7 +114,7 @@ static const MotorPerifDef CONN_M3 =
 };
 
 //Connector IO1, PB8, TIM4_CH3
-static const MotorPerifDef  CONN_M4=
+static const MotorPerifDef  CONN_M1=
 {
     .drvType       = BRUSHED,
     .gpioPerif     = RCC_AHB1Periph_GPIOB,
@@ -136,7 +136,7 @@ static const MotorPerifDef  CONN_M4=
 };
 
 //Connector IO2, PB5, TIM3_CH2
-static const MotorPerifDef CONN_M1 =
+static const MotorPerifDef CONN_M4 =
 {
     .drvType       = BRUSHED,
     .gpioPerif     = RCC_AHB1Periph_GPIOB,
