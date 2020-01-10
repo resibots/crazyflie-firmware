@@ -37,19 +37,19 @@ PidObject pidQZ;
 #define Hexa_PID_Z_KD  5.0
 #define Hexa_PID_Z_INTEGRATION_LIMIT   200.0
 
-#define Hexa_PID_QX_KP  10.0
+#define Hexa_PID_QX_KP  20.0
 #define Hexa_PID_QX_KI  0.0
-#define Hexa_PID_QX_KD  5.0
+#define Hexa_PID_QX_KD  7.0
 #define Hexa_PID_QX_INTEGRATION_LIMIT    20.0
 
-#define Hexa_PID_QY_KP  10.0
+#define Hexa_PID_QY_KP  20.0
 #define Hexa_PID_QY_KI  0.0
-#define Hexa_PID_QY_KD  5.0
+#define Hexa_PID_QY_KD  7.0
 #define Hexa_PID_QY_INTEGRATION_LIMIT   20.0
 
-#define Hexa_PID_QZ_KP  10.0
+#define Hexa_PID_QZ_KP  20.0
 #define Hexa_PID_QZ_KI  0.0
-#define Hexa_PID_QZ_KD  5.0
+#define Hexa_PID_QZ_KD  7.0
 #define Hexa_PID_QZ_INTEGRATION_LIMIT     20.0
 #define Hexa_mass 0.055 //55g in kg
 #define Hexa_Ixx 0.000016
@@ -82,6 +82,7 @@ static float sqx;
 static float sqy;
 static float sqz;
 static float t;
+static float t_init;
 
 static bool isInit;
 void controllerPidHexaInit(void)
@@ -105,6 +106,7 @@ void controllerPidHexaInit(void)
   pidSetIntegralLimit(&pidY, Hexa_PID_QY_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidZ,   Hexa_PID_QZ_INTEGRATION_LIMIT);
   t = 0;
+  t_init = 0;
   isInit = true;
   DEBUG_PRINT("Initializing PID Hexa \n");
   ax = 0; 
@@ -127,9 +129,9 @@ void controllerPidHexa(control_t* control, setpoint_t* setpoint,
     const state_t* state,
     const uint32_t tick)
 {
-    if (RATE_DO_EXECUTE(RATE_500_HZ, tick)) {
+    if (RATE_DO_EXECUTE(RATE_100_HZ, tick)) {
 
-        // t = fmax(fmin(1, (float)tick/5000),t);
+        t_init = fmax(fmin(1, (float)tick/3000),t_init);
         t = (float)tick / 1000; // time in seconds
         // ledseqRun(LED_GREEN_R, seq_linkup);
         cx = -state->position.y;
@@ -146,8 +148,8 @@ void controllerPidHexa(control_t* control, setpoint_t* setpoint,
         // sz = 0.2;
         sz = cz;
         qw = state->attitudeQuaternion.w;
-        qx = state->attitudeQuaternion.x;
-        qy = state->attitudeQuaternion.y;
+        qx = state->attitudeQuaternion.y;
+        qy = state->attitudeQuaternion.x;
         qz = state->attitudeQuaternion.z;
         // sqw = setpoint->attitudeQuaternion.w;
         sqw = 1;
@@ -173,23 +175,25 @@ void controllerPidHexa(control_t* control, setpoint_t* setpoint,
         struct vec rotated_error = qvrot(inv_attitude, p_error);
         // Stabilization control
         if (t > 5) {
-            wx = fmin(fmax(pidUpdate(&pidQX, q_error.x, true), -1.5), 1.5) * (float)(Hexa_Ixx);
-            wy = fmin(fmax(pidUpdate(&pidQY, q_error.y, true), -1.5), 1.5) * (float)(Hexa_Iyy);
+            ledseqRun(LED_GREEN_R, seq_linkup);
+            wx = (float)fmin(fmax(pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx), -7.5e-1), 7.5e-1);
+            wy = (float)fmin(fmax(pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy), -7.5e-1), 7.5e-1);
+            // wx = 0.00;
+            // wy = 0.045;
             if (t < 10 && cz < 0.1) {
-                az += 0.001 * t;
+                az += 0.001 * t_init;
                 ax = 0;
                 ay = 0;
                 wz = 0;
             }
             else {
-                ledseqRun(LED_GREEN_R, seq_linkup);
-                ax = 0 * t * (float)(Hexa_mass)*fmin(fmax(rotated_error.x, -15.0), 15.0);
-                ay = 0 * t * (float)(Hexa_mass)*fmin(fmax(rotated_error.y, -15.0), 15.0);
-                az = 0 * t * (float)(Hexa_mass)*fmin(fmax(rotated_error.z, -15.0), 15.0);
-                wz = 0 * t * fmin(fmax(pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz), -1.5), 1.5);
+                // ax = t_init * (float)(Hexa_mass)*fmin(fmax(rotated_error.x, -15.0), 15.0);
+                // ay = t_init * (float)(Hexa_mass)*fmin(fmax(rotated_error.y, -15.0), 15.0);
+                // az = t_init * (float)(Hexa_mass)*fmin(fmax(rotated_error.z, -15.0), 15.0);
+                // wz = t_init * (float)(fmin(fmax(pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz), -1.5), 1.5));
                 // ax = t * 0.05;
                 // ay = t * 0.00;
-                // az = t * Hexa_mass * 9.81 * 1;
+                az = Hexa_mass * 9.81;
                 // wx = t * 0.00;
                 // wy = t * 0.00;
                 // wz = t * 0.00;
@@ -198,9 +202,9 @@ void controllerPidHexa(control_t* control, setpoint_t* setpoint,
         control->ax = ax;
         control->ay = ay;
         control->az = az;
-        control->roll = wx;
-        control->pitch = wy;
-        control->yaw = wz;
+        control->roll = (int16_t) (wx * 10000);
+        control->pitch = (int16_t) (wy * 10000);
+        control->yaw = (int16_t)  (wz * 10000);
     }
 }
 

@@ -117,9 +117,9 @@ void powerDistribution(const control_t* control)
     cax = control->ax;
     cay = control->ay;
     caz = control->az;
-    cwx = control->roll;
-    cwy = control->pitch;
-    cwz = control->yaw;
+    cwx = ((float) control->roll) /10000;
+    cwy = ((float) control->pitch) /10000;
+    cwz = ((float) control->yaw) /10000;
     //converting the desired forces given by the controller into a vec6
     struct vec6 at = mkvec6(cax, cay, caz, cwx, cwy, cwz);
     //computing the desired control from desired forces into desired squarred rotor speed
@@ -208,12 +208,12 @@ void powerDistribution(const control_t* control)
         motorsSetRatio(MOTOR_M6, motorPowerSet.m6);
     }
     else {
-        // motorsSetRatio(MOTOR_M1, motorPower.m1);
-        // motorsSetRatio(MOTOR_M2, motorPower.m2);
-        // motorsSetRatio(MOTOR_M3, motorPower.m3);
-        // motorsSetRatio(MOTOR_M4, motorPower.m4);
-        // motorsSetRatio(MOTOR_M5, motorPower.m5);
-        // motorsSetRatio(MOTOR_M6, motorPower.m6);
+        motorsSetRatio(MOTOR_M1, motorPower.m1);
+        motorsSetRatio(MOTOR_M2, motorPower.m2);
+        motorsSetRatio(MOTOR_M3, motorPower.m3);
+        motorsSetRatio(MOTOR_M4, motorPower.m4);
+        motorsSetRatio(MOTOR_M5, motorPower.m5);
+        motorsSetRatio(MOTOR_M6, motorPower.m6);
         // motorsSetRatio(MOTOR_M1, 65535*1/19);
         // motorsSetRatio(MOTOR_M2, 65535*1/19);
         // motorsSetRatio(MOTOR_M3, 65535*1/19);
@@ -246,7 +246,7 @@ LOG_ADD(LOG_FLOAT, m3, &m3)
 LOG_ADD(LOG_FLOAT, m4, &m4)
 LOG_ADD(LOG_FLOAT, m5, &m5)
 LOG_ADD(LOG_FLOAT, m6, &m6)
-LOG_ADD(LOG_FLOAT, f1, &f1)
+LOG_ADD(LOG_FLOAT,f1, &f1)
 LOG_ADD(LOG_FLOAT, f2, &f2)
 LOG_ADD(LOG_FLOAT, f3, &f3)
 LOG_ADD(LOG_FLOAT, f4, &f4)
