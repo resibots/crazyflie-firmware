@@ -23,39 +23,43 @@ PidObject pidQX;
 PidObject pidQY;
 PidObject pidQZ;
 
-#define Hexa_PID_X_KP  10.0
+#define Hexa_PID_X_KP  3.0
 #define Hexa_PID_X_KI  0.0
-#define Hexa_PID_X_KD  5.0
+#define Hexa_PID_X_KD  25.0
 #define Hexa_PID_X_INTEGRATION_LIMIT    20.0
 
-#define Hexa_PID_Y_KP  10.0
+#define Hexa_PID_Y_KP  3.0
 #define Hexa_PID_Y_KI  0.0
-#define Hexa_PID_Y_KD  5.0
+#define Hexa_PID_Y_KD  25.0
 #define Hexa_PID_Y_INTEGRATION_LIMIT   20.0
 
 #define Hexa_PID_Z_KP  10.0
-#define Hexa_PID_Z_KI  1.0
-#define Hexa_PID_Z_KD  5.0
+#define Hexa_PID_Z_KI  0.0
+#define Hexa_PID_Z_KD  15.0
 #define Hexa_PID_Z_INTEGRATION_LIMIT   200.0
 
-#define Hexa_PID_QX_KP  250.0
-#define Hexa_PID_QX_KI  00.0
-#define Hexa_PID_QX_KD  50.0
-#define Hexa_PID_QX_INTEGRATION_LIMIT    1000.0
+#define Hexa_PID_QX_KP  30.0
+#define Hexa_PID_QX_KI  2.0
+#define Hexa_PID_QX_KD  35.0
+#define Hexa_PID_QX_INTEGRATION_LIMIT    1.0
 
-#define Hexa_PID_QY_KP  250.0
-#define Hexa_PID_QY_KI  00.0
-#define Hexa_PID_QY_KD  50.0
-#define Hexa_PID_QY_INTEGRATION_LIMIT   2000.0
+#define Hexa_PID_QY_KP  30.0
+#define Hexa_PID_QY_KI  2.0
+#define Hexa_PID_QY_KD  35.0
+#define Hexa_PID_QY_INTEGRATION_LIMIT   1.0
 
-#define Hexa_PID_QZ_KP  100.0
+#define Hexa_PID_QZ_KP  10.0
 #define Hexa_PID_QZ_KI  00.0
-#define Hexa_PID_QZ_KD  50.0
-#define Hexa_PID_QZ_INTEGRATION_LIMIT     2000.0
-#define Hexa_mass 0.055 //55g in kg
+#define Hexa_PID_QZ_KD  10.0
+#define Hexa_PID_QZ_INTEGRATION_LIMIT     1000.0
+#define Hexa_mass 0.045 //45g in kg
 #define Hexa_Ixx 0.000016
 #define Hexa_Iyy 0.000016
 #define Hexa_Izz 0.000029
+#define D_FILTER true
+#define D_FILTER_ATTITUDE false 
+#define CUTOFF_FREQ 20.0f
+#define CUTOFF_FREQ_ATTITUDE 0.0f
 // acceleration control
 static float ax;
 static float ay;
@@ -84,6 +88,7 @@ static float sqy;
 static float sqz;
 static float t;
 static float t_init;
+static bool took_off = false;
 
 static bool isInit;
 void controllerPidHexaInit(void)
@@ -93,16 +98,16 @@ void controllerPidHexaInit(void)
     return;
   }
 
-  pidInit(&pidQX,  0, Hexa_PID_QX_KP,  Hexa_PID_QX_KI,  Hexa_PID_QX_KD, UPDATE_DT, 0, 0, 0);
-  pidInit(&pidQY, 0, Hexa_PID_QY_KP, Hexa_PID_QY_KI, Hexa_PID_QY_KD, UPDATE_DT, 0, 0, 0);
-  pidInit(&pidQZ,   0, Hexa_PID_QZ_KP,   Hexa_PID_QZ_KI,   Hexa_PID_QZ_KD, UPDATE_DT, 0, 0, 0);
+  pidInit(&pidQX,  0, Hexa_PID_QX_KP,  Hexa_PID_QX_KI,  Hexa_PID_QX_KD, UPDATE_DT, 0, CUTOFF_FREQ_ATTITUDE, D_FILTER_ATTITUDE);
+  pidInit(&pidQY, 0, Hexa_PID_QY_KP, Hexa_PID_QY_KI, Hexa_PID_QY_KD, UPDATE_DT, 0, CUTOFF_FREQ_ATTITUDE, D_FILTER_ATTITUDE);
+  pidInit(&pidQZ,   0, Hexa_PID_QZ_KP,   Hexa_PID_QZ_KI,   Hexa_PID_QZ_KD, UPDATE_DT, 0, CUTOFF_FREQ_ATTITUDE, D_FILTER_ATTITUDE);
   pidSetIntegralLimit(&pidQX,  Hexa_PID_QX_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidQY, Hexa_PID_QY_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidQZ,   Hexa_PID_QZ_INTEGRATION_LIMIT);
 
-  pidInit(&pidX,  0, Hexa_PID_X_KP,  Hexa_PID_X_KI,  Hexa_PID_X_KD, UPDATE_DT, 0, 0, 0);
-  pidInit(&pidY, 0, Hexa_PID_Y_KP, Hexa_PID_Y_KI, Hexa_PID_Y_KD, UPDATE_DT, 0, 0, 0);
-  pidInit(&pidZ,   0, Hexa_PID_Z_KP,   Hexa_PID_Z_KI,   Hexa_PID_Z_KD, UPDATE_DT, 0, 0, 0);
+  pidInit(&pidX, 0, Hexa_PID_X_KP,  Hexa_PID_X_KI,  Hexa_PID_X_KD, UPDATE_DT, 0, CUTOFF_FREQ, D_FILTER);
+  pidInit(&pidY, 0, Hexa_PID_Y_KP, Hexa_PID_Y_KI, Hexa_PID_Y_KD, UPDATE_DT, 0, CUTOFF_FREQ, D_FILTER);
+  pidInit(&pidZ, 0, Hexa_PID_Z_KP,   Hexa_PID_Z_KI,   Hexa_PID_Z_KD, UPDATE_DT, 0, CUTOFF_FREQ, D_FILTER);
   pidSetIntegralLimit(&pidX,  Hexa_PID_QX_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidY, Hexa_PID_QY_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidZ,   Hexa_PID_QZ_INTEGRATION_LIMIT);
@@ -115,7 +120,9 @@ void controllerPidHexaInit(void)
   az = 0; 
   wx = 0; 
   wy = 0; 
-  wz = 0; 
+  wz = 0;
+  sx = 0;
+  sy = 0;
 }
 
 bool controllerPidHexaTest(void)
@@ -141,13 +148,8 @@ void controllerPidHexa(control_t* control, setpoint_t* setpoint,
         // sx = setpoint->position.x;
         // sy = setpoint->position.y;
         // sz = setpoint->position.z;
-        // sx = cx;
-        // sy = cy;
+        sz = 0.1;
         // sz = cz;
-        sx = 0;
-        sy = 0;
-        // sz = 0.2;
-        sz = cz;
         qw = state->attitudeQuaternion.w;
         qx = state->attitudeQuaternion.x;
         qy = state->attitudeQuaternion.y;
@@ -181,25 +183,31 @@ void controllerPidHexa(control_t* control, setpoint_t* setpoint,
         // Stabilization control
         if (t > 5) {
             ledseqRun(LED_GREEN_L, seq_linkup);
-            wx = -(float)fmin(fmax(pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx), -0.5), 0.5);
-            wy = -(float)fmin(fmax(pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy), -0.5), 0.5);
+            wx = -10*(float)fmin(fmax(pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx), -3.0), 3.0);
+            wy = -5*(float)fmin(fmax(pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy), -3.0), 3.0);
             // wx = 0.003;
             // wy = 0.003;
-            if (t < 15 && cz < 0.1 && az < 11) {
-                az += 0.00003 * t_init;
+            if (cz < 0.5 && az < 0.80 && !(took_off)) {
+                ledseqRun(LED_GREEN_R, seq_linkup);
+                sx = cx;
+                sy = cy;
+                az += 0.00030 * t_init;
+                // wy += 1.5 * wy;
                 ax = 0;
                 ay = 0;
                 wz = 0;
             }
             else {
-                ledseqRun(LED_GREEN_R, seq_linkup);
-                ax = (float)(fmin(fmax((float)(Hexa_mass)*rotated_error.x, -0.15), 0.15));
-                ay = (float)(fmin(fmax((float)(Hexa_mass)*rotated_error.y, -0.15), 0.15));
-                az = (float)(fmin(fmax((float)(Hexa_mass)*rotated_error.z, -0.15), 0.150));
-                wz = (float)(fmin(fmax(pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz), -15), 15));
+                took_off = true;
+                ax = (float)(fmin(fmax((float)(Hexa_mass)*rotated_error.x, -0.05), 0.05));
+                ay = (float)(fmin(fmax((float)(Hexa_mass)*rotated_error.y, -0.05), 0.05));
+                az = (float)(fmin(fmax((float)(Hexa_mass)*rotated_error.z, 0.40), 0.7));
+                // sx = cx;
+                // sy = cy;
+                wz = -(float)(fmin(fmax(pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz), -0.1), 01));
                 // ax = t * 0.05;
                 // ay = t * 0.00;
-                // az = Hexa_mass * 9.81 ;
+                // az = Hexa_mass * 9.81*0.2 ;
                 // wz = t * 0.00;
             }
         }
