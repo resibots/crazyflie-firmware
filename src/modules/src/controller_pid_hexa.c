@@ -2,6 +2,7 @@
 #include "pid.h"
 #include "stabilizer.h"
 #include "stabilizer_types.h"
+#include "estimator_kalman.h"
 
 #include "sensfusion6.h"
 #include "controller_pid_hexa.h"
@@ -23,35 +24,35 @@ PidObject pidQX;
 PidObject pidQY;
 PidObject pidQZ;
 
-#define Hexa_PID_X_KP  3.0
+#define Hexa_PID_X_KP  0.0
 #define Hexa_PID_X_KI  0.0
-#define Hexa_PID_X_KD  25.0
+#define Hexa_PID_X_KD  100.0
 #define Hexa_PID_X_INTEGRATION_LIMIT    20.0
 
-#define Hexa_PID_Y_KP  3.0
+#define Hexa_PID_Y_KP  0.0
 #define Hexa_PID_Y_KI  0.0
-#define Hexa_PID_Y_KD  25.0
+#define Hexa_PID_Y_KD  100.0
 #define Hexa_PID_Y_INTEGRATION_LIMIT   20.0
 
-#define Hexa_PID_Z_KP  10.0
-#define Hexa_PID_Z_KI  0.0
-#define Hexa_PID_Z_KD  15.0
+#define Hexa_PID_Z_KP  100.0
+#define Hexa_PID_Z_KI  15.0
+#define Hexa_PID_Z_KD  50.0
 #define Hexa_PID_Z_INTEGRATION_LIMIT   200.0
 
-#define Hexa_PID_QX_KP  30.0
-#define Hexa_PID_QX_KI  2.0
-#define Hexa_PID_QX_KD  35.0
+#define Hexa_PID_QX_KP  500.0
+#define Hexa_PID_QX_KI  1.0
+#define Hexa_PID_QX_KD  200.0
 #define Hexa_PID_QX_INTEGRATION_LIMIT    1.0
 
-#define Hexa_PID_QY_KP  30.0
-#define Hexa_PID_QY_KI  2.0
-#define Hexa_PID_QY_KD  35.0
+#define Hexa_PID_QY_KP  300.0
+#define Hexa_PID_QY_KI  1.0
+#define Hexa_PID_QY_KD  100.0
 #define Hexa_PID_QY_INTEGRATION_LIMIT   1.0
 
-#define Hexa_PID_QZ_KP  10.0
-#define Hexa_PID_QZ_KI  00.0
-#define Hexa_PID_QZ_KD  10.0
-#define Hexa_PID_QZ_INTEGRATION_LIMIT     1000.0
+#define Hexa_PID_QZ_KP  300.0
+#define Hexa_PID_QZ_KI  1.0
+#define Hexa_PID_QZ_KD  100.0
+#define Hexa_PID_QZ_INTEGRATION_LIMIT     1.0
 #define Hexa_mass 0.045 //45g in kg
 #define Hexa_Ixx 0.000016
 #define Hexa_Iyy 0.000016
@@ -89,8 +90,8 @@ static float sqz;
 static float t;
 static float t_init;
 static bool took_off = false;
-
-static bool isInit;
+static bool isInit = false;
+static bool firstControllerLoop = true;
 void controllerPidHexaInit(void)
 {
   if(isInit)
@@ -148,7 +149,7 @@ void controllerPidHexa(control_t* control, setpoint_t* setpoint,
         // sx = setpoint->position.x;
         // sy = setpoint->position.y;
         // sz = setpoint->position.z;
-        sz = 0.1;
+        sz = 0.5;
         // sz = cz;
         qw = state->attitudeQuaternion.w;
         qx = state->attitudeQuaternion.x;
@@ -179,36 +180,34 @@ void controllerPidHexa(control_t* control, setpoint_t* setpoint,
         // Extracting only the vector part of the quaternion error
         struct vec p_error = mkvec(pidUpdate(&pidX, cx, true), pidUpdate(&pidY, cy, true), pidUpdate(&pidZ, cz, true) + 9.81);
         // Rotating the error into hexarotor frame and converting it into desired forces and torques
-        struct vec rotated_error = qvrot(inv_attitude, p_error);
+        // struct vec rotated_error = qvrot(inv_attitude, p_error);
         // Stabilization control
+        if (firstControllerLoop)
+        {
+            estimatorKalmanInit();
+            firstControllerLoop = false;
+        }
         if (t > 5) {
             ledseqRun(LED_GREEN_L, seq_linkup);
-            wx = -10*(float)fmin(fmax(pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx), -3.0), 3.0);
-            wy = -5*(float)fmin(fmax(pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy), -3.0), 3.0);
-            // wx = 0.003;
-            // wy = 0.003;
-            if (cz < 0.5 && az < 0.80 && !(took_off)) {
+            wx = -(float)fmin(fmax(pidUpdate(&pidQX, q_error.x, true) * (float)(Hexa_Ixx), -0.1), 0.1);
+            wy = -(float)fmin(fmax(pidUpdate(&pidQY, q_error.y, true) * (float)(Hexa_Iyy), -0.1), 0.1);
+            wz = -(float)(fmin(fmax(pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz), -0.05), 0.05));
+            if (cz < 0.55 && az < 0.80 && !(took_off)) {
                 ledseqRun(LED_GREEN_R, seq_linkup);
                 sx = cx;
                 sy = cy;
-                az += 0.00030 * t_init;
-                // wy += 1.5 * wy;
+                az += 0.00050 * t_init;
                 ax = 0;
                 ay = 0;
-                wz = 0;
             }
             else {
                 took_off = true;
-                ax = (float)(fmin(fmax((float)(Hexa_mass)*rotated_error.x, -0.05), 0.05));
-                ay = (float)(fmin(fmax((float)(Hexa_mass)*rotated_error.y, -0.05), 0.05));
-                az = (float)(fmin(fmax((float)(Hexa_mass)*rotated_error.z, 0.40), 0.7));
-                // sx = cx;
-                // sy = cy;
-                wz = -(float)(fmin(fmax(pidUpdate(&pidQZ, q_error.z, true) * (float)(Hexa_Izz), -0.1), 01));
+                ax = (float)(fmin(fmax((float)(Hexa_mass)*p_error.x, -0.05), 0.05));
+                ay = (float)(fmin(fmax((float)(Hexa_mass)*p_error.y, -0.05), 0.05));
+                az = (float)(fmin(fmax((float)(Hexa_mass)*p_error.z, 0.40), 0.8));
                 // ax = t * 0.05;
                 // ay = t * 0.00;
                 // az = Hexa_mass * 9.81*0.2 ;
-                // wz = t * 0.00;
             }
         }
         control->ax = ax;
