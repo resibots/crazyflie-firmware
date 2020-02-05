@@ -222,6 +222,12 @@ void powerDistribution(const control_t* control)
         motorsSetRatio(MOTOR_M4, motorPower.m4);
         motorsSetRatio(MOTOR_M5, motorPower.m5);
         motorsSetRatio(MOTOR_M6, motorPower.m6);
+        // motorsSetRatio(MOTOR_M1, (motorPower.m1 < 65535*1/19) ? (motorPower.m1) : (65535*1/19));
+        // motorsSetRatio(MOTOR_M2, (motorPower.m2 < 65535*1/19) ? (motorPower.m2) : (65535*1/19));
+        // motorsSetRatio(MOTOR_M3, (motorPower.m3 < 65535*1/19) ? (motorPower.m3) : (65535*1/19));
+        // motorsSetRatio(MOTOR_M4, (motorPower.m4 < 65535*1/19) ? (motorPower.m4) : (65535*1/19));
+        // motorsSetRatio(MOTOR_M5, (motorPower.m5 < 65535*1/19) ? (motorPower.m5) : (65535*1/19));
+        // motorsSetRatio(MOTOR_M6, (motorPower.m6 < 65535*1/19) ? (motorPower.m6) : (65535*1/19));
         // motorsSetRatio(MOTOR_M1, 65535*1/19);
         // motorsSetRatio(MOTOR_M2, 65535*1/19);
         // motorsSetRatio(MOTOR_M3, 65535*1/19);
