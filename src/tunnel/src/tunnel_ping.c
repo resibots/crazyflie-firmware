@@ -55,7 +55,7 @@ static void sendCRTPPingReport(P2PPacket *p) {
 
   // Add our RSSI+status if there's room
   if(p_log.size < CRTP_MAX_DATA_SIZE - 2) {
-    p_log.basedata[p_log.size++] = p->rssi;
+    p_log.basedata[p_log.size++] = tunnelGetSignal(p->origin)->rssi;
     p_log.size += appendStatusMessage(&p_log.basedata[p_log.size]);
   }
 
@@ -109,8 +109,8 @@ static void p2pPingHandler(P2PPacket *p) {
         reply.txdest = getDroneId();
         if(getDroneId() == 0) // first drone replies to second
           reply.txdest = 1;
-        else if(!tunnelIsDroneConnected(getFollowerID()))
-          reply.txdest = getDroneId() - 1; // Go back through the chain 
+        else if(getDroneId() == getNDrones() - 1)
+          processFinishedPing(p); //reply.txdest = getDroneId() - 1; // Go back through the chain 
         else // middle drone propagates the ping
           reply.txdest += (p->rxdest - p->origin > 0) ? 1 : -1;
       }
@@ -125,7 +125,7 @@ static void p2pPingHandler(P2PPacket *p) {
 
       // Add our RSSI+status if there's room
       if(reply.size < P2P_MAX_DATA_SIZE - 2) {
-        reply.txdata[reply.size++] = p->rssi;
+        reply.txdata[reply.size++] = tunnelGetSignal(p->origin)->rssi;
         reply.size += appendStatusMessage(&reply.txdata[reply.size]);
       }
 
