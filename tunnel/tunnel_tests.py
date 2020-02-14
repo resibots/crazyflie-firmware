@@ -14,6 +14,7 @@ import time
 import pandas as pd
 from math import pi
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 class bcolors:
     NONE = ''
@@ -43,6 +44,9 @@ counter = 0
 prev_ping_time = 0
 
 scans = []
+
+# Maximum number of drones
+MAX_NDRONES = 16
 
 # Custom CRTP tunnel port
 RADIO_PORT_TUNNEL = 0x0A
@@ -84,6 +88,7 @@ TUNNEL_BEHAVIOR_ROLLBACK    = 6 # Notify all drones ahead and go back until the 
 TUNNEL_BEHAVIOR_SCAN        = 7 # Turn 90 degrees and scan the room, then point to the tunnel
 TUNNEL_BEHAVIOR_LAND        = 8 # Land slowly with a specified velocity
 
+# Used for keeping track of the keyboard state and control the head drone
 keystates = {
     "up"   : 0,
     "down" : 0,
@@ -93,6 +98,14 @@ keystates = {
     "q": 0,
     "r": 0,
 }
+
+# Used for logging and plotting RSSIs over time
+class PingChannel():
+    def __init__(self):
+        self.times = []
+        self.rssis = []
+ping_channels = [PingChannel() for i in range(MAX_NDRONES)]
+open("ping_log.txt", 'w').close()
 
 logging.basicConfig(level=logging.WARN)
 
@@ -247,7 +260,8 @@ def log_msg(pk, data_int=False, color=bcolors.NONE):
     if color is bcolors.NONE:
         if "STATUS" in text:
             color = bcolors.OKBLUE
-
+        elif "RED SWITCH" in text:
+            color = bcolors.FAIL
 
     color_print(color, text, newline=False)
 
@@ -270,6 +284,18 @@ def on_ping(pk):
     rssis_string += "[{}]".format(drone0statusStart.hex())
     rssis_string += ''.join(["--{}--[{}]".format(r[0], r[1:].hex()) for (i, r) in enumerate(infoList)])
     color_print(bcolors.HEADER, rssis_string)
+
+    # Log all RSSI values for a live & logged graph
+    f = open("ping_log.txt", "a")
+    measure_time = time.time() - start_time
+    f.write("{:.2f},".format(measure_time))
+    for i, drone_info in enumerate(infoList[:int(len(infoList))]):
+        ping_channels[i].rssis.append(drone_info[0])
+        ping_channels[i].times.append(measure_time)
+        f.write("{}".format(drone_info[0]))
+        f.write(',')
+    f.write('\n')
+    f.close()
 
 '''
 Message callbacks
@@ -416,7 +442,8 @@ def final_exploration(tunnel):
 
             if rth is False:
                 # Set a desired velocity
-                vel = (keystates["up"] - keystates["down"], keystates["left"] - keystates["right"])
+                vel = [keystates["up"] - keystates["down"], keystates["left"] - keystates["right"]]
+                #vel[0] = 1
                 tunnel.set_drone_id(0, verbose=False)
                 tunnel.move(vel[0], vel[1])
                 tunnel.reset_drone_id(verbose=False)
@@ -473,6 +500,27 @@ def show_scans():
         ax.set_title("Scan")
         plt.show()
 
+def _live_plot_animate(i):
+    plt.cla()
+    colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
+    labels = []
+    for j, channel in enumerate(ping_channels):
+        if not channel.rssis:
+            break
+        plt.plot(channel.times, channel.rssis, c=colors[j], linewidth=3, label="Link {}".format(str(j)))
+        labels.append("Link {}".format(str(j)))
+    plt.legend(ncol=5, fontsize='small', loc='upper left')
+    plt.ylim(bottom=30, top=75)
+
+def live_plot():
+    plt.rcParams.update({'font.size': 23})
+    plt.rcParams['mathtext.fontset'] = 'stix'
+    plt.rcParams['font.family'] = 'STIXGeneral'
+    ani = FuncAnimation(plt.gcf(), _live_plot_animate, interval=200)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Measured RSSI')
+    plt.show()
+
 
 '''
 Main args & function
@@ -492,16 +540,17 @@ if __name__ == '__main__':
     cf.open_link(uri)
 
     # Add packet callbacks
+    start_time = time.time()
     cf.add_port_callback(RADIO_PORT_TUNNEL, on_tunnel_msg)
     cf.add_port_callback(CRTPPort.CONSOLE, on_console_msg)
     time.sleep(3)
-    start_time = time.time()
 
     tunnel = TunnelCommunicator(cf, int(uri[-1], base=16))
 
     if n_drones > 0:
         tunnel.set_ndrones(n_drones)
 
+    #live_plot()
     tests[chosen_test][1](tunnel)
 
     cf.close_link()
