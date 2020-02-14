@@ -31,7 +31,7 @@ make all
 make all BLE=0
 ```
 
-Note that Bluetooth must be disabled in the nRF51 firmware in order to use the P2P Communication Protocol.
+Note that Bluetooth must be disabled in the nRF51 firmware in order to use the P2P Communication Protocol by using the `BLE=0` compilation flag.
 
 ### Flashing the firmwares
 
@@ -39,9 +39,9 @@ Once both repos have been compiled, you can flash both firmwares with the follow
 
 #### Flashing the STM32
 
-Flashing the STM32 chip can be done through two methods:
+Flashing the main chip can be done through two methods:
 
-2. Using the Crazyradio:
+1. Using the Crazyradio:
 Flashing using the radio is supported but flashing fails can happen. Turn the Crazyflie on in Bootloader mode by holding the power button for 3 seconds, conenct the Crazyradio through USB and run:
 
 ```
@@ -49,7 +49,7 @@ Flashing using the radio is supported but flashing fails can happen. Turn the Cr
 make cload
 ```
 
-1. Using the STLink v2 debugger (**recommended**, `openocd` must be installed):
+2. Using the STLink v2 debugger (**recommended**, `openocd` must be installed):
 A faster and reliable way of flashing the main chip is to use a JTAG USB Debugger (Bitcraze officially supports the STLink v2). Simply power on the Crazyflie by pressing the power button, connect the debugger via USB and JTAG on both ends and run:
 ```
 # In crazyflie-firmware/
@@ -73,9 +73,14 @@ In order to change a drone's address, firstly clone the python client repo conta
 ```
 git clone https://github.com/bitcraze/crazyflie-lib-python.git
 cd crazyflie-lib-python/examples
+```
+
+You can now change the target address defined in the `write-eeprom.py` file, connect the Crazyflie through USB to your PC, turn it on and run:
+
+```
 python3 write-eeprom.py
 ```
 
-You should now have a ready-to-use Tunnel Exploration UAV.
+The script should read back and display the new address. If not, try again by power-cycling the drone. When done, you should now have a ready-to-use Tunnel Exploration UAV.
 
 ## Project Structure
