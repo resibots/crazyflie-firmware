@@ -66,6 +66,10 @@
 // If ratios are close on both sides, take the closest side to a wall
 #define TUNNEL_RANGE_RATIO_MAX_DIFF .4f
 
+// If we see two walls on the sides, consider we're in a tunnel if the walls are this far appart or less (cm)
+// (otherwise we're in an open space)
+#define TUNNEL_MAX_WIDTH 100
+
 /****************
 OBSTACLE AVOIDING
 *****************/

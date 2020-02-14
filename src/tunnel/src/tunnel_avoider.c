@@ -124,16 +124,18 @@ void tunnelAvoiderUpdate(TunnelSetpoint *vel, bool enableCollisions) {
     float sign = (sideCouples[currentWall].diff >= 0) ? 1.f : -1.f;
     vel->yawrate += sign * TUNNEL_RANGER_TURN_FORCE * sideCouples[currentWall].ratio;
 
-    // Calculate translation (if there's a wall on the other side center based on
-    // the min value of the sides, else go to a default distance to the current wall)
+    // Choose at which distance to stay from the wall. If we see two walls center between them, else 
+    // use the default distance.
     float mainDist = sideCouples[currentWall].center;
     float oppositeDist = sideCouples[oppositeWall].center;
-    // TODO if(isCoupleValid(&sideCouples[oppositeWall]))
-    //   vel->vy = TUNNEL_RANGER_AVOID_FORCE * (mainDist - oppositeDist);
-    // else
+    float goalDist = TUNNEL_DEFAULT_WALL_DIST;
+    if(isCoupleValid(&sideCouples[oppositeWall]) && (mainDist + oppositeDist) <= TUNNEL_MAX_WIDTH)
+      goalDist = (mainDist + oppositeDist) / 2.f;
 
+    // Calculate translation (if there's a wall on the other side center based on
+    // the min value of the sides, else go to a default distance to the current wall)
     sign = (currentWall == DIRECTION_RIGHT) ? 1.f : -1.f;
-    vel->vy = sign * (TUNNEL_RANGER_AVOID_FORCE / 10.f) * (TUNNEL_DEFAULT_WALL_DIST - mainDist);
+    vel->vy = sign * (TUNNEL_RANGER_AVOID_FORCE / 10.f) * (goalDist - mainDist);
   }
 
   // Use independant repulsion forces for safety when coming too close of an obstacle
