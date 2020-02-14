@@ -105,6 +105,14 @@ DroneRole tunnelGetDroneRole() { return droneRole; }
 void tunnelSetDroneRole(DroneRole newRole) { droneRole = newRole; }
 
 static void handleAutoStates() {
+  // Keep track of when the leader takes off. Used 
+  static uint32_t leaderTakeoffTime = 0;
+  if(getDroneId() != 0 && leaderTakeoffTime == 0 && tunnelIsDroneConnected(getLeaderID())) {
+    if(tunnelGetLeaderStatus()->droneState == DRONE_STATE_FLYING)
+      leaderTakeoffTime = xTaskGetTickCount();
+    else leaderTakeoffTime = 0;
+  }
+
   switch(tunnelGetDroneState()) {
     case DRONE_STATE_IDLE: {
       // Launch the head drone automatically
@@ -114,7 +122,7 @@ static void handleAutoStates() {
       }
 
       // Arm the drone if the leader is flying (meaning it might need us to relay it if it goes too far away)
-      if(tunnelIsDroneConnected(getLeaderID()) && tunnelGetLeaderStatus()->droneState == DRONE_STATE_FLYING) {
+      if(leaderTakeoffTime != 0 && xTaskGetTickCount() - leaderTakeoffTime > TUNNEL_ARM_DELAY) {
         DEBUG_PRINT("Leader flying, auto arm!\n");
         tunnelSetDroneState(DRONE_STATE_ARMED);
       }

@@ -18,6 +18,7 @@
 #include "tunnel_helpers.h"
 #include "tunnel_avoider.h"
 #include "tunnel_behavior.h"
+#include "tunnel_signal.h"
 #include "tunnel.h"
 
 #define DEBUG_MODULE "TUN_CMD"
@@ -119,6 +120,7 @@ void tunnelCommanderUpdate() {
     tunnelSetDroneMode(DRONE_MODE_MANUAL);
     tunnelSetDroneState(DRONE_STATE_CRASHED);
     ledseqRun(SYS_LED, seq_testPassed);
+    DEBUG_PRINT("RED SWITCH\n");
   }
 #endif
 
@@ -140,6 +142,10 @@ void tunnelCommanderUpdate() {
   currentMovement.vy        = CONSTRAIN(-1 * TUNNEL_MAX_SPEED,      currentMovement.vy, TUNNEL_MAX_SPEED);
   currentMovement.yawrate   = CONSTRAIN(-1 * TUNNEL_MAX_TURN_SPEED, currentMovement.yawrate, TUNNEL_MAX_TURN_SPEED);
   currentMovement.zDistance = CONSTRAIN(TUNNEL_MIN_HEIGHT,          currentMovement.zDistance, TUNNEL_MAX_HEIGHT);
+
+  // Do not go further if the followe link is too bad in auto mode
+  if(getDroneId() == 0 && tunnelGetDroneMode() == DRONE_MODE_AUTO && !tunnelIsDroneConnected(getFollowerID()))
+    currentMovement.vx = -TUNNEL_DEFAULT_SPEED;
 
   // Refresh the estimated distance in tunnel
   if(prevUpdate != 0)

@@ -38,9 +38,9 @@ void behaviorPositioningUpdate(TunnelSetpoint *vel, bool *enableCollisions) {
     // Move forward or backward to reach the destination
     float signalDiff = leaderSignal->rssi - followerSignal->rssi;
     if(signalDiff > TUNNEL_SIGNAL_DIFF_TOLERANCE / 2.f)
-    vel->vx = TUNNEL_DEFAULT_SPEED;
+    vel->vx = 1.5 * TUNNEL_DEFAULT_SPEED;
     else if(signalDiff < -TUNNEL_SIGNAL_DIFF_TOLERANCE / 2.f)
-    vel->vx = -TUNNEL_DEFAULT_SPEED;
+    vel->vx = -1.5 * TUNNEL_DEFAULT_SPEED;
     else vel->vx = 0;
   }
 
