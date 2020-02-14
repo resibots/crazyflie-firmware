@@ -50,6 +50,8 @@ static bool isTested = false;
 #define OA_PIN_LEFT   PCA95X4_P6
 #define OA_PIN_RIGHT  PCA95X4_P2
 
+#define AddrPCA 0b0100000   //Original I2C address of the MultiRanger I2C expander
+
 static VL53L0xDev devFront;
 static VL53L0xDev devBack;
 static VL53L0xDev devUp;
@@ -93,13 +95,13 @@ static void oaInit()
 
   pca95x4Init();
 
-  pca95x4ConfigOutput(~(OA_PIN_UP |
+  pca95x4ConfigOutput(AddrPCA, ~(OA_PIN_UP |
                         OA_PIN_RIGHT |
                         OA_PIN_LEFT |
                         OA_PIN_FRONT |
                         OA_PIN_BACK));
 
-  pca95x4ClearOutput(OA_PIN_UP |
+  pca95x4ClearOutput(AddrPCA, OA_PIN_UP |
                      OA_PIN_RIGHT |
                      OA_PIN_LEFT |
                      OA_PIN_FRONT |
@@ -120,7 +122,7 @@ static bool oaTest()
     return false;
   }
 
-  pca95x4SetOutput(OA_PIN_FRONT);
+  pca95x4SetOutput(AddrPCA, OA_PIN_FRONT);
   if (vl53l0xInit(&devFront, I2C1_DEV, true)) {
     DEBUG_PRINT("Init front sensor [OK]\n");
   } else {
@@ -128,7 +130,7 @@ static bool oaTest()
     pass = false;
   }
 
-  pca95x4SetOutput(OA_PIN_BACK);
+  pca95x4SetOutput(AddrPCA, OA_PIN_BACK);
   if (vl53l0xInit(&devBack, I2C1_DEV, true)) {
     DEBUG_PRINT("Init back sensor [OK]\n");
   } else {
@@ -136,7 +138,7 @@ static bool oaTest()
     pass = false;
   }
 
-  pca95x4SetOutput(OA_PIN_UP);
+  pca95x4SetOutput(AddrPCA, OA_PIN_UP);
   if (vl53l0xInit(&devUp, I2C1_DEV, true)) {
     DEBUG_PRINT("Init up sensor [OK]\n");
   } else {
@@ -144,7 +146,7 @@ static bool oaTest()
     pass = false;
   }
 
-  pca95x4SetOutput(OA_PIN_LEFT);
+  pca95x4SetOutput(AddrPCA, OA_PIN_LEFT);
   if (vl53l0xInit(&devLeft, I2C1_DEV, true)) {
     DEBUG_PRINT("Init left sensor [OK]\n");
   } else {
@@ -152,7 +154,7 @@ static bool oaTest()
     pass = false;
   }
 
-  pca95x4SetOutput(OA_PIN_RIGHT);
+  pca95x4SetOutput(AddrPCA, OA_PIN_RIGHT);
   if (vl53l0xInit(&devRight, I2C1_DEV, true)) {
     DEBUG_PRINT("Init right sensor [OK]\n");
   } else {

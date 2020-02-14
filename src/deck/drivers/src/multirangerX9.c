@@ -22,11 +22,11 @@
  * You should have received a copy of the GNU General Public License
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* multiranger.c: Multiranger deck driver */
+/* multiranger.c: MultirangerX9 deck driver */
 #include "deck.h"
 #include "param.h"
 
-#define DEBUG_MODULE "MR"
+#define DEBUG_MODULE "MR++"
 
 #include "system.h"
 #include "debug.h"
@@ -46,19 +46,32 @@ static bool isInit = false;
 static bool isTested = false;
 static bool isPassed = false;
 
-#define AddrPCA 0b0100000   //Original I2C address of the MultiRanger I2C expander
-
+//Original sensors of the MultiRanger deck
 #define MR_PIN_UP     PCA95X4_P0
-#define MR_PIN_FRONT  PCA95X4_P4
-#define MR_PIN_BACK   PCA95X4_P1
+#define MR_PIN_FRONT  PCA95X4_P1
+#define MR_PIN_BACK   PCA95X4_P4
 #define MR_PIN_LEFT   PCA95X4_P6
 #define MR_PIN_RIGHT  PCA95X4_P2
+//Extra sensors
+#define MR_PIN_FRONT_RIGHT PCA95X4_P0
+#define MR_PIN_FRONT_LEFT  PCA95X4_P1
+#define MR_PIN_BACK_LEFT   PCA95X4_P2
+#define MR_PIN_BACK_RIGHT  PCA95X4_P3
+
+//Address of the 2 I2C Expander
+#define AddrPCA_A 0b0111100
+#define AddrPCA_B 0b0111000
 
 static VL53L1_Dev_t devFront;
 static VL53L1_Dev_t devBack;
 static VL53L1_Dev_t devUp;
 static VL53L1_Dev_t devLeft;
 static VL53L1_Dev_t devRight;
+
+static VL53L1_Dev_t devFrontRight;
+static VL53L1_Dev_t devFrontLeft;
+static VL53L1_Dev_t devBackRight;
+static VL53L1_Dev_t devBackLeft;
 
 static uint16_t mrGetMeasurementAndRestart(VL53L1_Dev_t *dev)
 {
@@ -100,6 +113,15 @@ static void mrTask(void *param)
     status = VL53L1_StartMeasurement(&devLeft);
     status = VL53L1_StopMeasurement(&devRight);
     status = VL53L1_StartMeasurement(&devRight);
+
+    status = VL53L1_StopMeasurement(&devFrontRight);
+    status = VL53L1_StartMeasurement(&devFrontRight);
+    status = VL53L1_StopMeasurement(&devFrontLeft);
+    status = VL53L1_StartMeasurement(&devFrontLeft);
+    status = VL53L1_StopMeasurement(&devBackRight);
+    status = VL53L1_StartMeasurement(&devBackRight);
+    status = VL53L1_StopMeasurement(&devBackLeft);
+    status = VL53L1_StartMeasurement(&devBackLeft);
     status = status;
 
     TickType_t lastWakeTime = xTaskGetTickCount();
@@ -113,6 +135,11 @@ static void mrTask(void *param)
         rangeSet(rangeUp, mrGetMeasurementAndRestart(&devUp)/1000.0f);
         rangeSet(rangeLeft, mrGetMeasurementAndRestart(&devLeft)/1000.0f);
         rangeSet(rangeRight, mrGetMeasurementAndRestart(&devRight)/1000.0f);
+
+        rangeSet(rangeFrontRight, mrGetMeasurementAndRestart(&devFrontRight)/1000.0f);
+        rangeSet(rangeFrontLeft, mrGetMeasurementAndRestart(&devFrontLeft)/1000.0f);
+        rangeSet(rangeBackRight, mrGetMeasurementAndRestart(&devBackRight)/1000.0f);
+        rangeSet(rangeBackLeft, mrGetMeasurementAndRestart(&devBackLeft)/1000.0f);
     }
 }
 
@@ -125,22 +152,34 @@ static void mrInit()
 
     pca95x4Init();
 
-    pca95x4ConfigOutput(AddrPCA, ~(MR_PIN_UP |
+    pca95x4ConfigOutput(AddrPCA_A, ~(MR_PIN_UP |
                           MR_PIN_RIGHT |
                           MR_PIN_LEFT |
                           MR_PIN_FRONT |
                           MR_PIN_BACK));
 
-    pca95x4ClearOutput(AddrPCA, MR_PIN_UP |
+    pca95x4ClearOutput(AddrPCA_A, MR_PIN_UP |
                        MR_PIN_RIGHT |
                        MR_PIN_LEFT |
                        MR_PIN_FRONT |
                        MR_PIN_BACK);
 
+    pca95x4ConfigOutput(AddrPCA_B, ~(
+                       MR_PIN_FRONT_RIGHT |
+                       MR_PIN_FRONT_LEFT |
+                       MR_PIN_BACK_RIGHT |
+                       MR_PIN_BACK_LEFT));
+
+    pca95x4ClearOutput(AddrPCA_B,
+                       MR_PIN_FRONT_RIGHT |
+                       MR_PIN_FRONT_LEFT |
+                       MR_PIN_BACK_RIGHT |
+                       MR_PIN_BACK_LEFT);
+
     isInit = true;
 
-    xTaskCreate(mrTask, MULTIRANGER_TASK_NAME, MULTIRANGER_TASK_STACKSIZE, NULL,
-        MULTIRANGER_TASK_PRI, NULL);
+    xTaskCreate(mrTask, MULTIRANGERX9_TASK_NAME, MULTIRANGERX9_TASK_STACKSIZE, NULL,
+        MULTIRANGERX9_TASK_PRI, NULL);
 }
 
 static bool mrTest()
@@ -152,7 +191,7 @@ static bool mrTest()
 
     isPassed = isInit;
 
-    pca95x4SetOutput(AddrPCA, MR_PIN_FRONT);
+    pca95x4SetOutput(AddrPCA_A, MR_PIN_FRONT);
     if (vl53l1xInit(&devFront, I2C1_DEV))
     {
         DEBUG_PRINT("Init front sensor [OK]\n");
@@ -163,7 +202,7 @@ static bool mrTest()
         isPassed = false;
     }
 
-    pca95x4SetOutput(AddrPCA, MR_PIN_BACK);
+    pca95x4SetOutput(AddrPCA_A, MR_PIN_BACK);
     if (vl53l1xInit(&devBack, I2C1_DEV))
     {
         DEBUG_PRINT("Init back sensor [OK]\n");
@@ -174,7 +213,7 @@ static bool mrTest()
         isPassed = false;
     }
 
-    pca95x4SetOutput(AddrPCA, MR_PIN_UP);
+    pca95x4SetOutput(AddrPCA_A, MR_PIN_UP);
     if (vl53l1xInit(&devUp, I2C1_DEV))
     {
         DEBUG_PRINT("Init up sensor [OK]\n");
@@ -185,7 +224,7 @@ static bool mrTest()
         isPassed = false;
     }
 
-    pca95x4SetOutput(AddrPCA, MR_PIN_LEFT);
+    pca95x4SetOutput(AddrPCA_A, MR_PIN_LEFT);
     if (vl53l1xInit(&devLeft, I2C1_DEV))
     {
         DEBUG_PRINT("Init left sensor [OK]\n");
@@ -196,7 +235,7 @@ static bool mrTest()
         isPassed = false;
     }
 
-    pca95x4SetOutput(AddrPCA, MR_PIN_RIGHT);
+    pca95x4SetOutput(AddrPCA_A, MR_PIN_RIGHT);
     if (vl53l1xInit(&devRight, I2C1_DEV))
     {
         DEBUG_PRINT("Init right sensor [OK]\n");
@@ -207,15 +246,60 @@ static bool mrTest()
         isPassed = false;
     }
 
+    //Second Part
+        pca95x4SetOutput(AddrPCA_B, MR_PIN_FRONT_RIGHT);
+    if (vl53l1xInit(&devFrontRight, I2C1_DEV))
+    {
+        DEBUG_PRINT("Init front-right sensor [OK]\n");
+    }
+    else
+    {
+        DEBUG_PRINT("Init front-right sensor [FAIL]\n");
+        isPassed = false;
+    }
+
+    pca95x4SetOutput(AddrPCA_B, MR_PIN_FRONT_LEFT);
+    if (vl53l1xInit(&devFrontLeft, I2C1_DEV))
+    {
+        DEBUG_PRINT("Init front-left sensor [OK]\n");
+    }
+    else
+    {
+        DEBUG_PRINT("Init front-left sensor [FAIL]\n");
+        isPassed = false;
+    }
+
+    pca95x4SetOutput(AddrPCA_B, MR_PIN_BACK_RIGHT);
+    if (vl53l1xInit(&devBackRight, I2C1_DEV))
+    {
+        DEBUG_PRINT("Init back-right sensor [OK]\n");
+    }
+    else
+    {
+        DEBUG_PRINT("Init back-right sensor [FAIL]\n");
+        isPassed = false;
+    }
+
+    pca95x4SetOutput(AddrPCA_B, MR_PIN_BACK_LEFT);
+    if (vl53l1xInit(&devBackLeft, I2C1_DEV))
+    {
+        DEBUG_PRINT("Init back-left sensor [OK]\n");
+    }
+    else
+    {
+        DEBUG_PRINT("Init back-left sensor [FAIL]\n");
+        isPassed = false;
+    }
+
     isTested = true;
 
     return isPassed;
 }
 
-static const DeckDriver multiranger_deck = {
-    .vid = 0xBC,
-    .pid = 0x0C,
-    .name = "bcMultiranger",
+static const DeckDriver MULTIRANGERX9_deck = {
+    .vid = 0x1A,
+    .pid = 0x1C,
+    .name = "Multiranger++",
 
     .usedGpio = 0, // FIXME: set the used pins
 
@@ -223,8 +307,8 @@ static const DeckDriver multiranger_deck = {
     .test = mrTest,
 };
 
-DECK_DRIVER(multiranger_deck);
+DECK_DRIVER(MULTIRANGERX9_deck);
 
 PARAM_GROUP_START(deck)
-PARAM_ADD(PARAM_UINT8 | PARAM_RONLY, bcMultiranger, &isInit)
+PARAM_ADD(PARAM_UINT8 | PARAM_RONLY, MultirangerX9, &isInit)
 PARAM_GROUP_STOP(deck)
