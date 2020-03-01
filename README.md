@@ -1,3 +1,5 @@
+# Modifications for Peer2peer communication in tunnels: see the 'cavemod' branch
+
 # Crazyflie Firmware  [![Build Status](https://api.travis-ci.org/bitcraze/crazyflie-firmware.svg)](https://travis-ci.org/bitcraze/crazyflie-firmware)
 
 This project contains the source code for the firmware used in the Crazyflie range of platforms, including
